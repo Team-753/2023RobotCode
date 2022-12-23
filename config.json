@@ -1,0 +1,106 @@
+{
+  "PCM": 61,
+  "SwerveModules": {
+    "frontLeft": {
+      "motor_ID_1": 1,
+      "motor_ID_2": 3,
+      "encoder_ID": 2,
+      "encoderOffset": 11.33
+    },
+    "frontRight": {
+      "motor_ID_1": 4,
+      "motor_ID_2": 6,
+      "encoder_ID": 5,
+      "encoderOffset": -112.06
+    },
+    "rearLeft": {
+      "motor_ID_1": 10,
+      "motor_ID_2": 12,
+      "encoder_ID": 11,
+      "encoderOffset": -30.67
+    },
+    "rearRight": {
+      "motor_ID_1": 7,
+      "motor_ID_2": 9,
+      "encoder_ID": 8,
+      "encoderOffset": 166.2
+    }
+  },
+  "Climber": {
+    "leftShoulder": {
+      "ID": 20,
+      "Name": "leftShoulder"
+    },
+    "rightShoulder": {
+      "ID": 21,
+      "Name": "rightShoulder"
+    },
+    "shoulderPID": {
+      "kP": 0.005,
+      "kI": 0,
+      "kD": 0
+    },
+    "shoulderCurrentLimit": 35,
+    "shoulderStressedVelocityThreshold": 2,
+    "leftWinch": {
+      "ID": 18,
+      "Name": "leftWinch"
+    },
+    "rightWinch": {
+      "ID": 17,
+      "Name": "rightWinch"
+    },
+    "winchPID": {
+      "kP": 0.5,
+      "kI": 0,
+      "kD": 0
+    },
+    "winchCurrentLimit": 35,
+    "winchStressedVelocityThreshold": 2,
+    "leftHook_PCM_ID_Forward": 0,
+    "leftHook_PCM_ID_Reverse": 1,
+    "rightHook_PCM_ID_Forward": 3,
+    "rightHook_PCM_ID_Reverse": 2,
+    "Arm_Dimensions": {
+      "Arm": 11,
+      "Forearm1": 2.5,
+      "Forearm2": 16.5,
+      "PulleyJointDifference": 3
+    }
+  },
+  "Intake": {
+    "motorID": 16,
+    "pistonIDForward": 5,
+    "pistonIDReverse": 4,
+    "inverted": true,
+    "IntakeSpeed": 0.8
+  },
+  "Tower": {
+    "towerFeederID": 13,
+    "ballClimberID": 14,
+    "shooterID": 19,
+    "proximitySensorID": 0,
+    "towerFeederInverted": false,
+    "ballClimberInverted": false,
+    "shooterInverted": true
+  },
+  "RobotDimensions": {
+    "trackWidth": 25.5,
+    "wheelBase": 21.5,
+    "wheelDiameter": 4
+  },
+  "RobotDefaultSettings": {
+    "fieldOrient": true,
+    "robotSpeedLimiter": 1,
+    "robotVelocityLimit": 3,
+    "robotAccelerationLimit": 1
+  },
+  "driverStation": {
+    "joystickDeadZones": {
+      "xDeadZone": 0.1,
+      "yDeadZone": 0.1,
+      "zDeadZone": 0.1
+    },
+    "flywheelTriggerThreshold": 0.25
+  }
+}
