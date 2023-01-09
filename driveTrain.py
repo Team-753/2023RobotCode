@@ -1,108 +1,72 @@
-from swerveModule import swerveModule
-import math
+from wpimath import geometry, kinematics
 import wpilib
+import navx
+from swerveModule import SwerveModule
+from ctre import NeutralMode
 
-class driveTrain:
-    def __init__(self, config: dict, navxOBJ: object):
-        self.navx = navxOBJ
-        self.swerveModules = {
-            "frontLeft": None,
-            "frontRight": None,
-            "rearLeft": None,
-            "rearRight": None
-        }
+class DriveTrain:
+    ''' Swerve drivetrain infrastructure '''
+    '''
+    "robotVelocityLimit": 3,
+    "robotAccelerationLimit": 1
+    '''
+    def __init__(self, config: dict) -> None:
         self.config = config
-        self.fieldOrient = bool(self.config["RobotDefaultSettings"]["fieldOrient"])
+        
+        self.navx = navx.AHRS.create_spi()
+        self.navx.reset()
+        
+        self.kMaxSpeed = config["RobotDefaultSettings"]["robotVelocityLimit"]
         self.wheelBase = self.config["RobotDimensions"]["wheelBase"]
         self.trackWidth = self.config["RobotDimensions"]["trackWidth"]
-        # LConfig = self.config["SwerveModules"]["frontLeft"]
-        for i in range(4):
-            moduleName = list(self.config["SwerveModules"])[i]
-            swerveConfig = self.config["SwerveModules"][moduleName]
-            self.swerveModules[moduleName] = swerveModule(swerveConfig["motor_ID_1"], swerveConfig["motor_ID_2"], swerveConfig["encoder_ID"], swerveConfig["encoderOffset"], moduleName)
-            self.swerveModules[moduleName].initMotorEncoder()
-
-
-    def rotateCartesianPlane(self, angle: float, x: float, y: float):
-        newX = x*math.sin(angle) - y*math.cos(angle)
-        newY = x*math.cos(angle) + y*math.sin(angle)
-        return(newX, newY)
-
-    def move(self, joystickX: float, joystickY: float, joystickRotation: float):
-        '''
-        This method takes the joystick inputs from the driverStation class. 
-        First checking to see if it is field oriented and compensating for the navx angle if it is.
-        NOTE: The final angle may be in unit circle degrees and not in normal oriented degrees this is most likely the problem if the drivetrain has a 90 degree offset
-        '''
-        joystickX, joystickY = joystickX * self.swerveSpeedFactor, joystickY * self.swerveSpeedFactor
         
-        if self.fieldOrient:
-            angle %= 360
-            if angle < -180:
-                angle += 360
-            elif angle > 180:
-                angle -= 360
-            angleRadians = angle*math.pi/180
-            translationVector = self.rotateCartesianPlane(angleRadians, joystickX, joystickY)
+        self.KINEMATICS = kinematics.SwerveDrive4Kinematics(
+            geometry.Translation2d(self.trackWidth / 2, self.wheelBase / 2),
+            geometry.Translation2d(self.trackWidth / 2, -self.wheelBase / 2),
+            geometry.Translation2d(-self.trackWidth / 2, self.wheelBase / 2),
+            geometry.Translation2d(-self.trackWidth / 2, -self.wheelBase / 2))
+        
+        self.frontLeft = SwerveModule(self.config["SwerveModules"]["frontLeft"])
+        self.frontRight = SwerveModule(self.config["SwerveModules"]["frontRight"])
+        self.rearLeft = SwerveModule(self.config["SwerveModules"]["rearLeft"])
+        self.rearRight = SwerveModule(self.config["SwerveModules"]["rearRight"])
+        
+    def getNAVXRotation2d(self):
+        ''' Returns the robot rotation as a Rotation2d object. '''
+        return self.navx.getRotation2d()
+    
+    def drive(self, xSpeed: float, ySpeed: float, rotation: float, fieldRelative: bool):
+        if fieldRelative:
+            swerveModuleStates = self.KINEMATICS.toSwerveModuleStates(kinematics.ChassisSpeeds.fromFieldRelativeSpeeds(kinematics.ChassisSpeeds(xSpeed, ySpeed, rotation), self.getNAVXRotation2d()))
         else:
-            translationVector = (joystickX, joystickY)
-            
-        fLRotationVector = (joystickRotation*math.cos(self.fLRotationVectorAngle), joystickRotation*math.sin(self.fLRotationVectorAngle))
-        fRRotationVector = (joystickRotation*math.cos(self.fRRotationVectorAngle), joystickRotation*math.sin(self.fRRotationVectorAngle))
-        rLRotationVector = (joystickRotation*math.cos(self.rLRotationVectorAngle), joystickRotation*math.sin(self.rLRotationVectorAngle))
-        rRRotationVector = (joystickRotation*math.cos(self.rRRotationVectorAngle), joystickRotation*math.sin(self.rRRotationVectorAngle))
+            swerveModuleStates = self.KINEMATICS.toSwerveModuleStates(kinematics.ChassisSpeeds(xSpeed, ySpeed, rotation))
         
-        fLTranslationVector = (fLRotationVector[0] + translationVector[0], fLRotationVector[1] + translationVector[1])
-        fRTranslationVector = (fRRotationVector[0] + translationVector[0], fRRotationVector[1] + translationVector[1])
-        rLTranslationVector = (rLRotationVector[0] + translationVector[0], rLRotationVector[1] + translationVector[1])
-        rRTranslationVector = (rRRotationVector[0] + translationVector[0], rRRotationVector[1] + translationVector[1])
-        
-        fLAngle = math.atan2(fLTranslationVector[1], fLTranslationVector[0])*180/math.pi
-        fRAngle = math.atan2(fRTranslationVector[1], fRTranslationVector[0])*180/math.pi
-        rLAngle = math.atan2(rLTranslationVector[1], rLTranslationVector[0])*180/math.pi
-        rRAngle = math.atan2(rRTranslationVector[1], rRTranslationVector[0])*180/math.pi
-
-        fLSpeed = math.sqrt((fLTranslationVector[0]**2) + (fLTranslationVector[1]**2))
-        fRSpeed = math.sqrt((fRTranslationVector[0]**2) + (fRTranslationVector[1]**2))
-        rLSpeed = math.sqrt((rLTranslationVector[0]**2) + (rLTranslationVector[1]**2))
-        rRSpeed = math.sqrt((rRTranslationVector[0]**2) + (rRTranslationVector[1]**2))
-
-        maxSpeed = max(fLSpeed, fRSpeed, rLSpeed, rRSpeed)
-        if maxSpeed > 1:
-            fLSpeed /= maxSpeed
-            fRSpeed /= maxSpeed
-            rLSpeed /= maxSpeed
-            rRSpeed /= maxSpeed
-        self.swerveModules["frontLeft"].move(fLSpeed, fLAngle)
-        self.swerveModules["frontRight"].move(fRSpeed, fRAngle)
-        self.swerveModules["rearLeft"].move(rLSpeed, rLAngle)
-        self.swerveModules["rearRight"].move(rRSpeed, rRAngle)
-
-    def reInitiateMotorEncoders(self):
-        ''' Call this when actually re-zeroing the motor absolutes '''
-        self.swerveModules["frontLeft"].initMotorEncoder()
-        self.swerveModules["frontRight"].initMotorEncoder()
-        self.swerveModules["rearLeft"].initMotorEncoder()
-        self.swerveModules["rearRight"].initMotorEncoder()
+        self.KINEMATICS.desaturateWheelSpeeds(swerveModuleStates, self.kMaxSpeed)
+        self.frontLeft.setState(swerveModuleStates[0])
+        self.frontRight.setState(swerveModuleStates[1])
+        self.rearLeft.setState(swerveModuleStates[2])
+        self.rearRight.setState(swerveModuleStates[3])
         
     def stationary(self):
-        ''' Makes the robot's drivetrain stationary '''
-        self.swerveModules["frontLeft"].stationary()
-        self.swerveModules["frontRight"].stationary()
-        self.swerveModules["rearLeft"].stationary()
-        self.swerveModules["rearRight"].stationary()
-
+        self.frontLeft.setNeutralMode(NeutralMode.Brake)
+        self.frontRight.setNeutralMode(NeutralMode.Brake)
+        self.rearLeft.setNeutralMode(NeutralMode.Brake)
+        self.rearRight.setNeutralMode(NeutralMode.Brake)
+    
     def coast(self):
-        ''' Coasts the robot's drivetrain '''
-        self.swerveModules["frontLeft"].coast()
-        self.swerveModules["frontRight"].coast()
-        self.swerveModules["rearLeft"].coast()
-        self.swerveModules["rearRight"].coast()
+        self.frontLeft.setNeutralMode(NeutralMode.Coast)
+        self.frontRight.setNeutralMode(NeutralMode.Coast)
+        self.rearLeft.setNeutralMode(NeutralMode.Coast)
+        self.rearRight.setNeutralMode(NeutralMode.Coast)
+    
+    def balance(self):
+        ''' Needs a lot of work '''
+    
+    def xMode(self):
+        ''' Needs work '''
         
-    def refreshValues(self):
-        '''frontLeftValues = self.swerveModules["frontLeft"].returnValues()
-        frontRightValues = self.swerveModules["frontRight"].returnValues()
-        rearLeftValues = self.swerveModules["rearLeft"].returnValues()
-        rearRightValues = self.swerveModules["rearRight"].returnValues()
-        return frontLeftValues, frontRightValues, rearLeftValues, rearRightValues'''
-        pass
+    def getSwerveModulePositions(self):
+        return(self.swerveModules["frontLeft"].getSwerveModulePosition(), 
+               self.swerveModules["frontRight"].getSwerveModulePosition(), 
+               self.swerveModules["rearLeft"].getSwerveModulePosition(), 
+               self.swerveModules["rearRight"].getSwerveModulePosition())
