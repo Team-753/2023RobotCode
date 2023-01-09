@@ -62,4 +62,5 @@ class SwerveModule:
     - Add a well-formatted swerve diagnostics shuffleboard tab
     - Finish X-Mode and Balance functions
     - Integrate Autonomous
+    - Refer to: https://github.com/wpilibsuite/allwpilib/blob/main/wpilibjExamples/src/main/java/edu/wpi/first/wpilibj/examples/swervebot/Drivetrain.java
     '''
