@@ -3,6 +3,7 @@ import wpilib
 import navx
 from swerveModule import SwerveModule
 from ctre import NeutralMode
+from wpilib import shuffleboard
 
 class DriveTrain:
     ''' Swerve drivetrain infrastructure '''
@@ -12,7 +13,14 @@ class DriveTrain:
     '''
     def __init__(self, config: dict) -> None:
         self.config = config
-        
+        self.swerveTab = shuffleboard.Shuffleboard.getTab("Swerve")
+        if (config["RobotDefaultSettings"]["DEBUGGING"]):
+            self.swerveTab.add("frontLeft", 0).withPosition(0, 0).withWidget(shuffleboard.BuiltInWidgets.kGyro)
+            self.swerveTab.add("frontRight", 0).withPosition(2, 0).withWidget(shuffleboard.BuiltInWidgets.kGyro)
+            self.swerveTab.add("rearLeft", 0).withPosition(0, 2).withWidget(shuffleboard.BuiltInWidgets.kGyro)
+            self.swerveTab.add("rearRight", 0).withPosition(2, 2).withWidget(shuffleboard.BuiltInWidgets.kGyro)
+            
+            
         self.navx = navx.AHRS.create_spi()
         self.navx.reset()
         
@@ -34,6 +42,9 @@ class DriveTrain:
     def getNAVXRotation2d(self):
         ''' Returns the robot rotation as a Rotation2d object. '''
         return self.navx.getRotation2d()
+    
+    def test(self, data):
+        print(data)
     
     def drive(self, xSpeed: float, ySpeed: float, rotation: float, fieldRelative: bool):
         if fieldRelative:
@@ -66,7 +77,7 @@ class DriveTrain:
         ''' Needs work '''
         
     def getSwerveModulePositions(self):
-        return(self.swerveModules["frontLeft"].getSwerveModulePosition(), 
-               self.swerveModules["frontRight"].getSwerveModulePosition(), 
-               self.swerveModules["rearLeft"].getSwerveModulePosition(), 
-               self.swerveModules["rearRight"].getSwerveModulePosition())
+        return(self.frontLeft.getSwerveModulePosition(), 
+               self.frontRight.getSwerveModulePosition(), 
+               self.rearLeft.getSwerveModulePosition(), 
+               self.rearRight.getSwerveModulePosition())

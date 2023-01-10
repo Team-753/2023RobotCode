@@ -30,7 +30,7 @@ class MyRobot(wpilib.TimedRobot):
         self.poseEstimator = PoseEstimatorSubsystem(self.cameraOne, self.driveTrain, geometry.Pose2d())
         
     def disabledInit(self) -> None:
-        self.driveTrain.coast()
+        ''''''
         return super().disabledInit()
             
     def testInit(self) -> None:
@@ -53,10 +53,10 @@ class MyRobot(wpilib.TimedRobot):
         self.poseEstimator.periodic()
         
     def disabledPeriodic(self):
-        self.visionPeriodic()
+        ''''''
     
     def disabledInit(self) -> None:
-        self.driveTrain.coast()
+        ''''''
         
     
 

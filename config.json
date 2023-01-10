@@ -34,7 +34,8 @@
     "fieldOrient": true,
     "robotSpeedLimiter": 1,
     "robotVelocityLimit": 3,
-    "robotAccelerationLimit": 1
+    "robotAccelerationLimit": 1,
+    "DEBUGGING": true
   },
   "driverStation": {
     "joystickDeadZones": {

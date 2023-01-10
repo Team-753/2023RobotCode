@@ -36,7 +36,7 @@ class SwerveModule:
         
     def getSwerveModulePosition(self):
         distanceMeters = self.driveMotor.getSelectedSensorPosition() * self.wheelDiameter * math.pi / self.countsPerRotation * self.drivingGearRatio # converting the clicks into distance values, in this case, meters
-        angle = geometry.Rotation2d(self.getTurnMotorPosition)
+        angle = geometry.Rotation2d(self.getTurnMotorPosition())
         return kinematics.SwerveModulePosition(distanceMeters, angle)
     
     def getTurnMotorPosition(self):
