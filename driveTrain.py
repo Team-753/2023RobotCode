@@ -11,14 +11,15 @@ class DriveTrain:
     "robotVelocityLimit": 3,
     "robotAccelerationLimit": 1
     '''
+    dataTab = shuffleboard.Shuffleboard.getTab("Swerve")
     def __init__(self, config: dict) -> None:
         self.config = config
-        self.swerveTab = shuffleboard.Shuffleboard.getTab("Swerve")
+        '''self.odometryTab = shuffleboard.Shuffleboard.getTab("Odometry")
         if (config["RobotDefaultSettings"]["DEBUGGING"]):
-            self.swerveTab.add("frontLeft", 0).withPosition(0, 0).withWidget(shuffleboard.BuiltInWidgets.kGyro)
-            self.swerveTab.add("frontRight", 0).withPosition(2, 0).withWidget(shuffleboard.BuiltInWidgets.kGyro)
-            self.swerveTab.add("rearLeft", 0).withPosition(0, 2).withWidget(shuffleboard.BuiltInWidgets.kGyro)
-            self.swerveTab.add("rearRight", 0).withPosition(2, 2).withWidget(shuffleboard.BuiltInWidgets.kGyro)
+            self.odometryTab.add("frontLeft", 180).withPosition(0, 0).withWidget(shuffleboard.BuiltInWidgets.kGyro).withSize(2, 2)
+            self.odometryTab.add("frontRight", 45).withPosition(2, 0).withWidget(shuffleboard.BuiltInWidgets.kGyro).withSize(2, 2)
+            self.odometryTab.add("rearLeft", 90).withPosition(0, 2).withWidget(shuffleboard.BuiltInWidgets.kGyro).withSize(2, 2)
+            self.odometryTab.add("rearRight", 135).withPosition(2, 2).withWidget(shuffleboard.BuiltInWidgets.kGyro).withSize(2, 2)'''
             
             
         self.navx = navx.AHRS.create_spi()
@@ -77,7 +78,13 @@ class DriveTrain:
         ''' Needs work '''
         
     def getSwerveModulePositions(self):
-        return(self.frontLeft.getSwerveModulePosition(), 
+        positions = (self.frontLeft.getSwerveModulePosition(), 
                self.frontRight.getSwerveModulePosition(), 
                self.rearLeft.getSwerveModulePosition(), 
                self.rearRight.getSwerveModulePosition())
+        if (self.config["RobotDefaultSettings"]["DEBUGGING"]):
+            self.dataTab.add("frontLeft", positions[0].angle).withPosition(0, 0).withWidget(shuffleboard.BuiltInWidgets.kGyro).withSize(2, 2)
+            self.dataTab.add("frontRight", positions[1].angle).withPosition(2, 0).withWidget(shuffleboard.BuiltInWidgets.kGyro).withSize(2, 2)
+            self.dataTab.add("rearLeft", positions[2].angle).withPosition(0, 2).withWidget(shuffleboard.BuiltInWidgets.kGyro).withSize(2, 2)
+            self.dataTab.add("rearRight", positions[3].angle).withPosition(2, 2).withWidget(shuffleboard.BuiltInWidgets.kGyro).withSize(2, 2)
+        return positions

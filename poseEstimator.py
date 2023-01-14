@@ -27,15 +27,24 @@ class PoseEstimatorSubsystem:
                                                                  self.visionMeasurementStdDevs)
         self.tab = shuffleboard.Shuffleboard.getTab("Odometry")
         #self.tab.addString("Pose", self.getFormattedPose()).withPosition(0, 0).withSize(2, 0)
-        self.tab.add("Field", self.field).withPosition(2, 0).withSize(6, 4)
+        self.tab.add("Field", self.field).withPosition(5, 0).withSize(6, 4)
         
     def periodic(self):
         ''' Call this function with every iteration of your autonomous and teleop loop. '''
         pipelineResult = self.photonCamera.getLatestResult()
-        if (pipelineResult.getTimestamp() != self.previousPipelineResultTimeStamp and pipelineResult.hasTargets()):
-            self.previousPipelineResultTimeStamp = pipelineResult.getTimestamp()
+        resultTimeStamp = pipelineResult.getTimestamp()
+        if (resultTimeStamp != self.previousPipelineResultTimeStamp and pipelineResult.hasTargets()):
+            self.previousPipelineResultTimeStamp = resultTimeStamp
             target = pipelineResult.getBestTarget()
             fiducialId = target.getFiducialId() # https://github.com/STMARobotics/swerve-test/blob/main/src/main/java/frc/robot/subsystems/PoseEstimatorSubsystem.java#L78
+            if (target.getPoseAmbiguity() <= 0.2 and fiducialId >= 0 and fiducialId < 9):
+                targetPose = self.getTargetPose(fiducialId) # need 3d poses of each apriltag id
+                camToTarget = target.getBestCameraToTarget()
+                camPose = targetPose.transformBy(camToTarget.inverse())
+                robotPose = self.camToRobot(camPose)
+                self.poseEstimator.addVisionMeasurement(robotPose.toPose2d(), resultTimeStamp)
+                
+                
             
         self.poseEstimator.update(
             self.driveTrain.getNAVXRotation2d(),
@@ -56,3 +65,9 @@ class PoseEstimatorSubsystem:
         
     def resetFieldPosition(self):
         self.setCurrentPose(geometry.Pose2d())
+        
+    def getTargetPose(self, id: int):
+        return geometry.Pose3d()
+    
+    def camToRobot(self, camPose: geometry.Pose3d):
+        return geometry.Pose3d()

@@ -4,25 +4,25 @@
       "driveMotorID": 1,
       "turnMotorID": 3,
       "encoderID": 2,
-      "encoderOffset": 11.33
+      "encoderOffset": -169.365234375
     },
     "frontRight": {
       "driveMotorID": 4,
       "turnMotorID": 6,
       "encoderID": 5,
-      "encoderOffset": -112.06
+      "encoderOffset": 68.994140625
     },
     "rearLeft": {
       "driveMotorID": 10,
       "turnMotorID": 12,
       "encoderID": 11,
-      "encoderOffset": -30.67
+      "encoderOffset": 146.513671875
     },
     "rearRight": {
       "driveMotorID": 7,
       "turnMotorID": 9,
       "encoderID": 8,
-      "encoderOffset": 166.2
+      "encoderOffset": -15.732421875
     }
   },
   "RobotDimensions": {
@@ -35,7 +35,7 @@
     "robotSpeedLimiter": 1,
     "robotVelocityLimit": 3,
     "robotAccelerationLimit": 1,
-    "DEBUGGING": true
+    "DEBUGGING": false
   },
   "driverStation": {
     "joystickDeadZones": {

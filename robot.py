@@ -1,14 +1,14 @@
 import wpilib
 import json
 import os
-from networktables import NetworkTables
+#from networktables import NetworkTables
 import threading
 import photonvision
 from poseEstimator import PoseEstimatorSubsystem
 from driveTrain import DriveTrain
 from wpimath import geometry
 
-cond = threading.Condition()
+'''cond = threading.Condition()
 notified = False
 def connectionListener(connected, info):
 	print(info, '; Connected=%s' % connected)
@@ -17,7 +17,7 @@ def connectionListener(connected, info):
 		cond.notify()
 
 NetworkTables.initialize()
-NetworkTables.addConnectionListener(connectionListener, immediateNotify=True)
+NetworkTables.addConnectionListener(connectionListener, immediateNotify=True)'''
 
 class MyRobot(wpilib.TimedRobot):
     def robotInit(self):
@@ -37,20 +37,22 @@ class MyRobot(wpilib.TimedRobot):
         return super().testInit()
     
     def testPeriodic(self) -> None:
-        return super().testPeriodic()
+        self.driveTrain.drive(0, 0.5, 0, True)
     
     def autonomousInit(self):
         pass
         
     def autonomousPeriodic(self):
-        self.poseEstimator.periodic()
+        #self.poseEstimator.periodic()
+        pass
         
     def teleopInit(self):
         pass
         
     def teleopPeriodic(self):
         '''This function is called periodically during operator control.'''
-        self.poseEstimator.periodic()
+        #self.poseEstimator.periodic()
+        pass
         
     def disabledPeriodic(self):
         ''''''

@@ -18,6 +18,12 @@
       "open": true
     },
     "transitory": {
+      "Shuffleboard": {
+        "Odometry": {
+          "open": true
+        },
+        "open": true
+      },
       "photonvision": {
         "cameraOne": {
           "open": true
@@ -25,7 +31,19 @@
       }
     }
   },
-  "NetworkTables View": {
-    "visible": false
+  "NetworkTables Info": {
+    "Clients": {
+      "open": true
+    },
+    "Server": {
+      "Publishers": {
+        "open": true
+      },
+      "open": true
+    },
+    "shuffleboard": {
+      "open": true
+    },
+    "visible": true
   }
 }
