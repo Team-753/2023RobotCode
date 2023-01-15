@@ -26,12 +26,8 @@ class SwerveModule:
         self.absolute.configAbsoluteSensorRange(AbsoluteSensorRange.Signed_PlusMinus180)
         self.absolute.configMagnetOffset(-config["encoderOffset"])
         
-        '''self.turnController = controller.ProfiledPIDControllerRadians(self.kPTurn, self.kITurn, self.kDTurn, trajectory.TrapezoidProfileRadians.Constraints(self.maxAngularVelocity, self.maxAngularAcceleration))
-        self.turnController.setTolerance(self.angleTolerance)
-        self.turnController.enableContinuousInput(-math.pi, math.pi)'''
         self.turnMotor.configIntegratedSensorAbsoluteRange(ctre.AbsoluteSensorRange.Signed_PlusMinus180)
         self.turnMotor.setSelectedSensorPosition(int(self.absolute.getAbsolutePosition() * self.countsPerRotation * self.turningGearRatio / 180), 0)
-        print(self.turnMotor.getSelectedSensorPosition(0))
         self.turnMotor.config_kP(0, 0.1)
         self.turnMotor.config_kI(0, 0.0001)
         self.turnMotor.config_kD(0, 0.0001)
@@ -46,6 +42,7 @@ class SwerveModule:
         self.driveMotor.config_kF(0, 0.045)
         self.driveMotor.config_IntegralZone(0, 50)
         self.driveMotor.configAllowableClosedloopError(0, 25)
+        self.driveMotor.setNeutralMode(ctre.NeutralMode.Brake)
         
         
     def getSwerveModulePosition(self):

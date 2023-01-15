@@ -3,6 +3,8 @@ from wpimath import estimator, geometry
 from wpilib import shuffleboard
 import robotpy_apriltag # gone unused for now, may stay that way...
 import photonvision
+from os import path
+from json import load
 
 class PoseEstimatorSubsystem:
     ''' The infrastructure for estimating robot pose based off of vision and wheel odometry data '''
@@ -10,6 +12,11 @@ class PoseEstimatorSubsystem:
     visionMeasurementStdDevs = 0, 0, 0 # change this later
     field = wpilib.Field2d()
     previousPipelineResultTimeStamp = 0 # useless for now...
+    folderPath = path.dirname(path.abspath(__file__))
+    filePath = path.join(folderPath, 'apriltags.json')
+    camRelRobot = geometry.Transform3d(geometry.Translation3d(0, 0, 0), geometry.Rotation3d())
+    with open (filePath, "r") as f1:
+        tags = load(f1)
     def __init__(self, photonCamera: photonvision.PhotonCamera, driveTrain: object, initialPose: geometry.Pose2d) -> None:
         ''' Initiates the PoseEstimator Subsystem
         
@@ -41,10 +48,8 @@ class PoseEstimatorSubsystem:
                 targetPose = self.getTargetPose(fiducialId) # need 3d poses of each apriltag id
                 camToTarget = target.getBestCameraToTarget()
                 camPose = targetPose.transformBy(camToTarget.inverse())
-                robotPose = self.camToRobot(camPose)
+                robotPose = camPose.transformBy(self.camRelRobot)
                 self.poseEstimator.addVisionMeasurement(robotPose.toPose2d(), resultTimeStamp)
-                
-                
             
         self.poseEstimator.update(
             self.driveTrain.getNAVXRotation2d(),
@@ -67,7 +72,7 @@ class PoseEstimatorSubsystem:
         self.setCurrentPose(geometry.Pose2d())
         
     def getTargetPose(self, id: int):
-        return geometry.Pose3d()
-    
-    def camToRobot(self, camPose: geometry.Pose3d):
-        return geometry.Pose3d()
+        tag = self.tags[f"{id}"]
+        tagRotation = geometry.Rotation3d(0, 0, tag["theta"])
+        tagPose = geometry.Pose3d(tag["x"], tag["y"], tag["z"], tagRotation)
+        return tagPose
