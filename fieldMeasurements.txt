@@ -1,0 +1,18 @@
+Field is 801.37x1654.175cm
+ID 4 and 5 are 36cm from the alliance wall. Centered on the 243.84cm substation.
+Outer and coop grid are each 137.795cm deep.
+The coop grid is 167.64cm wide.
+The outer grids are 190.5cm wide
+substation apriltags are 60.325cm from the ground to the 8-inch border
+substation apriltag is 35.56cm from the wall
+grid apriltags are 36.195cm from the ground to the 8-inch border as well as 36.195cm back from the grid edge
+so half the field is: 801.37x827.0875cm
+meaning that the outer grid is 827.0875-137.795 = 689.2925cm from the white line add on 36.195cm to this == 725.4875cm to grid apriltags
+also meaning that the substation apriltag is 827.0875-35.56 = 791.5275cm from the white line
+243.84 / 2 = 121.92cm. Substation apriltags are 121.92cm from the alliance wall, 791.5275cm from the white line, and centered at a height of 70.485cm
+changing the y-val to be field centric...
+400.685cm - 121.92cm = 279.765
+(x, y, z, rot) in meters and degrees
+so for the substation apriltags:
+APRILTAG 4: (7.915275, 139.8825, 0.70485, -90)
+APRILTAG 5: (-7.915275, 139.8825, 0.70485, 90)
