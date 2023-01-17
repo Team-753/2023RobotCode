@@ -7,10 +7,6 @@ from wpilib import shuffleboard
 
 class DriveTrain:
     ''' Swerve drivetrain infrastructure '''
-    '''
-    "robotVelocityLimit": 3,
-    "robotAccelerationLimit": 1
-    '''
     dataTab = shuffleboard.Shuffleboard.getTab("Swerve")
     def __init__(self, config: dict) -> None:
         self.config = config
@@ -43,9 +39,6 @@ class DriveTrain:
     def getNAVXRotation2d(self):
         ''' Returns the robot rotation as a Rotation2d object. '''
         return self.navx.getRotation2d()
-    
-    def test(self, data):
-        print(data)
     
     def drive(self, xSpeed: float, ySpeed: float, rotation: float, fieldRelative: bool):
         if fieldRelative:

@@ -4,8 +4,8 @@ import os
 #from networktables import NetworkTables
 import threading
 import photonvision
-from poseEstimator import PoseEstimatorSubsystem
-from driveTrain import DriveTrain
+from controlsystems.poseEstimator import PoseEstimatorSubsystem
+from subsystems.driveTrain import DriveTrain
 from wpimath import geometry
 
 '''cond = threading.Condition()
@@ -23,9 +23,9 @@ class MyRobot(wpilib.TimedRobot):
     def robotInit(self):
         folderPath = os.path.dirname(os.path.abspath(__file__))
         filePath = os.path.join(folderPath, 'config.json')
-        self.cameraOne = photonvision.PhotonCamera("cameraOne")
         with open (filePath, "r") as f1:
             self.config = json.load(f1)
+        self.cameraOne = photonvision.PhotonCamera("cameraOne")
         self.driveTrain = DriveTrain(self.config)
         self.poseEstimator = PoseEstimatorSubsystem(self.cameraOne, self.driveTrain, geometry.Pose2d())
         
