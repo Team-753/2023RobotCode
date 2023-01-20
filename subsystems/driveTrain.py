@@ -1,7 +1,7 @@
 from wpimath import geometry, kinematics
 import wpilib
 import navx
-from swerveModule import SwerveModule
+from subsystems.swerveModule import SwerveModule
 from ctre import NeutralMode
 from wpilib import shuffleboard
 

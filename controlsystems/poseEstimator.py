@@ -13,7 +13,7 @@ class PoseEstimatorSubsystem:
     field = wpilib.Field2d()
     previousPipelineResultTimeStamp = 0 # useless for now...
     folderPath = path.dirname(path.abspath(__file__))
-    filePath = path.join(folderPath, 'apriltags.json')
+    filePath = path.join(folderPath, '..\\apriltags.json')
     camRelRobot = geometry.Transform3d(geometry.Translation3d(0, 0, 0), geometry.Rotation3d())
     with open (filePath, "r") as f1:
         tags = load(f1)
@@ -33,13 +33,16 @@ class PoseEstimatorSubsystem:
                                                                  self.stateStdDevs,
                                                                  self.visionMeasurementStdDevs)
         self.tab = shuffleboard.Shuffleboard.getTab("Odometry")
+        self.driverData = shuffleboard.Shuffleboard.getTab("Driver")
         #self.tab.addString("Pose", self.getFormattedPose()).withPosition(0, 0).withSize(2, 0)
         self.tab.add("Field", self.field).withPosition(5, 0).withSize(6, 4)
+        self.driverData.add("Apriltag Detected", "NONE").withPosition(3, 0)
         
     def periodic(self):
         ''' Call this function with every iteration of your autonomous and teleop loop. '''
         pipelineResult = self.photonCamera.getLatestResult()
         resultTimeStamp = pipelineResult.getTimestamp()
+        check = False
         if (resultTimeStamp != self.previousPipelineResultTimeStamp and pipelineResult.hasTargets()):
             self.previousPipelineResultTimeStamp = resultTimeStamp
             target = pipelineResult.getBestTarget()
@@ -50,6 +53,11 @@ class PoseEstimatorSubsystem:
                 camPose = targetPose.transformBy(camToTarget.inverse())
                 robotPose = camPose.transformBy(self.camRelRobot)
                 self.poseEstimator.addVisionMeasurement(robotPose.toPose2d(), resultTimeStamp)
+                self.driverData.add("Apriltag Detected", f"{fiducialId}")
+                check = True
+        if check == False:
+            self.driverData.add("Apriltag Deteced", "NONE")
+
             
         self.poseEstimator.update(
             self.driveTrain.getNAVXRotation2d(),

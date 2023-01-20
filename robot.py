@@ -7,6 +7,8 @@ import photonvision
 from controlsystems.poseEstimator import PoseEstimatorSubsystem
 from subsystems.driveTrain import DriveTrain
 from wpimath import geometry
+from wpilib import shuffleboard
+import photonvision
 
 '''cond = threading.Condition()
 notified = False
@@ -28,6 +30,7 @@ class MyRobot(wpilib.TimedRobot):
         self.cameraOne = photonvision.PhotonCamera("cameraOne")
         self.driveTrain = DriveTrain(self.config)
         self.poseEstimator = PoseEstimatorSubsystem(self.cameraOne, self.driveTrain, geometry.Pose2d())
+        self.driverData = shuffleboard.Shuffleboard.getTab("Driver")
         
     def disabledInit(self) -> None:
         ''''''
@@ -55,7 +58,14 @@ class MyRobot(wpilib.TimedRobot):
         pass
         
     def disabledPeriodic(self):
-        ''''''
+        ''' Runs while the robot is idle '''
+        # checking whether or not an apriltag is detected
+        result = self.cameraOne.getLatestResult() # getting the latest result from the camera
+        if (result.hasTargets()): # checking if the photoncamera actually has any apriltags in view
+            id = result.getBestTarget().getFiducialId() # getting the id of the closest apriltag
+            self.driverData.add("Apriltag Detected", f"{id}") # adding the detection to driverstation
+        else: # no apriltag detected :(
+            self.driverData.add("Apriltag Detected", "NONE") # adding "NONE" to the driverstation
     
     def disabledInit(self) -> None:
         ''''''
