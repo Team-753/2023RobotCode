@@ -22,6 +22,7 @@ NetworkTables.initialize()
 NetworkTables.addConnectionListener(connectionListener, immediateNotify=True)'''
 
 class MyRobot(wpilib.TimedRobot):
+    aprilTagPreviouslyDetected = False 
     def robotInit(self):
         folderPath = os.path.dirname(os.path.abspath(__file__))
         filePath = os.path.join(folderPath, 'config.json')
@@ -61,11 +62,13 @@ class MyRobot(wpilib.TimedRobot):
         ''' Runs while the robot is idle '''
         # checking whether or not an apriltag is detected
         result = self.cameraOne.getLatestResult() # getting the latest result from the camera
-        if (result.hasTargets()): # checking if the photoncamera actually has any apriltags in view
+        if (result.hasTargets() and not self.aprilTagPreviouslyDetected): # checking if the photoncamera actually has any apriltags in view
             id = result.getBestTarget().getFiducialId() # getting the id of the closest apriltag
             self.driverData.add("Apriltag Detected", f"{id}") # adding the detection to driverstation
-        else: # no apriltag detected :(
+            self.aprilTagPreviouslyDetected = True
+        elif (self.aprilTagPreviouslyDetected): # no apriltag detected :(
             self.driverData.add("Apriltag Detected", "NONE") # adding "NONE" to the driverstation
+            self.aprilTagPreviouslyDetected = False
     
     def disabledInit(self) -> None:
         ''''''
