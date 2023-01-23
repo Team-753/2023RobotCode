@@ -13,7 +13,7 @@ class PoseEstimatorSubsystem:
     field = wpilib.Field2d()
     previousPipelineResultTimeStamp = 0 # useless for now...
     folderPath = path.dirname(path.abspath(__file__))
-    filePath = path.join(folderPath, '..\\apriltags.json')
+    filePath = path.join(folderPath, '../apriltags.json')
     camRelRobot = geometry.Transform3d(geometry.Translation3d(0, 0, 0), geometry.Rotation3d())
     with open (filePath, "r") as f1:
         tags = load(f1)

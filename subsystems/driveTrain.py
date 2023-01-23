@@ -19,7 +19,6 @@ class DriveTrain:
             
             
         self.navx = navx.AHRS.create_spi()
-        self.navx.reset()
         
         self.kMaxSpeed = config["RobotDefaultSettings"]["robotVelocityLimit"]
         self.wheelBase = self.config["RobotDimensions"]["wheelBase"]
@@ -35,6 +34,11 @@ class DriveTrain:
         self.frontRight = SwerveModule(self.config["SwerveModules"]["frontRight"])
         self.rearLeft = SwerveModule(self.config["SwerveModules"]["rearLeft"])
         self.rearRight = SwerveModule(self.config["SwerveModules"]["rearRight"])
+        
+        self.dataTab.add("frontLeft", 0).withPosition(0, 0).withWidget(shuffleboard.BuiltInWidgets.kGyro).withSize(2, 2)
+        self.dataTab.add("frontRight", 0).withPosition(2, 0).withWidget(shuffleboard.BuiltInWidgets.kGyro).withSize(2, 2)
+        self.dataTab.add("rearLeft", 0).withPosition(0, 2).withWidget(shuffleboard.BuiltInWidgets.kGyro).withSize(2, 2)
+        self.dataTab.add("rearRight", 0).withPosition(2, 2).withWidget(shuffleboard.BuiltInWidgets.kGyro).withSize(2, 2)
         
     def getNAVXRotation2d(self):
         ''' Returns the robot rotation as a Rotation2d object. '''
@@ -76,8 +80,12 @@ class DriveTrain:
                self.rearLeft.getSwerveModulePosition(), 
                self.rearRight.getSwerveModulePosition())
         if (self.config["RobotDefaultSettings"]["DEBUGGING"]):
-            self.dataTab.add("frontLeft", positions[0].angle).withPosition(0, 0).withWidget(shuffleboard.BuiltInWidgets.kGyro).withSize(2, 2)
-            self.dataTab.add("frontRight", positions[1].angle).withPosition(2, 0).withWidget(shuffleboard.BuiltInWidgets.kGyro).withSize(2, 2)
-            self.dataTab.add("rearLeft", positions[2].angle).withPosition(0, 2).withWidget(shuffleboard.BuiltInWidgets.kGyro).withSize(2, 2)
-            self.dataTab.add("rearRight", positions[3].angle).withPosition(2, 2).withWidget(shuffleboard.BuiltInWidgets.kGyro).withSize(2, 2)
+            '''self.dataTab.add("frontLeft", 0).withPosition(0, 0).withWidget(shuffleboard.BuiltInWidgets.kGyro).withSize(2, 2).getEntry()
+            self.dataTab.add("frontRight", 0).withPosition(2, 0).withWidget(shuffleboard.BuiltInWidgets.kGyro).withSize(2, 2).getEntry()
+            self.dataTab.add("rearLeft", 0).withPosition(0, 2).withWidget(shuffleboard.BuiltInWidgets.kGyro).withSize(2, 2).getEntry()
+            self.dataTab.add("rearRight", 0).withPosition(2, 2).withWidget(shuffleboard.BuiltInWidgets.kGyro).withSize(2, 2).getEntry()'''
+            print(f"frontLeft: {positions[0].angle.degrees()}")
+            print(f"frontRight: {positions[1].angle.degrees()}")
+            print(f"rearLeft: {positions[2].angle.degrees()}")
+            print(f"rearRight: {positions[3].angle.degrees()}")
         return positions

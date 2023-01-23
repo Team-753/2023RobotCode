@@ -17,7 +17,6 @@ def connectionListener(connected, info):
 	with cond:
 		notified = True
 		cond.notify()
-
 NetworkTables.initialize()
 NetworkTables.addConnectionListener(connectionListener, immediateNotify=True)'''
 
@@ -41,7 +40,7 @@ class MyRobot(wpilib.TimedRobot):
         return super().testInit()
     
     def testPeriodic(self) -> None:
-        self.driveTrain.drive(0, 0.5, 0, True)
+        pass
     
     def autonomousInit(self):
         pass
@@ -55,23 +54,24 @@ class MyRobot(wpilib.TimedRobot):
         
     def teleopPeriodic(self):
         '''This function is called periodically during operator control.'''
-        #self.poseEstimator.periodic()
-        pass
-        
+        self.driveTrain.drive(0, 0.5, 0, False)
+    
     def disabledPeriodic(self):
         ''' Runs while the robot is idle '''
+        print(self.driveTrain.rearRight.absolute.getAbsolutePosition())
+        print(self.driveTrain.rearRight.turnMotor.getSelectedSensorPosition(0))
         # checking whether or not an apriltag is detected
-        result = self.cameraOne.getLatestResult() # getting the latest result from the camera
+        '''result = self.cameraOne.getLatestResult() # getting the latest result from the camera
         if (result.hasTargets() and not self.aprilTagPreviouslyDetected): # checking if the photoncamera actually has any apriltags in view
             id = result.getBestTarget().getFiducialId() # getting the id of the closest apriltag
             self.driverData.add("Apriltag Detected", f"{id}") # adding the detection to driverstation
             self.aprilTagPreviouslyDetected = True
         elif (self.aprilTagPreviouslyDetected): # no apriltag detected :(
             self.driverData.add("Apriltag Detected", "NONE") # adding "NONE" to the driverstation
-            self.aprilTagPreviouslyDetected = False
+            self.aprilTagPreviouslyDetected = False'''
     
     def disabledInit(self) -> None:
-        ''''''
+        self.driveTrain.coast()
         
     
 
