@@ -25,6 +25,7 @@ class Arm:
         need to switch over PID's based on how far out the arm is extended.
         - Returns: whether it is within the setpoint threshold, very important for auto stuff
         '''
+        return bool
         
     def coast(self):
         ''''''

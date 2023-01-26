@@ -3,6 +3,7 @@ from wpilib import shuffleboard
 
 class Operator:
     counter = 0
+    '''
     blank = {
         "driverX": 0.0,
         "driverY": 0.0,
@@ -17,6 +18,7 @@ class Operator:
         "placeBottomMid": False,
         "placeBottomLeft": False
     }
+    '''
     driverTab = shuffleboard.Shuffleboard.getTab("Driver")
     
     def __init__(self, config: dict) -> None:
@@ -45,4 +47,19 @@ class Operator:
         
     def periodic(self):
         self.checkInputDevices()
-        switches = self.blank.copy()
+        switches = {
+        "driverX": self.joystick.getX(),
+        "driverY": self.joystick.getY(),
+        "driverZ": self.joystick.getZ(),
+        "placeTopRight": 1,
+        "placeTopMid": 2,
+        "placeTopLeft": 3,
+        "placeMidRight": False,
+        "placeMidMid": False,
+        "placeMidLeft": False,
+        "placeBottomRight": False,
+        "placeBottomMid": False,
+        "placeBottomLeft": False,
+        "coneMode": False,
+        "cubeMode": False
+    }
