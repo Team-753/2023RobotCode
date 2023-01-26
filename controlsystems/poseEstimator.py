@@ -5,6 +5,7 @@ import robotpy_apriltag # gone unused for now, may stay that way...
 import photonvision
 from os import path
 from json import load
+from subsystems.driveTrain import DriveTrain
 
 class PoseEstimatorSubsystem:
     ''' The infrastructure for estimating robot pose based off of vision and wheel odometry data '''
@@ -13,7 +14,7 @@ class PoseEstimatorSubsystem:
     field = wpilib.Field2d()
     previousPipelineResultTimeStamp = 0 # useless for now...
     camRelRobot = geometry.Transform3d(geometry.Translation3d(0, 0, 0), geometry.Rotation3d())
-    def __init__(self, photonCamera: photonvision.PhotonCamera, driveTrain: object, initialPose: geometry.Pose2d) -> None:
+    def __init__(self, photonCamera: photonvision.PhotonCamera, driveTrain: DriveTrain, initialPose: geometry.Pose2d) -> None:
         ''' Initiates the PoseEstimator Subsystem
         
             :param photonCamera: The chosen PhotonCamera object.

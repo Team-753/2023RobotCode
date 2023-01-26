@@ -2,39 +2,45 @@ import wpilib
 from wpimath import controller
 from wpimath import geometry, kinematics
 from pathplannerlib import PathPlanner, PathPlannerTrajectory, PathConstraints, PathPoint
-from math import pi
+from math import radians
+from controlsystems.ppHolonomicDriveController import PPHolonomicDriveController
+from controlsystems.commandController import CommandController
 
 ''' For intellisense: '''
-import subsystems.driveTrain
-import controlsystems.poseEstimator
+from subsystems.driveTrain import DriveTrain
+from controlsystems.poseEstimator import PoseEstimatorSubsystem
 
 class Autonomous:
     currentPose = geometry.Pose2d(0, 0, 0)
-    def __init__(self, config: dict, tags: dict, driveTrain: subsystems.driveTrain, poseEstimator: controlsystems.poseEstimator, mode: str) -> None:
+    def __init__(self, config: dict, tags: dict, driveTrain: DriveTrain, poseEstimator: PoseEstimatorSubsystem) -> None:
         self.config = config
         self.alliance = wpilib.DriverStation.getAlliance()
-        self.mode = mode
         self.tags = tags
+        self.driveTrain = driveTrain
+        self.poseEstimator = poseEstimator
         
         self.maxVel = self.config["autonomousSettings"]["autoVelLimit"]
         self.maxAcc = self.config["autonomousSettings"]["autoAccLimit"]
-        
+        '''
+        "xPoseToleranceMeters": 0.01,
+        "yPoseToleranceMeters": 0.01,
+        "thetaPoseToleranceDegrees": 0.25
+        '''
         xController = controller.PIDController()
         yController = controller.PIDController()
         thetaController = controller.ProfiledPIDControllerRadians()
+        tolerance = geometry.Pose2d(geometry.Translation2d(x=self.config["autonomousSettings"]["xPoseToleranceMeters"], y=self.config["autonomousSettings"]["yPoseToleranceMeters"]), geometry.Rotation2d(radians(self.config["autonomousSettings"]["thetaPoseToleranceDegrees"])))
+        self.autoController = PPHolonomicDriveController(xController, yController, thetaController, tolerance)
         
-        self.autoController = controller.HolonomicDriveController(xController, yController, thetaController)
+        self.commandController = CommandController()
+        
         '''
         options for modes:
         goto
         autopath
         '''
-        
-    def goTo(self, x, y, rotation):
-        pass
-    
     def followAprilTag(self, id: int):
-        ''' Stays one meter in front of the corresponding apriltag '''
+        ''' --TESTING-- Stays one meter in front of the corresponding apriltag '''
         tagPose = self.getTargetPose(id)
         trajectory = PathPlanner.generatePath( # NOTE: Mess with heading value later, maybe make it equal the the vector heading?
             PathConstraints(6, 3),
@@ -46,7 +52,7 @@ class Autonomous:
         state = trajectory.sample()
         return ""
     
-    def loadPath(self, pathname: str):
+    def loadFullAuto(self, pathname: str):
         ''''''
         #path = PathPlanner.loadPath(pathname, self.maxVel, self.maxAcc, False)
         
@@ -56,42 +62,13 @@ class Autonomous:
         tagPose = geometry.Pose3d(tag["x"], tag["y"], tag["z"], tagRotation)
         return tagPose
     
-    def bigDaddy(self):
+    def bigDaddy(self, mode: str, conditionals: dict):
         ''' Does literally everything to do with anything, runs periodically in ALL modes.
         parameters: TBD '''
-    
-class PPHolonomicDriveController:
-    translationError = geometry.Translation2d()
-    rotationError = geometry.Rotation2d()
-    enabled = True
-    
-    def __init__(self, xController: controller.PIDController, yController: controller.PIDController, thetaController: controller.PIDController, tolerance: geometry.Pose2d) -> None:
-        self.xController = xController
-        self.yController = yController
-        self.thetaController = thetaController
-        thetaController.enableContinuousInput(-pi, pi)
-        self.tolerance = tolerance
-        
-    def atReference(self):
-        translationTolerance = self.tolerance.translation()
-        rotationTolerance = self.tolerance.rotation()
-        return abs(self.translationError.X()) < translationTolerance.X() and abs(self.translationError.Y()) < translationTolerance.Y() and abs(self.rotationError.radians()) < rotationTolerance.radians()
-    
-    def enable(self, enable: bool):
-        self.enabled = enable
-    
-    def ChassisSpeeds(self, currentPose: geometry.Pose2d, referenceState: PathPlannerTrajectory.PathPlannerState):
-        xFF = referenceState.velocity * referenceState.pose.rotation().cos()
-        yFF = referenceState.velocity * referenceState.pose.rotation().sin()
-        rotationFF = referenceState.holonomicAngularVelocity
-        
-        self.translationError = referenceState.pose.relativeTo(currentPose).rotation()
-        self.rotationError = referenceState.holonomicRotation.rotateBy(currentPose.rotation()) # docs list ".minus" here, not present in robotpy
-        
-        if (not self.enabled):
-            return (kinematics.ChassisSpeeds.fromFieldRelativeSpeeds((xFF, yFF, rotationFF, currentPose.rotation())))
-        
-        xFeedback = self.xController.calculate(currentPose.X(), referenceState.pose.X())
-        yFeedback = self.yController.calculate(currentPose.Y(), referenceState.pose.Y())
-        rotationFeedback = self.thetaController.calculate(currentPose.rotation().radians(), referenceState.holonomicRotation.radians())
-        return kinematics.ChassisSpeeds.fromFieldRelativeSpeeds(xFF + xFeedback, yFF + yFeedback, rotationFF + rotationFeedback, currentPose.rotation())
+        self.poseEstimator.periodic() # always ran
+        if (mode == "fullAuto"):
+            pass
+        elif (mode == "commando"):
+            pass
+        else: # passive auto, doesn't do anything, just keeps track of where the robot is still
+            pass
