@@ -29,12 +29,14 @@ class MyRobot(wpilib.TimedRobot):
         filePath = os.path.join(folderPath, 'config.json')
         with open (filePath, "r") as f1:
             self.config = json.load(f1)
+        tagPath = os.path.join(folderPath, '../apriltags.json')
+        with open (tagPath, "r") as f1:
+            self.tags = json.load(f1)
         self.cameraOne = photonvision.PhotonCamera("cameraOne")
         self.driveTrain = DriveTrain(self.config)
-        self.poseEstimator = PoseEstimatorSubsystem(self.cameraOne, self.driveTrain, geometry.Pose2d())
         self.driverData = shuffleboard.Shuffleboard.getTab("Driver")
         self.operator = Operator(self.config)
-        self.automous = Autonomous(self.config, "autopath")
+        self.autonomous = Autonomous(self.config, self.tags, self.driveTrain, PoseEstimatorSubsystem(self.cameraOne, self.driveTrain, self.tags, geometry.Pose2d()))
         
     def disabledInit(self) -> None:
         ''''''
@@ -44,21 +46,20 @@ class MyRobot(wpilib.TimedRobot):
         return super().testInit()
     
     def testPeriodic(self) -> None:
-        pass
+        self.autonomous.followAprilTag()
     
     def autonomousInit(self):
         pass
         
     def autonomousPeriodic(self):
-        #self.poseEstimator.periodic()
-        self.automous.followAprilTag()
+        self.autonomous.bigDaddy()
         
     def teleopInit(self):
         pass
         
     def teleopPeriodic(self):
         '''This function is called periodically during operator control.'''
-        self.driveTrain.drive(0, 0.5, 0, False)
+        self.autonomous.bigDaddy()
     
     def disabledPeriodic(self):
         ''' Runs while the robot is idle '''

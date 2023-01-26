@@ -21,8 +21,8 @@ class Operator:
     
     def __init__(self, config: dict) -> None:
         self.config = config
-        self.driverTab.add("Joystick Connected", False).withPosition(12, 0)
-        self.driverTab.add("Stream Deck Connected", False).withPosition(12, 1)
+        self.driverTab.add("Joystick Connected", False).withPosition(10, 0)
+        self.driverTab.add("Stream Deck Connected", False).withPosition(10, 1)
         self.joystick = wpilib.Joystick(self.config["driverStation"]["joystickUSB"])
         self.streamDeck = wpilib.Joystick(self.config["driverStation"]["streamDeckUSB"])
         self.checkInputDevices()
