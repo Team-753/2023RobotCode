@@ -37,6 +37,10 @@
     "robotAccelerationLimit": 1,
     "DEBUGGING": true
   },
+  "autonomousSettings": {
+    "autoVelLimit": 4,
+    "autoAccLimit": 3
+  },
   "driverStation": {
     "joystickUSB": 0,
     "streamDeckUSB": 1,

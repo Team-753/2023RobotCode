@@ -5,7 +5,9 @@ import os
 import threading
 import photonvision
 from controlsystems.poseEstimator import PoseEstimatorSubsystem
+from controlsystems.operator import Operator
 from subsystems.driveTrain import DriveTrain
+from controlsystems.autonomous import Autonomous
 from wpimath import geometry
 from wpilib import shuffleboard
 import photonvision
@@ -31,6 +33,8 @@ class MyRobot(wpilib.TimedRobot):
         self.driveTrain = DriveTrain(self.config)
         self.poseEstimator = PoseEstimatorSubsystem(self.cameraOne, self.driveTrain, geometry.Pose2d())
         self.driverData = shuffleboard.Shuffleboard.getTab("Driver")
+        self.operator = Operator(self.config)
+        self.automous = Autonomous(self.config, "autopath")
         
     def disabledInit(self) -> None:
         ''''''
@@ -47,7 +51,7 @@ class MyRobot(wpilib.TimedRobot):
         
     def autonomousPeriodic(self):
         #self.poseEstimator.periodic()
-        pass
+        self.automous.followAprilTag()
         
     def teleopInit(self):
         pass
@@ -58,8 +62,7 @@ class MyRobot(wpilib.TimedRobot):
     
     def disabledPeriodic(self):
         ''' Runs while the robot is idle '''
-        print(self.driveTrain.rearRight.absolute.getAbsolutePosition())
-        print(self.driveTrain.rearRight.turnMotor.getSelectedSensorPosition(0))
+        self.operator.checkInputDevices()
         # checking whether or not an apriltag is detected
         '''result = self.cameraOne.getLatestResult() # getting the latest result from the camera
         if (result.hasTargets() and not self.aprilTagPreviouslyDetected): # checking if the photoncamera actually has any apriltags in view
