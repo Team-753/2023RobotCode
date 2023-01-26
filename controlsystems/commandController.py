@@ -68,13 +68,13 @@ class CommandController:
                     if (self.mandible.intake()): # we have the game piece, no need to coast, that functionality is built in
                         return True, True, None
                     else:
-                        return True, False, target[1] # we dont have the game piece yet, hold/target position; hope and pray
+                        return False, True, target[1] # we dont have the game piece yet, hold/target position; hope and pray
                 
             else: # arm isn't in position yet, hold robot position and wait for the arm
                 return False, False, target[0]
         else:
             return False, False, target[0]
-        # returns: (first stage done?), (are we done now?), posetarget
+        # returns: (are we done now?), (first stage done?), posetarget
     
     def autoPickupCommand(self, armPosition: str, gamePieceType: str):
         ''' Same idea as the substation pickup command but doesn't involve as many checks and doesn't manipulate the drivetrain.
@@ -102,18 +102,17 @@ class CommandController:
         ''' Sets the mandible to either open or closed.
         stateToSet: 'cube', 'cone' '''
         self.mandible.setState(stateToSet)
+        return True
         
     def setMandibleNeutralWheelState(self, stateToSet: str):
         ''' Sets the neutral wheel state for the mandible.
         stateToSet: 'coast', 'brake' '''
         self.mandible.setNeutralWheelState(stateToSet)
+        return True
     
     def mandibleIntake(self):
         ''' Spins the wheels inwards until the game piece is detected '''
-        if self.mandible.intake():
-            return True
-        else:
-            return False
+        return self.mandible.intake()
         
     def mandibleOuttake(self):
         ''' Spins the wheels outwards '''

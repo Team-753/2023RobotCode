@@ -42,7 +42,9 @@
     "autoAccLimit": 3,
     "xPoseToleranceMeters": 0.01,
     "yPoseToleranceMeters": 0.01,
-    "thetaPoseToleranceDegrees": 0.25
+    "thetaPoseToleranceDegrees": 0.25,
+    "translationPIDConstants": {},
+    "rotationPIDConstants": {}
   },
   "driverStation": {
     "joystickUSB": 0,
