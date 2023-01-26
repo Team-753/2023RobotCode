@@ -70,5 +70,7 @@ class Autonomous:
             pass
         elif (mode == "commando"):
             pass
+        elif (mode == "aprilTagTesting"):
+            pass
         else: # passive auto, doesn't do anything, just keeps track of where the robot is still
             pass
