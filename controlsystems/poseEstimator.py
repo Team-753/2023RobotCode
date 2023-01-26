@@ -1,10 +1,11 @@
-import wpilib
+import wpilib  
 from wpimath import estimator, geometry
 from wpilib import shuffleboard
 import robotpy_apriltag # gone unused for now, may stay that way...
 import photonvision
 from os import path
 from json import load
+from subsystems.driveTrain import DriveTrain
 
 class PoseEstimatorSubsystem:
     ''' The infrastructure for estimating robot pose based off of vision and wheel odometry data '''
@@ -12,12 +13,8 @@ class PoseEstimatorSubsystem:
     visionMeasurementStdDevs = 0, 0, 0 # change this later
     field = wpilib.Field2d()
     previousPipelineResultTimeStamp = 0 # useless for now...
-    folderPath = path.dirname(path.abspath(__file__))
-    filePath = path.join(folderPath, '..\\apriltags.json')
     camRelRobot = geometry.Transform3d(geometry.Translation3d(0, 0, 0), geometry.Rotation3d())
-    with open (filePath, "r") as f1:
-        tags = load(f1)
-    def __init__(self, photonCamera: photonvision.PhotonCamera, driveTrain: object, initialPose: geometry.Pose2d) -> None:
+    def __init__(self, photonCamera: photonvision.PhotonCamera, driveTrain: DriveTrain, initialPose: geometry.Pose2d) -> None:
         ''' Initiates the PoseEstimator Subsystem
         
             :param photonCamera: The chosen PhotonCamera object.

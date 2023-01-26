@@ -6,8 +6,8 @@
       "style": "0",
       "userScale": "2",
       "width": "1280",
-      "xpos": "424",
-      "ypos": "263"
+      "xpos": "618",
+      "ypos": "64"
     }
   },
   "Table": {
@@ -46,7 +46,7 @@
     },
     "###NetworkTables Info": {
       "Collapsed": "0",
-      "Pos": "250,130",
+      "Pos": "248,129",
       "Size": "750,145"
     },
     "###Other Devices": {

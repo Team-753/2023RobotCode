@@ -4,10 +4,12 @@ import navx
 from subsystems.swerveModule import SwerveModule
 from ctre import NeutralMode
 from wpilib import shuffleboard
+from wpilib import SmartDashboard
+#from pathplannerlib import 
 
 class DriveTrain:
     ''' Swerve drivetrain infrastructure '''
-    dataTab = shuffleboard.Shuffleboard.getTab("Swerve")
+    dataTab = shuffleboard.Shuffleboard.getTab("Testing")
     def __init__(self, config: dict) -> None:
         self.config = config
         '''self.odometryTab = shuffleboard.Shuffleboard.getTab("Odometry")
@@ -19,7 +21,6 @@ class DriveTrain:
             
             
         self.navx = navx.AHRS.create_spi()
-        self.navx.reset()
         
         self.kMaxSpeed = config["RobotDefaultSettings"]["robotVelocityLimit"]
         self.wheelBase = self.config["RobotDimensions"]["wheelBase"]
@@ -36,6 +37,13 @@ class DriveTrain:
         self.rearLeft = SwerveModule(self.config["SwerveModules"]["rearLeft"])
         self.rearRight = SwerveModule(self.config["SwerveModules"]["rearRight"])
         
+        self.flVisual = self.dataTab.add("frontLeft", 0).withPosition(0, 0).withWidget(shuffleboard.BuiltInWidgets.kGyro).withSize(1, 1).getEntry()
+        self.frVisual = self.dataTab.add("frontRight", 0).withPosition(2, 0).withWidget(shuffleboard.BuiltInWidgets.kGyro).withSize(1, 1).getEntry()
+        self.rlVisual = self.dataTab.add("rearLeft", 0).withPosition(0, 2).withWidget(shuffleboard.BuiltInWidgets.kGyro).withSize(1, 1).getEntry()
+        self.rrVisual = self.dataTab.add("rearRight", 0).withPosition(2, 2).withWidget(shuffleboard.BuiltInWidgets.kGyro).withSize(1, 1).getEntry()
+        
+        self.PPSwerveController
+        
     def getNAVXRotation2d(self):
         ''' Returns the robot rotation as a Rotation2d object. '''
         return self.navx.getRotation2d()
@@ -51,6 +59,9 @@ class DriveTrain:
         self.frontRight.setState(swerveModuleStates[1])
         self.rearLeft.setState(swerveModuleStates[2])
         self.rearRight.setState(swerveModuleStates[3])
+        
+    def followTrajectory(self, trajectory):
+        pass
         
     def stationary(self):
         self.frontLeft.setNeutralMode(NeutralMode.Brake)
@@ -76,8 +87,8 @@ class DriveTrain:
                self.rearLeft.getSwerveModulePosition(), 
                self.rearRight.getSwerveModulePosition())
         if (self.config["RobotDefaultSettings"]["DEBUGGING"]):
-            self.dataTab.add("frontLeft", positions[0].angle).withPosition(0, 0).withWidget(shuffleboard.BuiltInWidgets.kGyro).withSize(2, 2)
-            self.dataTab.add("frontRight", positions[1].angle).withPosition(2, 0).withWidget(shuffleboard.BuiltInWidgets.kGyro).withSize(2, 2)
-            self.dataTab.add("rearLeft", positions[2].angle).withPosition(0, 2).withWidget(shuffleboard.BuiltInWidgets.kGyro).withSize(2, 2)
-            self.dataTab.add("rearRight", positions[3].angle).withPosition(2, 2).withWidget(shuffleboard.BuiltInWidgets.kGyro).withSize(2, 2)
+            '''self.dataTab.add("frontLeft", 0).withPosition(0, 0).withWidget(shuffleboard.BuiltInWidgets.kGyro).withSize(2, 2).getEntry()
+            self.dataTab.add("frontRight", 0).withPosition(2, 0).withWidget(shuffleboard.BuiltInWidgets.kGyro).withSize(2, 2).getEntry()
+            self.dataTab.add("rearLeft", 0).withPosition(0, 2).withWidget(shuffleboard.BuiltInWidgets.kGyro).withSize(2, 2).getEntry()
+            self.dataTab.add("rearRight", 0).withPosition(2, 2).withWidget(shuffleboard.BuiltInWidgets.kGyro).withSize(2, 2).getEntry()'''
         return positions
