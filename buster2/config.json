@@ -1,0 +1,58 @@
+{
+  "SwerveModules": {
+    "frontLeft": {
+      "driveMotorID": 1,
+      "turnMotorID": 3,
+      "encoderID": 2,
+      "encoderOffset": 10.95
+    },
+    "frontRight": {
+      "driveMotorID": 4,
+      "turnMotorID": 6,
+      "encoderID": 5,
+      "encoderOffset": 248.55
+    },
+    "rearLeft": {
+      "driveMotorID": 10,
+      "turnMotorID": 12,
+      "encoderID": 11,
+      "encoderOffset": 326.337890625
+    },
+    "rearRight": {
+      "driveMotorID": 7,
+      "turnMotorID": 9,
+      "encoderID": 8,
+      "encoderOffset": 163.5
+    }
+  },
+  "RobotDimensions": {
+    "trackWidth": 25.5,
+    "wheelBase": 21.5,
+    "wheelDiameter": 4
+  },
+  "RobotDefaultSettings": {
+    "fieldOrient": true,
+    "robotSpeedLimiter": 1,
+    "robotVelocityLimit": 3,
+    "robotAccelerationLimit": 1,
+    "DEBUGGING": true
+  },
+  "autonomousSettings": {
+    "autoVelLimit": 4,
+    "autoAccLimit": 3,
+    "xPoseToleranceMeters": 0.01,
+    "yPoseToleranceMeters": 0.01,
+    "thetaPoseToleranceDegrees": 0.25,
+    "translationPIDConstants": {},
+    "rotationPIDConstants": {}
+  },
+  "driverStation": {
+    "joystickUSB": 0,
+    "streamDeckUSB": 1,
+    "joystickDeadZones": {
+      "xDeadZone": 0.1,
+      "yDeadZone": 0.1,
+      "zDeadZone": 0.15
+    }
+  }
+}
