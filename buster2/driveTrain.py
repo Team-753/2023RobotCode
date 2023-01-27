@@ -53,10 +53,28 @@ class DriveTrain:
             swerveModuleStates = self.KINEMATICS.toSwerveModuleStates(kinematics.ChassisSpeeds(xSpeed, ySpeed, rotation))
         
         self.KINEMATICS.desaturateWheelSpeeds(swerveModuleStates, self.kMaxSpeed)
-        '''self.frontLeft.setState(swerveModuleStates[0])
+        self.frontLeft.setState(swerveModuleStates[0])
         self.frontRight.setState(swerveModuleStates[1])
         self.rearLeft.setState(swerveModuleStates[2])
-        self.rearRight.setState(swerveModuleStates[3])'''
+        self.rearRight.setState(swerveModuleStates[3])
+    
+    def joystickDrive(self, xScalar: float, yScalar: float, zScalar: float, fieldRelative: bool):
+        temp = xScalar
+        xScalar = yScalar * self.kMaxSpeed
+        yScalar = temp * self.kMaxSpeed
+        zScalar *= 0.1
+        
+        if fieldRelative:
+            swerveModuleStates = self.KINEMATICS.toSwerveModuleStates(kinematics.ChassisSpeeds.fromFieldRelativeSpeeds(kinematics.ChassisSpeeds(xScalar, yScalar, zScalar), self.getNAVXRotation2d()))
+        else:
+            swerveModuleStates = self.KINEMATICS.toSwerveModuleStates(kinematics.ChassisSpeeds(xScalar, yScalar, zScalar))
+        
+        self.KINEMATICS.desaturateWheelSpeeds(swerveModuleStates, self.kMaxSpeed)
+        self.frontLeft.setState(swerveModuleStates[0])
+        self.frontRight.setState(swerveModuleStates[1])
+        self.rearLeft.setState(swerveModuleStates[2])
+        self.rearRight.setState(swerveModuleStates[3])
+        
         
     def followTrajectory(self, trajectory):
         pass
@@ -68,10 +86,10 @@ class DriveTrain:
         self.rearRight.setNeutralMode(NeutralMode.Brake)'''
     
     def coast(self):
-        '''self.frontLeft.setNeutralMode(NeutralMode.Coast)
+        self.frontLeft.setNeutralMode(NeutralMode.Coast)
         self.frontRight.setNeutralMode(NeutralMode.Coast)
         self.rearLeft.setNeutralMode(NeutralMode.Coast)
-        self.rearRight.setNeutralMode(NeutralMode.Coast)'''
+        self.rearRight.setNeutralMode(NeutralMode.Coast)
     
     def balance(self):
         ''' Needs a lot of work '''
@@ -85,3 +103,8 @@ class DriveTrain:
                self.rearLeft.getSwerveModulePosition(), 
                self.rearRight.getSwerveModulePosition())
         return positions'''
+    def reportSwerves(self):
+        self.frontLeft.testPeriodic()
+        self.frontRight.testPeriodic()
+        self.rearLeft.testPeriodic()
+        self.rearRight.testPeriodic()
