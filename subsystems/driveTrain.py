@@ -1,7 +1,7 @@
 from wpimath import geometry, kinematics
 import wpilib
 import navx
-from subsystems.swerveModule import SwerveModule
+from swerveModule import SwerveModule
 from ctre import NeutralMode
 from wpilib import shuffleboard
 from wpilib import SmartDashboard
@@ -32,17 +32,15 @@ class DriveTrain:
             geometry.Translation2d(-self.trackWidth / 2, self.wheelBase / 2),
             geometry.Translation2d(-self.trackWidth / 2, -self.wheelBase / 2))
         
-        self.frontLeft = SwerveModule(self.config["SwerveModules"]["frontLeft"])
-        self.frontRight = SwerveModule(self.config["SwerveModules"]["frontRight"])
-        self.rearLeft = SwerveModule(self.config["SwerveModules"]["rearLeft"])
-        self.rearRight = SwerveModule(self.config["SwerveModules"]["rearRight"])
+        self.frontLeft = SwerveModule(self.config["SwerveModules"]["frontLeft"], "frontLeft")
+        self.frontRight = SwerveModule(self.config["SwerveModules"]["frontRight"], "frontRight")
+        self.rearLeft = SwerveModule(self.config["SwerveModules"]["rearLeft"], "rearLeft")
+        self.rearRight = SwerveModule(self.config["SwerveModules"]["rearRight"], "rearRight")
         
-        self.flVisual = self.dataTab.add("frontLeft", 0).withPosition(0, 0).withWidget(shuffleboard.BuiltInWidgets.kGyro).withSize(1, 1).getEntry()
+        '''self.flVisual = self.dataTab.add("frontLeft", 0).withPosition(0, 0).withWidget(shuffleboard.BuiltInWidgets.kGyro).withSize(1, 1).getEntry()
         self.frVisual = self.dataTab.add("frontRight", 0).withPosition(2, 0).withWidget(shuffleboard.BuiltInWidgets.kGyro).withSize(1, 1).getEntry()
         self.rlVisual = self.dataTab.add("rearLeft", 0).withPosition(0, 2).withWidget(shuffleboard.BuiltInWidgets.kGyro).withSize(1, 1).getEntry()
-        self.rrVisual = self.dataTab.add("rearRight", 0).withPosition(2, 2).withWidget(shuffleboard.BuiltInWidgets.kGyro).withSize(1, 1).getEntry()
-        
-        self.PPSwerveController
+        self.rrVisual = self.dataTab.add("rearRight", 0).withPosition(2, 2).withWidget(shuffleboard.BuiltInWidgets.kGyro).withSize(1, 1).getEntry()'''
         
     def getNAVXRotation2d(self):
         ''' Returns the robot rotation as a Rotation2d object. '''
@@ -59,36 +57,64 @@ class DriveTrain:
         self.frontRight.setState(swerveModuleStates[1])
         self.rearLeft.setState(swerveModuleStates[2])
         self.rearRight.setState(swerveModuleStates[3])
+    
+    def joystickDrive(self, xScalar: float, yScalar: float, zScalar: float, fieldRelative: bool):
+        temp = xScalar
+        xScalar = yScalar * self.kMaxSpeed
+        yScalar = temp * self.kMaxSpeed
+        zScalar *= 0.1
+        
+        if fieldRelative:
+            swerveModuleStates = self.KINEMATICS.toSwerveModuleStates(kinematics.ChassisSpeeds.fromFieldRelativeSpeeds(kinematics.ChassisSpeeds(xScalar, yScalar, zScalar), self.getNAVXRotation2d()))
+        else:
+            swerveModuleStates = self.KINEMATICS.toSwerveModuleStates(kinematics.ChassisSpeeds(xScalar, yScalar, zScalar))
+        
+        self.KINEMATICS.desaturateWheelSpeeds(swerveModuleStates, self.kMaxSpeed)
+        self.frontLeft.setState(swerveModuleStates[0])
+        self.frontRight.setState(swerveModuleStates[1])
+        self.rearLeft.setState(swerveModuleStates[2])
+        self.rearRight.setState(swerveModuleStates[3])
+        
         
     def followTrajectory(self, trajectory):
         pass
         
     def stationary(self):
+        ''' Don't use this, is unhealthy for the motors and drivetrain. '''
         self.frontLeft.setNeutralMode(NeutralMode.Brake)
+        self.frontLeft.stop()
         self.frontRight.setNeutralMode(NeutralMode.Brake)
+        self.frontRight.stop()
         self.rearLeft.setNeutralMode(NeutralMode.Brake)
+        self.rearLeft.stop()
         self.rearRight.setNeutralMode(NeutralMode.Brake)
+        self.rearRight.stop()
     
     def coast(self):
+        ''' Whenever you don't want to power the wheels '''
         self.frontLeft.setNeutralMode(NeutralMode.Coast)
+        self.frontLeft.stop()
         self.frontRight.setNeutralMode(NeutralMode.Coast)
+        self.frontRight.stop()
         self.rearLeft.setNeutralMode(NeutralMode.Coast)
+        self.rearLeft.stop()
         self.rearRight.setNeutralMode(NeutralMode.Coast)
+        self.rearRight.stop()
     
     def balance(self):
         ''' Needs a lot of work '''
     
     def xMode(self):
-        ''' Needs work '''
+        ''' Needs work '''  
         
-    def getSwerveModulePositions(self):
+    '''def getSwerveModulePositions(self):
         positions = (self.frontLeft.getSwerveModulePosition(), 
                self.frontRight.getSwerveModulePosition(), 
                self.rearLeft.getSwerveModulePosition(), 
                self.rearRight.getSwerveModulePosition())
-        if (self.config["RobotDefaultSettings"]["DEBUGGING"]):
-            '''self.dataTab.add("frontLeft", 0).withPosition(0, 0).withWidget(shuffleboard.BuiltInWidgets.kGyro).withSize(2, 2).getEntry()
-            self.dataTab.add("frontRight", 0).withPosition(2, 0).withWidget(shuffleboard.BuiltInWidgets.kGyro).withSize(2, 2).getEntry()
-            self.dataTab.add("rearLeft", 0).withPosition(0, 2).withWidget(shuffleboard.BuiltInWidgets.kGyro).withSize(2, 2).getEntry()
-            self.dataTab.add("rearRight", 0).withPosition(2, 2).withWidget(shuffleboard.BuiltInWidgets.kGyro).withSize(2, 2).getEntry()'''
-        return positions
+        return positions'''
+    def reportSwerves(self):
+        self.frontLeft.testPeriodic()
+        self.frontRight.testPeriodic()
+        self.rearLeft.testPeriodic()
+        self.rearRight.testPeriodic()

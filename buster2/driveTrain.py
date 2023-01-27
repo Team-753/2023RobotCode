@@ -80,22 +80,32 @@ class DriveTrain:
         pass
         
     def stationary(self):
-        '''self.frontLeft.setNeutralMode(NeutralMode.Brake)
+        ''' Don't use this, is unhealthy for the motors and drivetrain. '''
+        self.frontLeft.setNeutralMode(NeutralMode.Brake)
+        self.frontLeft.stop()
         self.frontRight.setNeutralMode(NeutralMode.Brake)
+        self.frontRight.stop()
         self.rearLeft.setNeutralMode(NeutralMode.Brake)
-        self.rearRight.setNeutralMode(NeutralMode.Brake)'''
+        self.rearLeft.stop()
+        self.rearRight.setNeutralMode(NeutralMode.Brake)
+        self.rearRight.stop()
     
     def coast(self):
+        ''' Whenever you don't want to power the wheels '''
         self.frontLeft.setNeutralMode(NeutralMode.Coast)
+        self.frontLeft.stop()
         self.frontRight.setNeutralMode(NeutralMode.Coast)
+        self.frontRight.stop()
         self.rearLeft.setNeutralMode(NeutralMode.Coast)
+        self.rearLeft.stop()
         self.rearRight.setNeutralMode(NeutralMode.Coast)
+        self.rearRight.stop()
     
     def balance(self):
         ''' Needs a lot of work '''
     
     def xMode(self):
-        ''' Needs work '''
+        ''' Needs work '''  
         
     '''def getSwerveModulePositions(self):
         positions = (self.frontLeft.getSwerveModulePosition(), 

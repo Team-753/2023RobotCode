@@ -3,6 +3,7 @@ from wpimath import kinematics, geometry
 import math
 from ctre import AbsoluteSensorRange, SensorInitializationStrategy
 from wpilib import SmartDashboard
+from wpilib import DriverStation
 
 class SwerveModule:
     countsPerRotation = 2048 # encoder ticks per rotation
@@ -10,6 +11,11 @@ class SwerveModule:
     drivingGearRatio = 8.14 # 8.14 motor spins per wheel spin
     wheelDiameter = 0.1010 # in meters
     motorEncoderConversionFactor = 2 * math.pi / countsPerRotation * 12.8
+    '''
+    TODO:
+    - optimize functions by using all radians instead of converting from ticks to degrees to radians and vice versa
+    - add debugging statements to all motor configs, or at the very least the non-persistant settings ie: setting of offsets
+    '''
     def __init__(self, config: dict, moduleName: str) -> None:
         self.moduleName = moduleName
         
@@ -23,27 +29,50 @@ class SwerveModule:
         self.absoluteEncoder.configAbsoluteSensorRange(AbsoluteSensorRange.Unsigned_0_to_360, 250)
         self.absoluteEncoder.configMagnetOffset(-config["encoderOffset"], 250)
         
-        self.turnMotor.configIntegratedSensorAbsoluteRange(AbsoluteSensorRange.Unsigned_0_to_360)
-        self.turnMotor.configIntegratedSensorInitializationStrategy(SensorInitializationStrategy.BootToZero)
-        self.turnMotor.setSelectedSensorPosition(self.absoluteEncoder.getAbsolutePosition() * 2048 * 12.8 / 360, 0, 250)
-        self.turnMotor.config_kP(0, 0.1, 250)
-        self.turnMotor.config_kI(0, 0.0001, 250) #0.0001
-        self.turnMotor.config_kD(0, 0.0001, 250)
-        self.turnMotor.config_kF(0, 0, 250)
-        self.turnMotor.config_IntegralZone(0, 100, 250)
-        self.turnMotor.configAllowableClosedloopError(0, 0, 250)
+        turnMotorConfig = ctre.TalonFXConfiguration()
+        turnMotorConfig.absoluteSensorRange = AbsoluteSensorRange.Unsigned_0_to_360
+        turnMotorConfig.initializationStrategy = SensorInitializationStrategy.BootToZero
+        turnMotorConfig.slot0.kP = 0.1
+        turnMotorConfig.slot0.kI = 0.0001
+        turnMotorConfig.slot0.kD = 0.0001
+        turnMotorConfig.slot0.kF = 0
+        turnMotorConfig.slot0.integralZone = 100
+        turnMotorConfig.slot0.allowableClosedloopError = 0
+        turnMotorConfig.supplyCurrLimit = ctre.SupplyCurrentLimitConfiguration.currentLimit = 30
+        i = 5
+        while (self.turnMotor.configAllSettings(turnMotorConfig, 50) != 0 and i > 0):
+            print(f"Turn motor configuration on {self.moduleName} failed. Retrying")
+            i -= 1
+            if (i == 0):
+                print(f"Turn motor configuration on {self.moduleName} 5 times has failed. Please intervene.")
+        i = 5
+        while (self.turnMotor.setSelectedSensorPosition(self.absoluteEncoder.getAbsolutePosition() * self.countsPerRotation * self.turningGearRatio / 360, 0, 50) != 0 and i > 0):
+            print(f"Zeroing on {self.moduleName} failed. Retrying")
+            i -= 1
+            if (i == 0):
+                print(f"Zeroing on {self.moduleName} 5 times has failed. Please intervene.")
         self.turnMotor.setNeutralMode(ctre.NeutralMode.Coast)
         
-        self.driveMotor.config_kP(0, 0.0005, 250)
-        self.driveMotor.config_kI(0, 0.0005, 250) # 0.0005
-        self.driveMotor.config_kD(0, 0, 250)
-        self.driveMotor.config_kF(0, 0.045, 250)
-        self.driveMotor.config_IntegralZone(0, 500, 250)
-        self.driveMotor.configAllowableClosedloopError(0, 250)
+        driveMotorConfig = ctre.TalonFXConfiguration()
+        driveMotorConfig.absoluteSensorRange = AbsoluteSensorRange.Unsigned_0_to_360
+        driveMotorConfig.initializationStrategy = SensorInitializationStrategy.BootToZero
+        driveMotorConfig.slot0.kP = 0.0005
+        driveMotorConfig.slot0.kI = 0.0005
+        driveMotorConfig.slot0.kD = 0.0000
+        driveMotorConfig.slot0.kF = 0.045
+        driveMotorConfig.slot0.integralZone = 500
+        driveMotorConfig.slot0.allowableClosedloopError = 0
+        driveMotorConfig.supplyCurrLimit = ctre.SupplyCurrentLimitConfiguration.currentLimit = 35
+        i = 5
+        while (self.driveMotor.configAllSettings(driveMotorConfig, 50) != 0 and i > 0):
+            print(f"Drive motor configuration on {self.moduleName} failed. Retrying")
+            i -= 1
+            if (i == 0):
+                print(f"Drive motor configuration on {self.moduleName} 5 times has failed. Please intervene.")
         self.driveMotor.setNeutralMode(ctre.NeutralMode.Coast)
         
     def getWheelAngleRadians(self):
-        adjustedRelValDegrees = ((self.turnMotor.getSelectedSensorPosition(0) % (2048 * 12.8)) * 360) / (2048 * 12.8) # zero to 360 scale
+        adjustedRelValDegrees = ((self.turnMotor.getSelectedSensorPosition(0) % (self.countsPerRotation * self.turningGearRatio)) * 360) / (self.countsPerRotation * self.turningGearRatio) # zero to 360 scale
         adjustedRelValDegrees -= 180 # adjusting it to be 180/-180
         if adjustedRelValDegrees < -180:
             adjustedRelValDegrees = 360 + adjustedRelValDegrees
@@ -53,7 +82,8 @@ class SwerveModule:
         return geometry.Rotation2d(self.getWheelAngleRadians())
         
     def testPeriodic(self):
-        adjustedRelValDegrees = ((self.turnMotor.getSelectedSensorPosition(0) % (2048 * 12.8)) * 360) / (2048 * 12.8)
+        ''' Debugging only '''
+        adjustedRelValDegrees = ((self.turnMotor.getSelectedSensorPosition(0) % (self.countsPerRotation * self.turningGearRatio)) * 360) / (self.countsPerRotation * self.turningGearRatio)
         adjustedRelValDegrees -= 180
         if adjustedRelValDegrees < -180:
             adjustedRelValDegrees = 360 + adjustedRelValDegrees
@@ -68,6 +98,7 @@ class SwerveModule:
     def setState(self, state: kinematics.SwerveModuleState):
         state = kinematics.SwerveModuleState.optimize(state, self.getTurnWheelState())
         desiredStateAngle = state.angle.degrees()
+        #state.angle.rotateBy(geometry.Rotation2d(math.pi)) TODO: test this instead
         if desiredStateAngle > 0:
             desiredStateAngle -= 180
         else:
@@ -80,9 +111,14 @@ class SwerveModule:
         desiredAngleDegrees = state.angle.degrees()
         if desiredAngleDegrees < 0:
             desiredAngleDegrees += 360
+        # so we have to convert this back relative to the actual encoder tick amount on the motor encoder, i essentially do a "reverse" remainder to accomplish this
         motorEncoderTickTarget = (self.turnMotor.getSelectedSensorPosition(0) - (self.turnMotor.getSelectedSensorPosition(0) % (self.countsPerRotation * self.turningGearRatio))) + desiredAngleDegrees * self.countsPerRotation * self.turningGearRatio / 360
         self.turnMotor.set(ctre.TalonFXControlMode.Position, motorEncoderTickTarget)
         
     def setNeutralMode(self, mode):
         self.driveMotor.setNeutralMode(mode)
         self.turnMotor.setNeutralMode(mode)
+    
+    def stop(self):
+        self.turnMotor.set(ctre.ControlMode.PercentOutput, 0)
+        self.driveMotor.set(ctre.ControlMode.PercentOutput, 0)
