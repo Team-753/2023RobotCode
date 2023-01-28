@@ -8,7 +8,7 @@ from controlsystems.commandController import CommandController
 
 ''' For intellisense: '''
 from subsystems.driveTrain import DriveTrain
-from controlsystems.poseEstimator import PoseEstimatorSubsystem
+from buster2.poseEstimator import PoseEstimatorSubsystem
 
 class Autonomous:
     currentPose = geometry.Pose2d(0, 0, 0)

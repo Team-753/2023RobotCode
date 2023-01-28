@@ -46,34 +46,40 @@ class DriveTrain:
         ''' Returns the robot rotation as a Rotation2d object. '''
         return self.navx.getRotation2d()
     
-    def drive(self, xSpeed: float, ySpeed: float, rotation: float, fieldRelative: bool):
-        if fieldRelative:
-            swerveModuleStates = self.KINEMATICS.toSwerveModuleStates(kinematics.ChassisSpeeds.fromFieldRelativeSpeeds(kinematics.ChassisSpeeds(xSpeed, ySpeed, rotation), self.getNAVXRotation2d()))
+    def drive(self, xSpeed: float, ySpeed: float, rotation: float, fieldRelative = True):
+        if xSpeed == 0 and ySpeed == 0 and rotation == 0: 
+            self.coast()
         else:
-            swerveModuleStates = self.KINEMATICS.toSwerveModuleStates(kinematics.ChassisSpeeds(xSpeed, ySpeed, rotation))
-        
-        self.KINEMATICS.desaturateWheelSpeeds(swerveModuleStates, self.kMaxSpeed)
-        self.frontLeft.setState(swerveModuleStates[0])
-        self.frontRight.setState(swerveModuleStates[1])
-        self.rearLeft.setState(swerveModuleStates[2])
-        self.rearRight.setState(swerveModuleStates[3])
+            if fieldRelative:
+                swerveModuleStates = self.KINEMATICS.toSwerveModuleStates(kinematics.ChassisSpeeds.fromFieldRelativeSpeeds(kinematics.ChassisSpeeds(xSpeed, ySpeed, rotation), self.getNAVXRotation2d()))
+            else:
+                swerveModuleStates = self.KINEMATICS.toSwerveModuleStates(kinematics.ChassisSpeeds(xSpeed, ySpeed, rotation))
+            
+            self.KINEMATICS.desaturateWheelSpeeds(swerveModuleStates, self.kMaxSpeed)
+            self.frontLeft.setState(swerveModuleStates[0])
+            self.frontRight.setState(swerveModuleStates[1])
+            self.rearLeft.setState(swerveModuleStates[2])
+            self.rearRight.setState(swerveModuleStates[3])
     
-    def joystickDrive(self, xScalar: float, yScalar: float, zScalar: float, fieldRelative: bool):
-        temp = xScalar
-        xScalar = yScalar * self.kMaxSpeed
-        yScalar = temp * self.kMaxSpeed
-        zScalar *= 0.1
-        
-        if fieldRelative:
-            swerveModuleStates = self.KINEMATICS.toSwerveModuleStates(kinematics.ChassisSpeeds.fromFieldRelativeSpeeds(kinematics.ChassisSpeeds(xScalar, yScalar, zScalar), self.getNAVXRotation2d()))
+    def joystickDrive(self, xScalar: float, yScalar: float, zScalar: float, fieldRelative = True):
+        if xScalar == 0 and yScalar == 0 and zScalar == 0: 
+            self.coast()
         else:
-            swerveModuleStates = self.KINEMATICS.toSwerveModuleStates(kinematics.ChassisSpeeds(xScalar, yScalar, zScalar))
-        
-        self.KINEMATICS.desaturateWheelSpeeds(swerveModuleStates, self.kMaxSpeed)
-        self.frontLeft.setState(swerveModuleStates[0])
-        self.frontRight.setState(swerveModuleStates[1])
-        self.rearLeft.setState(swerveModuleStates[2])
-        self.rearRight.setState(swerveModuleStates[3])
+            temp = xScalar
+            xScalar = yScalar * self.kMaxSpeed
+            yScalar = temp * self.kMaxSpeed
+            zScalar *= 0.1
+            
+            if fieldRelative:
+                swerveModuleStates = self.KINEMATICS.toSwerveModuleStates(kinematics.ChassisSpeeds.fromFieldRelativeSpeeds(kinematics.ChassisSpeeds(xScalar, yScalar, zScalar), self.getNAVXRotation2d()))
+            else:
+                swerveModuleStates = self.KINEMATICS.toSwerveModuleStates(kinematics.ChassisSpeeds(xScalar, yScalar, zScalar))
+            
+            self.KINEMATICS.desaturateWheelSpeeds(swerveModuleStates, self.kMaxSpeed)
+            self.frontLeft.setState(swerveModuleStates[0])
+            self.frontRight.setState(swerveModuleStates[1])
+            self.rearLeft.setState(swerveModuleStates[2])
+            self.rearRight.setState(swerveModuleStates[3])
         
         
     def followTrajectory(self, trajectory):
@@ -107,14 +113,20 @@ class DriveTrain:
     def xMode(self):
         ''' Needs work '''  
         
-    '''def getSwerveModulePositions(self):
-        positions = (self.frontLeft.getSwerveModulePosition(), 
-               self.frontRight.getSwerveModulePosition(), 
-               self.rearLeft.getSwerveModulePosition(), 
-               self.rearRight.getSwerveModulePosition())
-        return positions'''
+    def getSwerveModulePositions(self):
+        positions = (self.frontLeft.getSwerveModuleState(), 
+               self.frontRight.getSwerveModuleState(), 
+               self.rearLeft.getSwerveModuleState(), 
+               self.rearRight.getSwerveModuleState())
+        return positions
     def reportSwerves(self):
         self.frontLeft.testPeriodic()
         self.frontRight.testPeriodic()
         self.rearLeft.testPeriodic()
         self.rearRight.testPeriodic()
+        
+    def reset(self):
+        self.frontLeft.reZeroMotors()
+        self.frontRight.reZeroMotors()
+        self.rearLeft.reZeroMotors()
+        self.rearRight.reZeroMotors()

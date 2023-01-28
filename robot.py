@@ -4,7 +4,7 @@ import os
 #from networktables import NetworkTables
 import threading
 import photonvision
-from controlsystems.poseEstimator import PoseEstimatorSubsystem
+from buster2.poseEstimator import PoseEstimatorSubsystem
 from controlsystems.operator import Operator
 from subsystems.driveTrain import DriveTrain
 from controlsystems.autonomous import Autonomous

@@ -38,7 +38,9 @@ class SwerveModule:
         turnMotorConfig.slot0.kF = 0
         turnMotorConfig.slot0.integralZone = 100
         turnMotorConfig.slot0.allowableClosedloopError = 0
-        turnMotorConfig.supplyCurrLimit = ctre.SupplyCurrentLimitConfiguration.currentLimit = 30
+        turnSupplyCurrentConfig = ctre.SupplyCurrentLimitConfiguration()
+        turnSupplyCurrentConfig.currentLimit = 30.0
+        turnMotorConfig.supplyCurrLimit = turnSupplyCurrentConfig
         i = 5
         while (self.turnMotor.configAllSettings(turnMotorConfig, 50) != 0 and i > 0):
             print(f"Turn motor configuration on {self.moduleName} failed. Retrying")
@@ -62,7 +64,9 @@ class SwerveModule:
         driveMotorConfig.slot0.kF = 0.045
         driveMotorConfig.slot0.integralZone = 500
         driveMotorConfig.slot0.allowableClosedloopError = 0
-        driveMotorConfig.supplyCurrLimit = ctre.SupplyCurrentLimitConfiguration.currentLimit = 35
+        driveSupplyCurrentConfig = ctre.SupplyCurrentLimitConfiguration()
+        driveSupplyCurrentConfig.currentLimit = 35.0
+        driveMotorConfig.supplyCurrLimit = driveSupplyCurrentConfig
         i = 5
         while (self.driveMotor.configAllSettings(driveMotorConfig, 50) != 0 and i > 0):
             print(f"Drive motor configuration on {self.moduleName} failed. Retrying")

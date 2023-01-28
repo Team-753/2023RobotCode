@@ -1,11 +1,11 @@
 import wpilib  
 from wpimath import estimator, geometry
 from wpilib import shuffleboard
-import robotpy_apriltag # gone unused for now, may stay that way...
-import photonvision
+# import robotpy_apriltag # gone unused for now, may stay that way...
+#import photonvision
 from os import path
 from json import load
-from subsystems.driveTrain import DriveTrain
+from driveTrain import DriveTrain
 import math
 
 class PoseEstimatorSubsystem:
@@ -72,7 +72,7 @@ class PoseEstimatorSubsystem:
     
     def setCurrentPose(self, newPose: geometry.Pose2d):
         ''' Resets the current pose with the given Pose2d object '''
-        self.poseEstimator.resetPosition(newPose)
+        self.poseEstimator.resetPosition(self.driveTrain.getNAVXRotation2d(), self.driveTrain.getSwerveModulePositions(), newPose)
         
     def resetFieldPosition(self):
         self.setCurrentPose(geometry.Pose2d())

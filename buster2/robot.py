@@ -6,9 +6,10 @@ import math
 import threading
 import photonvision
 from driveTrain import DriveTrain
-from wpimath import geometry
-from wpilib import shuffleboard
+from wpimath import geometry, controller, trajectory
 import photonvision
+import pathplannerlib
+from poseEstimator import PoseEstimatorSubsystem
 
 '''cond = threading.Condition()
 notified = False
@@ -28,6 +29,15 @@ class MyRobot(wpilib.TimedRobot):
             self.config = json.load(f1)
         self.driveTrain = DriveTrain(self.config)
         self.joystick = wpilib.Joystick(0)
+        self.estimator = PoseEstimatorSubsystem(self.driveTrain, geometry.Pose2d())
+        xConstraints = trajectory.TrapezoidProfile.Constraints(3, 2)
+        yConstraints = trajectory.TrapezoidProfile.Constraints(3, 2)
+        zConstraints = trajectory.TrapezoidProfileRadians.Constraints(math.pi, math.pi)
+        self.xPID = controller.PIDController(3, 0, 0)
+        self.yPID = controller.PIDController(3, 0, 0)
+        self.thetaPID = controller.ProfiledPIDControllerRadians(2, 0, 0, zConstraints)
+        self.thetaPID.enableContinuousInput(-math.pi, math.pi)
+        self.swerveController = controller.HolonomicDriveController(self.xPID, self.yPID, self.thetaPID)
         
     def disabledInit(self) -> None:
         ''''''
@@ -40,11 +50,30 @@ class MyRobot(wpilib.TimedRobot):
         '''self.autonomous.followAprilTag()'''
     
     def autonomousInit(self):
-        pass
+        self.driveTrain.reset()
+        self.estimator.resetFieldPosition()
+        self.timer = wpilib.Timer()
+        pathName = "Rectangle"
+        path = pathplannerlib.PathPlanner.loadPath(pathName, pathplannerlib.PathConstraints(4, 3), False)
+        self.path = path.asWPILibTrajectory()
+        self.timer.start()
+        self.autoDone = False
         
     def autonomousPeriodic(self):
         # self.autonomous.bigDaddy()
-        pass
+        self.estimator.periodic()
+        time = self.timer.get()
+        if (time < self.path.totalTime()):
+            goal = self.path.sample(time)
+            chassisSpeeds = self.swerveController.calculate(self.estimator.getCurrentPose(), goal, geometry.Rotation2d(0))
+            self.driveTrain.drive(chassisSpeeds.vx, chassisSpeeds.vy, chassisSpeeds.omega)
+        elif (self.autoDone == False):
+            self.timer.stop()
+            self.autoDone = True
+            self.driveTrain.drive(0, 0, 0)
+            print(f"Auto completed in: {self.timer.get()}s")
+        else:
+            self.driveTrain.drive(0, 0, 0)
         
     def teleopInit(self):
         self.driveTrain.navx.reset()
@@ -52,15 +81,10 @@ class MyRobot(wpilib.TimedRobot):
     def teleopPeriodic(self):
         '''This function is called periodically during operator control.'''
         x, y, z = self.evaluateDeadzones([self.joystick.getX(), self.joystick.getY(), self.joystick.getZ()])
-        self.driveTrain.reportSwerves()
-        if (x == 0 and y == 0 and z == 0):
-            self.driveTrain.coast()
-        else:  
-            self.driveTrain.joystickDrive(x, y, z, True)
-            print(f"x: {x}, y: {y}, z: {z}")
+        self.driveTrain.joystickDrive(x, y, z)
     
     def evaluateDeadzones(self, inputs):
-        '''This method takes in a list consisting of x input, y input, z input, arm input, and winch input.
+        '''This method takes in a list consisting of x input, y input, z input
         The magnitude of the units has to be less than 1.
         Returns the list of inputs with zero in place of values less than their respective deadzones.'''
         adjustedInputs = []
