@@ -122,3 +122,11 @@ class SwerveModule:
     def stop(self):
         self.turnMotor.set(ctre.ControlMode.PercentOutput, 0)
         self.driveMotor.set(ctre.ControlMode.PercentOutput, 0)
+    
+    def reZeroMotors(self):
+        self.driveMotor.setSelectedSensorPosition(0, 0, 50)
+        while (self.turnMotor.setSelectedSensorPosition(self.absoluteEncoder.getAbsolutePosition() * self.countsPerRotation * self.turningGearRatio / 360, 0, 50) != 0 and i > 0):
+            print(f"Zeroing on {self.moduleName} failed. Retrying")
+            i -= 1
+            if (i == 0):
+                print(f"Zeroing on {self.moduleName} 5 times has failed. Please intervene.")
