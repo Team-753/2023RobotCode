@@ -5,12 +5,13 @@ import math
 #from networktables import NetworkTables
 import threading
 import photonvision
-from driveTrain import DriveTrain
+from subsystems.driveTrain import DriveTrain
 from wpimath import geometry, controller, trajectory
 import photonvision
 import pathplannerlib
-from poseEstimator import PoseEstimatorSubsystem
+from subsystems.poseEstimator import PoseEstimatorSubsystem
 from wpilib import SmartDashboard
+import commands2
 
 '''cond = threading.Condition()
 notified = False
@@ -22,78 +23,25 @@ def connectionListener(connected, info):
 NetworkTables.initialize()
 NetworkTables.addConnectionListener(connectionListener, immediateNotify=True)'''
 
-class MyRobot(wpilib.TimedRobot):
+class MyRobot(commands2.TimedCommandRobot):
     def robotInit(self):
-        folderPath = os.path.dirname(os.path.abspath(__file__))
-        filePath = os.path.join(folderPath, 'config.json')
-        with open (filePath, "r") as f1:
-            self.config = json.load(f1)
-        SmartDashboard.putNumber("Target Rotation", 0)
-        self.driveTrain = DriveTrain(self.config)
-        self.joystick = wpilib.Joystick(0)
-        self.estimator = PoseEstimatorSubsystem(self.driveTrain, geometry.Pose2d())
-        xConstraints = trajectory.TrapezoidProfile.Constraints(3, 2)
-        yConstraints = trajectory.TrapezoidProfile.Constraints(3, 2)
-        zConstraints = trajectory.TrapezoidProfileRadians.Constraints(math.pi, math.pi)
-        self.xPID = controller.PIDController(0.001, 0, 0)
-        self.yPID = controller.PIDController(0.001, 0, 0)
-        self.thetaPID = controller.ProfiledPIDControllerRadians(0.0075, 0.002, 0.003, zConstraints)
-        self.thetaPID.enableContinuousInput(-math.pi, math.pi)
-        self.swerveController = controller.HolonomicDriveController(self.xPID, self.yPID, self.thetaPID)
-        pathName = "Rectangle"
-        path = pathplannerlib.PathPlanner.loadPath(pathName, pathplannerlib.PathConstraints(4, 3), False)
-        self.path = path.asWPILibTrajectory()
-        self.driveTrain.reset()
-        self.estimator.resetFieldPosition()
-        self.driveTrain.navx.reset()
+        pass
         
     def disabledInit(self) -> None:
         ''''''
         return super().disabledInit()
             
     def testInit(self) -> None:
-        pass
+        return super().testInit()
     
     def testPeriodic(self) -> None:
-        '''self.autonomous.followAprilTag()'''
-        self.estimator.periodic()
-        currentPose = self.estimator.getCurrentPose()
-        SmartDashboard.putNumber("Robot Rotation", currentPose.rotation().degrees())
-        goal = math.radians(SmartDashboard.getNumber("Target Rotation", 0))
-        val = self.thetaPID.calculate(currentPose.rotation().radians(), goal)
-        SmartDashboard.putNumber("rotation scalar", val)
-        self.driveTrain.drive(0, 0, val)
+        return super().testPeriodic()
     
     def autonomousInit(self):
-        #self.driveTrain.reset()
-        self.driveTrain.reset()
-        #self.estimator.resetFieldPosition()
-        self.estimator.resetFieldPosition()
-        self.timer = wpilib.Timer()
-        self.timer.start()
-        self.autoDone = False
+        return super().autonomousInit()
         
     def autonomousPeriodic(self):
-        # self.autonomous.bigDaddy()
-        self.estimator.periodic()
-        time = self.timer.get()
-        if time > self.path.totalTime():
-            time = self.path.totalTime() - 0.02
-        if (time < self.path.totalTime()):
-            currentPose = self.estimator.getCurrentPose()
-            SmartDashboard.putNumber("Robot X", currentPose.X())
-            SmartDashboard.putNumber("Robot Y", currentPose.Y())
-            SmartDashboard.putNumber("Robot Rotation", currentPose.rotation().degrees())
-            goal = self.path.sample(time)
-            chassisSpeeds = self.swerveController.calculate(currentPose, goal, geometry.Rotation2d(0))
-            self.driveTrain.drive(chassisSpeeds.vx, chassisSpeeds.vy, chassisSpeeds.omega)
-        elif (self.autoDone == False):
-            self.timer.stop()
-            self.autoDone = True
-            self.driveTrain.drive(0, 0, 0)
-            print(f"Auto completed in: {self.timer.get()}s")
-        else:
-            self.driveTrain.drive(0, 0, 0)
+        return super().autonomousPeriodic()
         
     def teleopInit(self):
         self.driveTrain.navx.reset()

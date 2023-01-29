@@ -5,17 +5,19 @@ from wpilib import shuffleboard
 #import photonvision
 from os import path
 from json import load
-from driveTrain import DriveTrain
+from subsystems.driveTrain import DriveTrainSubSystem
 import math
+import commands2
 
-class PoseEstimatorSubsystem:
+class PoseEstimatorSubsystem(commands2.SubsystemBase):
     ''' The infrastructure for estimating robot pose based off of vision and wheel odometry data '''
+    super.__init__()
     stateStdDevs = 0.5, 0.5, math.radians(10) # change this later
     visionMeasurementStdDevs = 0, 0, 0 # change this later
     field = wpilib.Field2d()
     #previousPipelineResultTimeStamp = 0 # useless for now...
     #camRelRobot = geometry.Transform3d(geometry.Translation3d(0, 0, 0), geometry.Rotation3d())
-    def __init__(self, driveTrain: DriveTrain, initialPose: geometry.Pose2d) -> None: # photonCamera: photonvision.PhotonCamera,
+    def __init__(self, MyRobot: commands2.TimedCommandRobot, driveTrain: DriveTrainSubSystem, initialPose: geometry.Pose2d, config: dict) -> None: # photonCamera: photonvision.PhotonCamera,
         ''' Initiates the PoseEstimator Subsystem
         
             :param photonCamera: The chosen PhotonCamera object.
@@ -23,6 +25,7 @@ class PoseEstimatorSubsystem:
             :param initialPose: Where on the field and in what orientation the robot starts in the form of a Pose2d object.'''
         #self.photonCamera = photonCamera # we will eventually import the camera, I am leaving this for intellisense
         self.driveTrain = driveTrain
+        self.config = config
         
         self.poseEstimator = estimator.SwerveDrive4PoseEstimator(self.driveTrain.KINEMATICS, 
                                                                  self.driveTrain.getNAVXRotation2d(), 
