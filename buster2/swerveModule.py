@@ -9,7 +9,7 @@ class SwerveModule:
     countsPerRotation = 2048 # encoder ticks per rotation
     turningGearRatio = 12.8 # 12.8 motor spins per wheel spin
     drivingGearRatio = 8.14 # 8.14 motor spins per wheel spin
-    wheelDiameter = 0.1010 # in meters
+    wheelDiameter = 0.1016 # in meters
     motorEncoderConversionFactor = 2 * math.pi / countsPerRotation * 12.8
     '''
     TODO:
@@ -95,7 +95,7 @@ class SwerveModule:
         SmartDashboard.putNumber(f"{self.moduleName} Absolute:", self.absoluteEncoder.getAbsolutePosition())
         
     def getSwerveModuleState(self):
-        distanceMeters = self.driveMotor.getSelectedSensorPosition(0) * self.wheelDiameter * math.pi / self.countsPerRotation * self.drivingGearRatio # converting the clicks into distance values, in this case, meters
+        distanceMeters = self.driveMotor.getSelectedSensorPosition(0) * self.wheelDiameter * math.pi / (self.countsPerRotation * self.drivingGearRatio) # converting the clicks into distance values, in this case, meters
         angle = self.getTurnWheelState()
         return kinematics.SwerveModulePosition(distanceMeters, angle)
             
