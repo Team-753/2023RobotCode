@@ -69,3 +69,6 @@ class RobotContainer:
     
     def teleopInit(self):
         pass
+    
+    def disabledInit(self):
+        self.driveTrain.coast()

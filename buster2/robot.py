@@ -39,6 +39,7 @@ class MyRobot(commands2.TimedCommandRobot):
     
     def disabledInit(self) -> None:
         '''self.driveTrain.coast()'''
+        self.robotContainer.disabledInit()
         
     
 
