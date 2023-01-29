@@ -11,7 +11,6 @@ import commands2
 
 class PoseEstimatorSubsystem(commands2.SubsystemBase):
     ''' The infrastructure for estimating robot pose based off of vision and wheel odometry data '''
-    super.__init__()
     stateStdDevs = 0.5, 0.5, math.radians(10) # change this later
     visionMeasurementStdDevs = 0, 0, 0 # change this later
     field = wpilib.Field2d()
@@ -24,6 +23,7 @@ class PoseEstimatorSubsystem(commands2.SubsystemBase):
             :param driveTrain: The created drivetrain class.
             :param initialPose: Where on the field and in what orientation the robot starts in the form of a Pose2d object.'''
         #self.photonCamera = photonCamera # we will eventually import the camera, I am leaving this for intellisense
+        super().__init__()
         self.driveTrain = driveTrain
         self.config = config
         
@@ -63,8 +63,6 @@ class PoseEstimatorSubsystem(commands2.SubsystemBase):
         self.poseEstimator.update(
             self.driveTrain.getNAVXRotation2d(),
             self.driveTrain.getSwerveModulePositions())
-        
-        self.field.setRobotPose(self.getCurrentPose()) # TODO-> may need to update shuffleboard with this? Further testing needed.
         
     def getFormattedPose(self):
         pose = self.getCurrentPose()

@@ -3,7 +3,6 @@ from wpimath import kinematics, geometry
 import math
 from ctre import AbsoluteSensorRange, SensorInitializationStrategy
 from wpilib import SmartDashboard
-from wpilib import DriverStation
 
 class SwerveModule:
     countsPerRotation = 2048 # encoder ticks per rotation
@@ -18,6 +17,7 @@ class SwerveModule:
     '''
     def __init__(self, config: dict, moduleName: str) -> None:
         self.moduleName = moduleName
+        self.xAngle = config["xAngle"]
         
         self.driveMotor = ctre.TalonFX(config["driveMotorID"])
         self.turnMotor = ctre.TalonFX(config["turnMotorID"])
@@ -98,7 +98,22 @@ class SwerveModule:
         distanceMeters = self.driveMotor.getSelectedSensorPosition(0) * self.wheelDiameter * math.pi / (self.countsPerRotation * self.drivingGearRatio) # converting the clicks into distance values, in this case, meters
         angle = self.getTurnWheelState()
         return kinematics.SwerveModulePosition(distanceMeters, angle)
-            
+    
+    def setStateTurnOnly(self, desiredStateAngle):
+        #state.angle.rotateBy(geometry.Rotation2d(math.pi)) TODO: test this instead
+        if desiredStateAngle > 0:
+            desiredStateAngle -= 180
+        else:
+            desiredStateAngle += 180
+        angle = geometry.Rotation2d(math.radians(desiredStateAngle))
+        
+        desiredAngleDegrees = angle.degrees()
+        if desiredAngleDegrees < 0:
+            desiredAngleDegrees += 360
+        # so we have to convert this back relative to the actual encoder tick amount on the motor encoder, i essentially do a "reverse" remainder to accomplish this
+        motorEncoderTickTarget = (self.turnMotor.getSelectedSensorPosition(0) - (self.turnMotor.getSelectedSensorPosition(0) % (self.countsPerRotation * self.turningGearRatio))) + desiredAngleDegrees * self.countsPerRotation * self.turningGearRatio / 360
+        self.turnMotor.set(ctre.TalonFXControlMode.Position, motorEncoderTickTarget)
+    
     def setState(self, state: kinematics.SwerveModuleState):
         state = kinematics.SwerveModuleState.optimize(state, self.getTurnWheelState())
         desiredStateAngle = state.angle.degrees()
@@ -134,3 +149,8 @@ class SwerveModule:
             i -= 1
             if (i == 0):
                 print(f"Zeroing on {self.moduleName} 5 times has failed. Please intervene.")
+                
+    def xMode(self):
+        self.driveMotor.set(ctre.ControlMode.PercentOutput, 0)
+        self.setNeutralMode(ctre.NeutralMode.Coast)
+        self.setStateTurnOnly(self.xAngle)

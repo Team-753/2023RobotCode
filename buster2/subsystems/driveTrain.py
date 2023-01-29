@@ -1,7 +1,7 @@
 from wpimath import geometry, kinematics
 import wpilib
 import navx
-from swerveModule import SwerveModule
+from subsystems.swerveModule import SwerveModule
 from ctre import NeutralMode
 from wpilib import shuffleboard
 from wpilib import SmartDashboard
@@ -11,7 +11,7 @@ import commands2
 class DriveTrainSubSystem(commands2.SubsystemBase):
     ''' Swerve drivetrain infrastructure '''
     def __init__(self, MyRobot: commands2.TimedCommandRobot, config: dict) -> None:
-        super.__init__()
+        super().__init__()
         self.myRobot = MyRobot
         self.config = config
             
@@ -104,6 +104,10 @@ class DriveTrainSubSystem(commands2.SubsystemBase):
     
     def xMode(self):
         ''' Needs work '''  
+        self.frontLeft.xMode()
+        self.frontRight.xMode()
+        self.rearLeft.xMode()
+        self.rearRight.xMode()
         
     def getSwerveModulePositions(self):
         positions = (self.frontLeft.getSwerveModuleState(), 

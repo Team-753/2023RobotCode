@@ -22,11 +22,17 @@ class RobotContainer:
         
         # commands
         
+        
         # buttons
         self.joystick = button.CommandJoystick(0)
         
         #subsystem configuration
-        self.driveTrain.setDefaultCommand(cmd.run(self.driveTrain.joystickDrive(self.getJoystickInput())), [self.driveTrain])
+        self.driveTrain.setDefaultCommand(cmd.run(lambda: self.driveTrain.joystickDrive(self.getJoystickInput()), [self.driveTrain]))
+        self.configureButtonBindings()
+    
+    def configureButtonBindings(self):
+        self.joystickButtonTwo = button.JoystickButton(self.joystick, 2)
+        self.joystickButtonTwo.whileHeld(cmd.run(lambda: self.driveTrain.xMode(), [self.driveTrain]))
         
     def getJoystickInput(self):
         inputs = (self.joystick.getX(), self.joystick.getY(), self.joystick.getZ())
@@ -57,3 +63,9 @@ class RobotContainer:
                 adjustedValue = 0
             adjustedInputs.append(adjustedValue)
         return adjustedInputs
+    
+    def getAutonomousCommand(self):
+        return commands2.Command()
+    
+    def teleopInit(self):
+        pass
