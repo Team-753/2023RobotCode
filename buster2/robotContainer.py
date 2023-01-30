@@ -28,6 +28,7 @@ class RobotContainer:
         
         #subsystem configuration
         self.driveTrain.setDefaultCommand(cmd.run(lambda: self.driveTrain.joystickDrive(self.getJoystickInput()), [self.driveTrain]))
+        
         self.configureButtonBindings()
     
     def configureButtonBindings(self):
