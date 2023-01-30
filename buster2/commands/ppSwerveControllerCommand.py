@@ -7,20 +7,18 @@ from subsystems.poseEstimator import PoseEstimatorSubsystem
 from subsystems.driveTrain import DriveTrainSubSystem
 from wpilib import DriverStation, Timer
 
-class PPSwerveDriveController(commands2.SubsystemBase):
+class PPSwerveDriveController(commands2.CommandBase):
     
-    def __init__(self, trajectory: PathPlannerTrajectory, driveTrain: DriveTrainSubSystem, poseEstimator: PoseEstimatorSubsystem, xController: controller.PIDController, yController: controller.PIDController, thetaController: controller.PIDController, moduleStateOutput, useAllianceColor: bool, tolerance: geometry.Pose2d) -> None:
-        super.__init__()
-        if (useAllianceColor):
-            self.transformedTrajectory = PathPlannerTrajectory.transformTrajectoryForAlliance(trajectory, DriverStation.getAlliance())
-        else:
-            self.transformedTrajectory = trajectory
+    def __init__(self, trajectory: PathPlannerTrajectory, driveTrain: DriveTrainSubSystem, poseEstimator: PoseEstimatorSubsystem, xController: controller.PIDController, yController: controller.PIDController, thetaController: controller.PIDController, useAllianceColor: bool, tolerance: geometry.Pose2d) -> None:
+        super().__init__()
+        self.trajectory = trajectory
+        self.useAllianceColor = useAllianceColor
         self.poseEstimator = poseEstimator
         self.controller = PPHolonomicDriveController(xController, yController, thetaController, tolerance)
         self.driveTrain = driveTrain
+        self.addRequirements(self.driveTrain)
         
-        self.Timer = Timer()
-        self.Timer.start()
+        self.timer = Timer()
         '''
         self.config = config
         xController = controller.PIDController()
@@ -30,8 +28,17 @@ class PPSwerveDriveController(commands2.SubsystemBase):
         self.autoController = PPHolonomicDriveController(xController, yController, thetaController, tolerance)
         '''
     
+    def initialize(self) -> None:
+        if (self.useAllianceColor):
+            self.transformedTrajectory = PathPlannerTrajectory.transformTrajectoryForAlliance(self.trajectory, DriverStation.getAlliance())
+        else:
+            self.transformedTrajectory = self.trajectory
+            
+        self.timer.reset()
+        self.timer.start()
+    
     def execute(self):
-        currentTime = self.Timer.get()
+        currentTime = self.timer.get()
         desiredState = self.transformedTrajectory.sample(currentTime)
         currentPose = self.poseEstimator.getCurrentPose()
         
@@ -39,10 +46,10 @@ class PPSwerveDriveController(commands2.SubsystemBase):
         self.driveTrain.drive(targetChassisSpeeds)
         
     def end(self, interruped: bool):
-        self.Timer.stop()
+        self.timer.stop()
         
         if (interruped or abs(self.transformedTrajectory.getEndState().velocity < 0.1)):
             self.driveTrain.drive(kinematics.ChassisSpeeds(0, 0, 0))
             
     def isFinished(self):
-        return self.Timer.hasElapsed(self.transformedTrajectory.getTotalTime())
+        return self.timer.hasElapsed(self.transformedTrajectory.getTotalTime())

@@ -37,8 +37,8 @@
   "RobotDefaultSettings": {
     "fieldOrient": true,
     "robotSpeedLimiter": 1,
-    "robotVelocityLimit": 3,
-    "robotAccelerationLimit": 1,
+    "robotVelocityLimit": 4,
+    "robotAccelerationLimit": 3,
     "DEBUGGING": true
   },
   "autonomousSettings": {
@@ -47,8 +47,18 @@
     "xPoseToleranceMeters": 0.03,
     "yPoseToleranceMeters": 0.03,
     "thetaPoseToleranceDegrees": 0.5,
-    "translationPIDConstants": {},
-    "rotationPIDConstants": {}
+    "translationPIDConstants": {
+      "kP": 0,
+      "kI": 0,
+      "kD": 0,
+      "period": 20
+    },
+    "rotationPIDConstants": {
+      "kP": 0,
+      "kI": 0,
+      "kD": 0,
+      "period": 20
+    }
   },
   "driverStation": {
     "joystickUSB": 0,
