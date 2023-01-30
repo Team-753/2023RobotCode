@@ -122,9 +122,16 @@
   ],
   "markers": [
     {
-      "position": 1.1636363636363631,
+      "position": 1.0,
       "names": [
-        "event"
+        "OpenMandible",
+        "armFloor"
+      ]
+    },
+    {
+      "position": 2.483522727272728,
+      "names": [
+        "CloseMandible"
       ]
     }
   ]

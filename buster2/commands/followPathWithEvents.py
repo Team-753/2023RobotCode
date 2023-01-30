@@ -14,11 +14,10 @@ class FollowPathWithEvents(commands2.CommandBase):
         self.markers = pathMarkers
         self.pathFollowingCommand = pathFollowingCommand
         self.eventMap = eventMap
-        reqs = []
         for marker in self.markers:
-            reqs.append(self.eventMap.get(marker).getRequirements())
-        #reqs.append(self.pathFollowingCommand.getRequirements())
-        self.addRequirements(reqs)
+            for name in marker.names:   
+                if (self.eventMap.get(name) != None):
+                    self.addRequirements(self.eventMap.get(name).getRequirements())
         
     def initialize(self) -> None:
         self.finished = False
@@ -59,8 +58,8 @@ class FollowPathWithEvents(commands2.CommandBase):
                         if (not self.currentCommands.get(runningCommand)):
                             continue
                         
-                        eventCommand.initialize()
-                        self.currentCommands[eventCommand] = True # possible issues with replacement of current command based on key duplicates???
+                    eventCommand.initialize()
+                    self.currentCommands[eventCommand] = True # possible issues with replacement of current command based on key duplicates???
     
     def end(self, interrupted: bool) -> None:
         for runningCommand in self.currentCommands:

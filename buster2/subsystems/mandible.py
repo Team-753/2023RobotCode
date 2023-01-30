@@ -46,8 +46,10 @@ class MandibleSubSystem(commands2.SubsystemBase):
         stateToSet: 'cone', 'cube' '''
         if stateToSet == "cone" and stateToSet != self.state: # we want a cone
             self.contract()
+            print("Mandible Contracting")
         elif stateToSet == "cube" and stateToSet != self.state: # we want a cube
             self.release()
+            print("Mandible Releasing")
     
     def setNeutralWheelState(self, wheelStateToSet: str):
         ''' Sets the state of the rotating wheels on the mandible.

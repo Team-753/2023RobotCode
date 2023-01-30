@@ -31,6 +31,7 @@ class ArmSubSystem(commands2.SubsystemBase):
 
     def setPosition(self, position: str):
         self.targetValue = self.constants[position]
+        print(f"Setting arm position: {position}")
         
     def coast(self):
         ''''''
