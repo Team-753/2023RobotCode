@@ -8,6 +8,7 @@ from json import load
 from subsystems.driveTrain import DriveTrainSubSystem
 import math
 import commands2
+from wpilib import SmartDashboard
 
 class PoseEstimatorSubsystem(commands2.SubsystemBase):
     ''' The infrastructure for estimating robot pose based off of vision and wheel odometry data '''
@@ -63,6 +64,10 @@ class PoseEstimatorSubsystem(commands2.SubsystemBase):
         self.poseEstimator.update(
             self.driveTrain.getNAVXRotation2d(),
             self.driveTrain.getSwerveModulePositions())
+        currentPose = self.getCurrentPose()
+        SmartDashboard.putNumber("X Position", currentPose.X())
+        SmartDashboard.putNumber("Y Position", currentPose.Y())
+        SmartDashboard.putNumber("Rotation", currentPose.rotation().degrees())
         
     def getFormattedPose(self):
         pose = self.getCurrentPose()

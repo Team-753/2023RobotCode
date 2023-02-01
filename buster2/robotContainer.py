@@ -25,7 +25,7 @@ class RobotContainer:
     with open (filePath, "r") as f1:
         config = json.load(f1)
         
-    selectedAutoName = "Rectangle" # NOTE: Change this to change active auto
+    selectedAutoName = "Drive Forward" # NOTE: Change this to change active auto
     
     def __init__(self, MyRobot: commands2.TimedCommandRobot) -> None:
         # subsystems
@@ -108,7 +108,7 @@ class RobotContainer:
         return pathplannerlib.PathPlanner.loadPathGroup(groupName, [self.pathConstraints], False)
     
     def teleopInit(self):
-        pass
+        self.driveTrain.navx.reset()
     
     def disabledInit(self):
         self.driveTrain.coast()

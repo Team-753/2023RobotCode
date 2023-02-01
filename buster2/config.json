@@ -48,13 +48,13 @@
     "yPoseToleranceMeters": 0.03,
     "thetaPoseToleranceDegrees": 0.5,
     "translationPIDConstants": {
-      "kP": 0,
+      "kP": 1.25,
       "kI": 0,
       "kD": 0,
       "period": 20
     },
     "rotationPIDConstants": {
-      "kP": 0,
+      "kP": 1,
       "kI": 0,
       "kD": 0,
       "period": 20
@@ -66,7 +66,7 @@
     "joystickDeadZones": {
       "xDeadZone": 0.1,
       "yDeadZone": 0.1,
-      "zDeadZone": 0.15
+      "zDeadZone": 0.1
     }
   }
 }
