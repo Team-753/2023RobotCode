@@ -1,8 +1,8 @@
 import ctre
-from wpimath import kinematics, geometry
+from wpimath import kinematics, geometry 
 import math
 from ctre import AbsoluteSensorRange, SensorInitializationStrategy
-from wpilib import SmartDashboard
+from wpilib import SmartDashboard, AnalogEncoder 
 
 class SwerveModule:
     countsPerRotation = 2048 # encoder ticks per rotation
@@ -24,7 +24,11 @@ class SwerveModule:
         self.driveMotor.configSelectedFeedbackSensor(ctre.FeedbackDevice.IntegratedSensor, 0, 250)
         self.turnMotor.configSelectedFeedbackSensor(ctre.FeedbackDevice.IntegratedSensor, 0, 250)
         
-        self.absoluteEncoder = ctre.CANCoder(config["encoderID"])
+        #self.absoluteEncoder = ctre.CANCoder(config["encoderID"])
+        self.absoluteEncoder = AnalogEncoder(config["encoderID"])
+        self.absoluteEncoder.setPositionOffset(offset: config["encoderOffset"]/ 360)
+
+
         self.absoluteEncoder.configSensorInitializationStrategy(SensorInitializationStrategy.BootToAbsolutePosition, 250)
         self.absoluteEncoder.configAbsoluteSensorRange(AbsoluteSensorRange.Unsigned_0_to_360, 250)
         self.absoluteEncoder.configMagnetOffset(-config["encoderOffset"], 250)
