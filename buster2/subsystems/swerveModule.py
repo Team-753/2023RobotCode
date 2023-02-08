@@ -26,12 +26,13 @@ class SwerveModule:
         
         #self.absoluteEncoder = ctre.CANCoder(config["encoderID"])
         self.absoluteEncoder = AnalogEncoder(config["encoderID"])
-        self.absoluteEncoder.setPositionOffset(offset: config["encoderOffset"]/ 360)
+        self.absoluteEncoder.setPositionOffset(config["encoderOffset"]/ 360)
+        
 
 
-        self.absoluteEncoder.configSensorInitializationStrategy(SensorInitializationStrategy.BootToAbsolutePosition, 250)
-        self.absoluteEncoder.configAbsoluteSensorRange(AbsoluteSensorRange.Unsigned_0_to_360, 250)
-        self.absoluteEncoder.configMagnetOffset(-config["encoderOffset"], 250)
+        #self.absoluteEncoder.configSensorInitializationStrategy(SensorInitializationStrategy.BootToAbsolutePosition, 250)
+        #self.absoluteEncoder.configAbsoluteSensorRange(AbsoluteSensorRange.Unsigned_0_to_360, 250)
+        #self.absoluteEncoder.configMagnetOffset(-config["encoderOffset"], 250)
         
         turnMotorConfig = ctre.TalonFXConfiguration()
         turnMotorConfig.absoluteSensorRange = AbsoluteSensorRange.Unsigned_0_to_360

@@ -3,28 +3,28 @@
     "frontLeft": {
       "driveMotorID": 1,
       "turnMotorID": 3,
-      "encoderID": 2,
+      "encoderID": 0,
       "encoderOffset": 10.95,
       "xAngle": -135
     },
     "frontRight": {
       "driveMotorID": 4,
       "turnMotorID": 6,
-      "encoderID": 5,
+      "encoderID": 1,
       "encoderOffset": 248.55,
       "xAngle": 135
     },
     "rearLeft": {
       "driveMotorID": 10,
       "turnMotorID": 12,
-      "encoderID": 11,
+      "encoderID": 2,
       "encoderOffset": 326.337890625,
       "xAngle": -45
     },
     "rearRight": {
       "driveMotorID": 7,
       "turnMotorID": 9,
-      "encoderID": 8,
+      "encoderID": 3,
       "encoderOffset": 163.5,
       "xAngle": 45
     }
