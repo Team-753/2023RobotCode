@@ -6,6 +6,7 @@ from pathplannerlib import PathPlannerTrajectory
 from subsystems.poseEstimator import PoseEstimatorSubsystem
 from subsystems.driveTrain import DriveTrainSubSystem
 from wpilib import DriverStation, Timer
+from wpimath import controller
 
 class PPSwerveDriveController(commands2.CommandBase):
     
@@ -14,6 +15,7 @@ class PPSwerveDriveController(commands2.CommandBase):
         self.trajectory = trajectory
         self.useAllianceColor = useAllianceColor
         self.poseEstimator = poseEstimator
+        thetaController = controller.ProfiledPIDControllerRadians(thetaController[0]["kP"], thetaController[0]["kI"], thetaController[0]["kD"], thetaController[1], thetaController[0]["period"])
         self.controller = PPHolonomicDriveController(xController, yController, thetaController, tolerance)
         self.driveTrain = driveTrain
         self.addRequirements(self.driveTrain)

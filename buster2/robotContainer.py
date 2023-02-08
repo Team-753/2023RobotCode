@@ -1,10 +1,12 @@
 import commands2
 from commands2 import button, cmd
 import wpilib
+from wpimath import controller
 import os
 import json
-from wpimath import geometry
+from wpimath import geometry, trajectory
 from math import radians
+import math
 import pathplannerlib
 from typing import List
 
@@ -26,6 +28,7 @@ class RobotContainer:
         config = json.load(f1)
         
     selectedAutoName = "Drive Forward" # NOTE: Change this to change active auto
+    maxAngularVelocity = config["autonomousSettings"]["autoVelLimit"] / math.hypot(config["RobotDimensions"]["trackWidth"] / 2, config["RobotDimensions"]["wheelBase"] / 2)
     
     def __init__(self, MyRobot: commands2.TimedCommandRobot) -> None:
         # subsystems
@@ -45,6 +48,8 @@ class RobotContainer:
         
         # additional configuration
         
+        thetaControllerConstraints = [self.config["autonomousSettings"]["rotationPIDConstants"], trajectory.TrapezoidProfile.Constraints(self.config["autonomousSettings"]["autoVelLimit"], self.maxAngularVelocity)]
+        
         self.pathConstraints = pathplannerlib.PathConstraints(self.config["autonomousSettings"]["autoVelLimit"], self.config["autonomousSettings"]["autoAccLimit"])
         self.configureButtonBindings()
         self.generateSimpleAutonomousCommands()
@@ -55,7 +60,7 @@ class RobotContainer:
                                                    self.eventMap, 
                                                    True, 
                                                    self.config["autonomousSettings"]["translationPIDConstants"],
-                                                   self.config["autonomousSettings"]["translationPIDConstants"],
+                                                   thetaControllerConstraints,
                                                    geometry.Pose2d(geometry.Translation2d(x=self.config["autonomousSettings"]["xPoseToleranceMeters"], 
                                                                                           y=self.config["autonomousSettings"]["yPoseToleranceMeters"]), 
                                                                                           geometry.Rotation2d(radians(self.config["autonomousSettings"]["thetaPoseToleranceDegrees"]
@@ -137,3 +142,22 @@ class RobotContainer:
                 cmd.runOnce(lambda: self.mandible.coast(), [self.mandible])
             ]
         )
+    def testInit(self):
+        self.initialAngle = 0
+        self.xboxController = button.CommandXboxController(0)
+        #self.xboxController.A().onTrue(cmd.run(lambda: self.turnTo(), [self.driveTrain]))
+        self.turnPID = controller.PIDController(0.025, 0, 0, 0.02)
+        self.turnPID.enableContinuousInput(-math.pi, math.pi)
+        
+    def turnTo(self):
+        x, y = self.xboxController.getLeftX(), self.xboxController.getLeftY()
+        if (abs(x) >= 0.25 and abs(y) >= 0.25):
+            angle = math.atan2(y, x)
+            self.initialAngle = angle
+        else:
+            angle = self.initialAngle
+        print(f"Target angle: {angle}")
+        currentAngle = self.driveTrain.getNAVXRotation2d().radians()
+        value = self.turnPID.calculate(currentAngle, angle)
+        print(f"Feed: {value}")
+        self.driveTrain.joystickDrive([0, 0, value], True)

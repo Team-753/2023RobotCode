@@ -38,7 +38,7 @@
     "fieldOrient": true,
     "robotSpeedLimiter": 1,
     "robotVelocityLimit": 4,
-    "robotAccelerationLimit": 3,
+    "robotAccelerationLimit": 8,
     "DEBUGGING": true
   },
   "autonomousSettings": {
@@ -48,16 +48,16 @@
     "yPoseToleranceMeters": 0.03,
     "thetaPoseToleranceDegrees": 0.5,
     "translationPIDConstants": {
-      "kP": 1.25,
+      "kP": 2.9,
       "kI": 0,
       "kD": 0,
-      "period": 20
+      "period": 0.02
     },
     "rotationPIDConstants": {
-      "kP": 1,
+      "kP": 3,
       "kI": 0,
       "kD": 0,
-      "period": 20
+      "period": 0.02
     }
   },
   "driverStation": {
