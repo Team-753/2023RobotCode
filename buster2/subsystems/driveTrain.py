@@ -64,7 +64,7 @@ class DriveTrainSubSystem(commands2.SubsystemBase):
             temp = xScalar
             xScalar = yScalar * self.kMaxSpeed
             yScalar = temp * self.kMaxSpeed
-            zScalar *= 0.1
+            zScalar *= 0.5
             
             if fieldRelative:
                 swerveModuleStates = self.KINEMATICS.toSwerveModuleStates(kinematics.ChassisSpeeds.fromFieldRelativeSpeeds(kinematics.ChassisSpeeds(xScalar, yScalar, zScalar), self.getNAVXRotation2d()))

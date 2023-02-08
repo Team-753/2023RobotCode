@@ -19,7 +19,7 @@ class SwerveAutoBuilder:
                  eventMap: dict, 
                  useAllianceColor: bool, 
                  translationConstants: dict, 
-                 rotationConstants: dict,  
+                 rotationConstants: List,  
                  tolerance: geometry.Pose2d) -> None:
         self.eventMap = eventMap
         self.useAllianceColor = useAllianceColor
@@ -35,7 +35,7 @@ class SwerveAutoBuilder:
                                        self.poseEstimator, 
                                        self.PIDControllerFromConstants(self.translationConstants), 
                                        self.PIDControllerFromConstants(self.translationConstants),
-                                       self.PIDControllerFromConstants(self.rotationConstants),
+                                       self.rotationConstants,
                                        self.useAllianceColor,
                                        self.tolerance
                                        )

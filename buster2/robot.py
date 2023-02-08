@@ -40,7 +40,12 @@ class MyRobot(commands2.TimedCommandRobot):
     def disabledInit(self) -> None:
         '''self.driveTrain.coast()'''
         self.robotContainer.disabledInit()
-        
+    
+    def testInit(self) -> None:
+        self.robotContainer.testInit()
+    
+    def testPeriodic(self) -> None:
+        self.robotContainer.turnTo()
     
 
 if __name__ == "__main__":
