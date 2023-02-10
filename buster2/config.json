@@ -67,6 +67,24 @@
       "xDeadZone": 0.1,
       "yDeadZone": 0.1,
       "zDeadZone": 0.1
-    }
+    },
+    "teleoperatedRobotConstants": {
+      "translationPIDConstants": {
+        "kP": 1,
+        "kI": 0,
+        "kD": 0,
+        "period": 0.02
+      },
+      "rotationPIDConstants": {
+        "kP": 1,
+        "kI": 0,
+        "kD": 0,
+        "period": 0.02
+      },
+      "xPoseToleranceMeters": 0.05,
+      "yPoseToleranceMeters": 0.05,
+      "thetaPoseToleranceDegrees": 1,
+      "teleopVelLimit": 4,
+      "teleopAccLimit": 3
   }
 }

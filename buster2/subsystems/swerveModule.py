@@ -10,6 +10,7 @@ class SwerveModule:
     drivingGearRatio = 8.14 # 8.14 motor spins per wheel spin
     wheelDiameter = 0.1016 # in meters
     motorEncoderConversionFactor = 2 * math.pi / countsPerRotation * 12.8
+    wheelVelocityThreshold = 0.1 # in meters per second, if we wheel is being told to spin any slower than this value, just coast the drive motor
     '''
     TODO:
     - optimize functions by using all radians instead of converting from ticks to degrees to radians and vice versa
@@ -125,8 +126,12 @@ class SwerveModule:
             desiredStateAngle += 180
         state.angle = geometry.Rotation2d(math.radians(desiredStateAngle))
         #SmartDashboard.putNumber(f"{self.moduleName} targetState:", state.angle.degrees())
-        velocity = (state.speed * self.drivingGearRatio * self.countsPerRotation) / (self.wheelDiameter * math.pi * 10) # converting from meters per second to ticks per hundred milliseconds
-        self.driveMotor.set(ctre.TalonFXControlMode.Velocity, velocity)
+        if abs(state.speed) < self.wheelVelocityThreshold: # we aren't going fast enough to justify actually trying, coast the drive motor
+            self.driveMotor.set(ctre.ControlMode.PercentOutput, 0)
+            self.driveMotor.setNeutralMode(ctre.NeutralMode.Coast)
+        else: # drive normally
+            velocity = (state.speed * self.drivingGearRatio * self.countsPerRotation) / (self.wheelDiameter * math.pi * 10) # converting from meters per second to ticks per hundred milliseconds
+            self.driveMotor.set(ctre.TalonFXControlMode.Velocity, velocity)
         
         desiredAngleDegrees = state.angle.degrees()
         if desiredAngleDegrees < 0:

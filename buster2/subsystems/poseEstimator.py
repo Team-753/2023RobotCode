@@ -50,7 +50,7 @@ class PoseEstimatorSubsystem(commands2.SubsystemBase):
             target = pipelineResult.getBestTarget()
             fiducialId = target.getFiducialId() # https://github.com/STMARobotics/swerve-test/blob/main/src/main/java/frc/robot/subsystems/PoseEstimatorSubsystem.java#L78
             if (target.getPoseAmbiguity() <= 0.2 and fiducialId >= 0 and fiducialId < 9):
-                targetPose = self.getTargetPose(fiducialId) # need 3d poses of each apriltag id
+                targetPose = self.getTagPose(fiducialId) # need 3d poses of each apriltag id
                 camToTarget = target.getBestCameraToTarget()
                 camPose = targetPose.transformBy(camToTarget.inverse())
                 robotPose = camPose.transformBy(self.camRelRobot)
@@ -83,7 +83,8 @@ class PoseEstimatorSubsystem(commands2.SubsystemBase):
     def resetFieldPosition(self):
         self.setCurrentPose(geometry.Pose2d())
         
-    def getTargetPose(self, id: int):
+    def getTagPose(self, id: int) -> geometry.Pose3d:
+        ''' Returns the 3D pose of the requested apriltag '''
         tag = self.tags[f"{id}"]
         tagRotation = geometry.Rotation3d(0, 0, tag["theta"])
         tagPose = geometry.Pose3d(tag["x"], tag["y"], tag["z"], tagRotation)

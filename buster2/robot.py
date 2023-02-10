@@ -1,7 +1,14 @@
 import wpilib
 import commands2
 from robotContainer import RobotContainer
+'''
+TODO:
+- test teleoperated control with PID's, add compatibility with macros
+- Implement auto game piece placement macros
+- Implement auto game piece pickup macros
 
+
+'''
 class MyRobot(commands2.TimedCommandRobot):
     def robotInit(self):
         self.robotContainer = RobotContainer(self)
