@@ -1,7 +1,6 @@
 import commands2
 from commands2 import cmd, button
 from wpimath import geometry
-from math import pi
 
 from auto.swerveAutoBuilder import SwerveAutoBuilder
 from subsystems.mandible import MandibleSubSystem
@@ -31,15 +30,18 @@ class SubstationPickupCommand(commands2.CommandBase):
     xFOffset = -1.5 # field relative, how far the final pose is from the substation apriltag
     yFOffset = 1 # field relative, how far down or up the final pose is from the substation apriltag
     
-    def __init__(self, SwerveAutoBuilder: SwerveAutoBuilder, Mandible: MandibleSubSystem, Arm: ArmSubSystem, PoseEstimator: PoseEstimatorSubsystem, Constraints: pathplannerlib.PathConstraints, EventMap: dict, DriverCommandJoystick: button.CommandJoystick, DriveTrain: DriveTrainSubSystem) -> None:
+    def __init__(self, SwerveAutoBuilder: SwerveAutoBuilder, Mandible: MandibleSubSystem, Arm: ArmSubSystem, PoseEstimator: PoseEstimatorSubsystem, Constraints: pathplannerlib.PathConstraints, EventMap: dict, DriverCommandJoystick: button.CommandJoystick) -> None:
         super().__init__()
-        self.addRequirements([Mandible, Arm, DriveTrain])
+        self.addRequirements([Mandible, Arm])
         self.swerveAutoBuilder = SwerveAutoBuilder
         self.mandible = Mandible
         self.arm = Arm
         self.poseEstimator = PoseEstimator
         self.eventMap = EventMap
         self.driverCommandJoystick = DriverCommandJoystick
+        self.constraints = Constraints
+    
+    def initialize(self) -> None:
         self.currentPose = self.poseEstimator.getCurrentPose()
         self.blueAllianceAprilTagPose = self.poseEstimator.getTagPose(4).toPose2d() # if we are the red alliance the swerveAutoBuilder should automajically switch everything around
         # first step is to figure out which side of the substation we are closer to, we can just do this using the Y-component to avoid alliance conflict
@@ -49,15 +51,13 @@ class SubstationPickupCommand(commands2.CommandBase):
         self.initialTargetPose = geometry.Pose2d(geometry.Translation2d(x=self.xIOffset, y=self.yIOffset), geometry.Rotation2d(0)).transformBy(geometry.Transform2d(self.blueAllianceAprilTagPose.translation(), geometry.Rotation2d())) # finding our new offset initial pose
         self.finalTargetPose = geometry.Pose2d(geometry.Translation2d(x=self.xFOffset, y=self.yFOffset), geometry.Rotation2d(0)).transformBy(geometry.Transform2d(self.blueAllianceAprilTagPose.translation(), geometry.Rotation2d())) # finding our new offset final pose
         self.currentPose = self.poseEstimator.getCurrentPose()
-        initialPath = pathplannerlib.PathPlanner.generatePath(Constraints, [pathplannerlib.PathPoint(self.currentPose.translation(), self.poseEstimator.heading, self.currentPose.rotation(), self.poseEstimator.velocity), pathplannerlib.PathPoint(self.initialTargetPose.translation(), geometry.Rotation2d(), self.initialTargetPose.rotation())])
+        initialPath = pathplannerlib.PathPlanner.generatePath(self.constraints, [pathplannerlib.PathPoint(self.currentPose.translation(), self.poseEstimator.heading, self.currentPose.rotation(), self.poseEstimator.velocity), pathplannerlib.PathPoint(self.initialTargetPose.translation(), geometry.Rotation2d(), self.initialTargetPose.rotation())])
         self.followInitialPathCommand = self.swerveAutoBuilder.followPath(initialPath)
-        finalPath = pathplannerlib.PathPlanner.generatePath(Constraints, [pathplannerlib.PathPoint(self.initialTargetPose.translation(), geometry.Rotation2d(), self.initialTargetPose.rotation()), pathplannerlib.PathPoint(self.finalTargetPose.translation(), geometry.Rotation2d(), self.finalTargetPose.rotation())])
+        finalPath = pathplannerlib.PathPlanner.generatePath(self.constraints, [pathplannerlib.PathPoint(self.initialTargetPose.translation(), geometry.Rotation2d(), self.initialTargetPose.rotation()), pathplannerlib.PathPoint(self.finalTargetPose.translation(), geometry.Rotation2d(), self.finalTargetPose.rotation())])
         self.followFinalPathCommand = self.swerveAutoBuilder.followPath(finalPath)
         self.secondStageCommand = commands2.ParallelCommandGroup([self.followFinalPathCommand, self.eventMap["IntakeMandible"]])
-        self.confirmationButton = button.JoystickButton(self.driverCommandJoystick, 1) # find the correct number later on
+        self.confirmationButton = button.JoystickButton(self.driverCommandJoystick, 12) # find the correct number later on
         self.confirmationButton.whenPressed(self.secondStageCommand)
-    
-    def initialize(self) -> None:
         cmd.parallel([self.followInitialPathCommand, self.eventMap["armSubstation"]])
     
     def execute(self) -> None:

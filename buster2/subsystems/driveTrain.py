@@ -6,16 +6,14 @@ from ctre import NeutralMode
 from wpilib import shuffleboard
 from wpilib import SmartDashboard
 from wpimath import controller, trajectory
-from subsystems.poseEstimator import PoseEstimatorSubsystem
 from math import hypot, radians, pi, atan2
 import commands2
 #from pathplannerlib import 
 
 class DriveTrainSubSystem(commands2.SubsystemBase):
     ''' Swerve drivetrain infrastructure '''
-    def __init__(self, MyRobot: commands2.TimedCommandRobot, config: dict) -> None:
+    def __init__(self, config: dict) -> None:
         super().__init__()
-        self.myRobot = MyRobot
         self.config = config
             
             
@@ -92,7 +90,7 @@ class DriveTrainSubSystem(commands2.SubsystemBase):
             
             self.setSwerveStates(xScalar, yScalar, zScalar, fieldRelative)
     
-    def joystickDrive(self, inputs: list, poseEstimator: PoseEstimatorSubsystem):
+    def joystickDrive(self, inputs: list, currentPose: geometry.Pose2d):
         '''
         Drives the robot in teleop using PIDs to assist in keeping the robot where the operator wants to go.
         - Locks rotation to the last angle when over the twist threshold
@@ -103,11 +101,10 @@ class DriveTrainSubSystem(commands2.SubsystemBase):
             - To fix the latter, maybe implement some way where we don't set our target pose until the velocity of that axis has reached near-zero
         '''
         if not self.teleopInitiated:
-            self.targetPose = poseEstimator.getCurrentPose() # to prevent our robot from driving off when we enable and don't yet touch the joystick
+            self.targetPose = currentPose # to prevent our robot from driving off when we enable and don't yet touch the joystick
             self.teleopInitiated = True
         HOLDPOSITION = True # hard coded for testing
         yScalar, xScalar, zScalar = inputs[0], inputs[1], inputs[2] # grabbing our inputs and swapping the respective x and y by default
-        currentPose = poseEstimator.getCurrentPose() # where does the pose estimator currently think our robot is?
         poseError = currentPose.relativeTo(self.targetPose) # how far are we off from where our axes setpoints were before?
         if xScalar == 0 and yScalar == 0 and zScalar == 0: # if we have no inputs, don't bother correcting
             if HOLDPOSITION:
@@ -133,7 +130,7 @@ class DriveTrainSubSystem(commands2.SubsystemBase):
                 else:
                     xSpeed = 0
             else:
-                self.targetPose = geometry.Pose2d(geometry.Translation2d(poseEstimator.getCurrentPose().X(), self.targetPose.Y(), self.targetPose.rotation()))
+                self.targetPose = geometry.Pose2d(geometry.Translation2d(currentPose.X(), self.targetPose.Y(), self.targetPose.rotation()))
                 xSpeed = xScalar * self.kMaxSpeed
             if yScalar == 0:
                 if (abs(poseError.Y()) > self.poseTolerance.Y()): # we are over the tolerance threshold
@@ -141,7 +138,7 @@ class DriveTrainSubSystem(commands2.SubsystemBase):
                 else:
                     ySpeed = 0 # no need to correct, leave the value alone
             else:
-                self.targetPose = geometry.Pose2d(geometry.Translation2d(self.targetPose.X(), poseEstimator.getCurrentPose().Y(), self.targetPose.rotation()))
+                self.targetPose = geometry.Pose2d(geometry.Translation2d(self.targetPose.X(), currentPose.Y(), self.targetPose.rotation()))
                 ySpeed = yScalar * self.kMaxSpeed
             if zScalar == 0:
                 if (abs(poseError.rotation().radians()) > self.poseTolerance.rotation().radians()): # we are over the tolerance threshold
@@ -149,14 +146,14 @@ class DriveTrainSubSystem(commands2.SubsystemBase):
                 else:
                     zSpeed = 0
             else:
-                self.targetPose = geometry.Pose2d(geometry.Translation2d(self.targetPose.X(), self.targetPose.Y(), poseEstimator.getCurrentPose().rotation()))
+                self.targetPose = geometry.Pose2d(geometry.Translation2d(self.targetPose.X(), self.targetPose.Y(), currentPose.rotation()))
                 zSpeed = zScalar * self.kMaxSpeed
             self.setSwerveStates(xSpeed, ySpeed, zSpeed)
             
         
     def setSwerveStates(self, xSpeed: float, ySpeed: float, zSpeed: float, fieldOrient = True) -> None:
         if fieldOrient:
-                swerveModuleStates = self.KINEMATICS.toSwerveModuleStates(kinematics.ChassisSpeeds.fromFieldRelativeSpeeds(kinematics.ChassisSpeeds(xSpeed, ySpeed, zSpeed)), self.getNAVXRotation2d())
+            swerveModuleStates = self.KINEMATICS.toSwerveModuleStates(kinematics.ChassisSpeeds.fromFieldRelativeSpeeds(kinematics.ChassisSpeeds(xSpeed, ySpeed, zSpeed), self.getNAVXRotation2d()))
         else:
             swerveModuleStates = self.KINEMATICS.toSwerveModuleStates(kinematics.ChassisSpeeds(xSpeed, ySpeed, zSpeed))
         
@@ -203,7 +200,6 @@ class DriveTrainSubSystem(commands2.SubsystemBase):
                self.frontRight.getSwerveModuleState(), 
                self.rearLeft.getSwerveModuleState(), 
                self.rearRight.getSwerveModuleState())
-        test = self.KINEMATICS.toTwist2d()
         return positions
         
     def resetSwerves(self):

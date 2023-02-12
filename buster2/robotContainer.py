@@ -1,6 +1,7 @@
 import commands2
 from commands2 import button, cmd
 import wpilib
+import photonvision
 from wpimath import controller
 import os
 import json
@@ -14,9 +15,11 @@ from subsystems.driveTrain import DriveTrainSubSystem
 from subsystems.poseEstimator import PoseEstimatorSubsystem
 from subsystems.mandible import MandibleSubSystem
 from subsystems.arm import ArmSubSystem
+from subsystems.auxiliaryStreamDeck import AuxiliaryStreamDeckSubsystem
 
 from commands.mandibleIntakeCommand import MandibleIntakeCommand
-from commands.universalMacro import UniversalMacroCommand
+from commands.substationPickupCommand import SubstationPickupCommand
+from commands.placeOnGridCommand import PlaceOnGridCommand
 
 from auto.swerveAutoBuilder import SwerveAutoBuilder
 
@@ -30,32 +33,29 @@ class RobotContainer:
         
     selectedAutoName = "Drive Forward" # NOTE: Change this to change active auto
     maxAngularVelocity = config["autonomousSettings"]["autoVelLimit"] / math.hypot(config["RobotDimensions"]["trackWidth"] / 2, config["RobotDimensions"]["wheelBase"] / 2)
+    photonCameras = [photonvision.PhotonCamera("photonCameraOne"), photonvision.PhotonCamera("photonCameraOne")]
     
     def __init__(self, MyRobot: commands2.TimedCommandRobot) -> None:
         # subsystems
-        self.driveTrain = DriveTrainSubSystem(MyRobot, self.config)
-        self.poseEstimator = PoseEstimatorSubsystem(MyRobot, self.driveTrain, self.PLACEHOLDER, self.config)
+        self.driveTrain = DriveTrainSubSystem(self.config)
+        self.poseEstimator = PoseEstimatorSubsystem(self.photonCameras, self.driveTrain, geometry.Pose2d(), self.config) # NOTE: THE BLANK POSE2D IS TEMPORARY
         self.mandible = MandibleSubSystem(98, 99)
         self.arm = ArmSubSystem()
-        
-        # commands
-        self.MandibleIntakeCommand = MandibleIntakeCommand(self.mandible)
+        self.auxiliaryStreamDeck = AuxiliaryStreamDeckSubsystem(1)
         
         # buttons
         self.joystick = button.CommandJoystick(0)
         
         #subsystem configuration
-        self.driveTrain.setDefaultCommand(cmd.run(lambda: self.driveTrain.joystickDrive(self.getJoystickInput()), [self.driveTrain]))
+        self.driveTrain.setDefaultCommand(cmd.run(lambda: self.driveTrain.joystickDrive(self.getJoystickInput(), self.poseEstimator.getCurrentPose()), [self.driveTrain]))
         
         # additional configuration
         
-        thetaControllerConstraints = [self.config["autonomousSettings"]["rotationPIDConstants"], trajectory.TrapezoidProfile.Constraints(self.config["autonomousSettings"]["autoVelLimit"], self.maxAngularVelocity)]
-        
-        self.pathConstraints = pathplannerlib.PathConstraints(self.config["autonomousSettings"]["autoVelLimit"], self.config["autonomousSettings"]["autoAccLimit"])
-        self.configureButtonBindings()
         self.generateSimpleAutonomousCommands()
         self.generateAutonomousMarkers()
         
+        thetaControllerConstraints = [self.config["autonomousSettings"]["rotationPIDConstants"], trajectory.TrapezoidProfileRadians.Constraints(self.config["autonomousSettings"]["autoVelLimit"], self.maxAngularVelocity)]
+        self.pathConstraints = pathplannerlib.PathConstraints(self.config["autonomousSettings"]["autoVelLimit"], self.config["autonomousSettings"]["autoAccLimit"])
         self.SwerveAutoBuilder = SwerveAutoBuilder(self.poseEstimator, 
                                                    self.driveTrain, 
                                                    self.eventMap, 
@@ -69,19 +69,32 @@ class RobotContainer:
                                                                                                               )
                                                                                           )
                                                    )
+        
+        self.configureButtonBindings()
+        
     
     def configureButtonBindings(self):
         self.joystickButtonFour = button.JoystickButton(self.joystick, 4)
         self.joystickButtonFour.whileHeld(cmd.run(lambda: self.driveTrain.xMode(), [self.driveTrain]))
+        
         self.joystickButtonTwo = button.JoystickButton(self.joystick, 2) # using this as a universal button for macros
-        self.joystickButtonTwo.whileHeld(UniversalMacroCommand(self.SwerveAutoBuilder, 
-                                                               self.mandible, 
-                                                               self.arm, 
-                                                               self.poseEstimator,
-                                                               self.pathConstraints,
-                                                               self.eventMap,
-                                                               self.joystick,
-                                                               self.driveTrain))
+        self.joystickButtonTwo.whileHeld(PlaceOnGridCommand(self.SwerveAutoBuilder, 
+                                                            self.mandible, 
+                                                            self.arm, 
+                                                            self.poseEstimator, 
+                                                            self.pathConstraints, 
+                                                            self.eventMap, 
+                                                            self.joystick, 
+                                                            self.auxiliaryStreamDeck))
+        
+        self.joystickButtonThree = button.JoystickButton(self.joystick, 3)
+        self.joystickButtonThree.whileHeld(SubstationPickupCommand(self.SwerveAutoBuilder, 
+                                                                   self.mandible, 
+                                                                   self.arm, 
+                                                                   self.poseEstimator, 
+                                                                   self.pathConstraints, 
+                                                                   self.eventMap, 
+                                                                   self.joystick))
         
     def getJoystickInput(self):
         inputs = (self.joystick.getX(), self.joystick.getY(), self.joystick.getZ())
@@ -133,7 +146,7 @@ class RobotContainer:
             "OpenMandible": cmd.runOnce(lambda: self.mandible.setState('cube'), [self.mandible]),
             "CloseMandible": cmd.runOnce(lambda: self.mandible.setState("cone"), [self.mandible]),
             "OuttakeMandible": self.MandibleOuttakeCommand,
-            "IntakeMandible": self.MandibleIntakeCommand,
+            "IntakeMandible": MandibleIntakeCommand(self.mandible),
             "armFullyRetracted": cmd.runOnce(lambda: self.arm.setPosition("fullyRetracted"), [self.arm]),
             "armSubstation": cmd.runOnce(lambda: self.arm.setPosition("substation"), [self.arm]),
             "armFloor": cmd.runOnce(lambda: self.arm.setPosition("floor"), [self.arm]),

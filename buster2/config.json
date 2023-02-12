@@ -35,12 +35,12 @@
     "wheelDiameter": 4,
     "PhotonCameras": {
       "photonCameraOne": {
-      "x": 0,
-      "y": 0,
-      "z": 0,
-      "roll": 0,
-      "pitch": 0,
-      "yaw": 0
+        "x": 0,
+        "y": 0,
+        "z": 0,
+        "roll": 0,
+        "pitch": 0,
+        "yaw": 0
       },
       "photonCameraTwo": {
         "x": 0,
@@ -49,7 +49,7 @@
         "roll": 0,
         "pitch": 0,
         "yaw": 0
-        }
+      }
     }
   },
   "RobotDefaultSettings": {
@@ -104,5 +104,6 @@
       "thetaPoseToleranceDegrees": 1,
       "teleopVelLimit": 4,
       "teleopAccLimit": 3
+    }
   }
 }

@@ -31,14 +31,14 @@ class PoseEstimatorSubsystem(commands2.SubsystemBase):
             :param config: The serialized robot configuration file. '''
         super().__init__()
 
+        self.driveTrain = driveTrain
+        self.config = config
         self.photonCameras = photonCameras
         self.cameraTransformations = []
         for camera in photonCameras:
             cameraParams = self.config["RobotDimensions"]["PhotonCameras"][camera.getCameraName()]
             self.cameraTransformations.append(geometry.Transform3d(geometry.Translation3d(cameraParams["x"], cameraParams["y"], cameraParams["z"]), geometry.Rotation3d(cameraParams["roll"], cameraParams["pitch"], cameraParams["yaw"])))
             
-        self.driveTrain = driveTrain
-        self.config = config
         
         self.poseEstimator = estimator.SwerveDrive4PoseEstimator(self.driveTrain.KINEMATICS, 
                                                                  self.driveTrain.getNAVXRotation2d(), 
