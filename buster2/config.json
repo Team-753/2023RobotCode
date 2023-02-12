@@ -32,7 +32,25 @@
   "RobotDimensions": {
     "trackWidth": 25.5,
     "wheelBase": 21.5,
-    "wheelDiameter": 4
+    "wheelDiameter": 4,
+    "PhotonCameras": {
+      "photonCameraOne": {
+      "x": 0,
+      "y": 0,
+      "z": 0,
+      "roll": 0,
+      "pitch": 0,
+      "yaw": 0
+      },
+      "photonCameraTwo": {
+        "x": 0,
+        "y": 0,
+        "z": 0,
+        "roll": 0,
+        "pitch": 0,
+        "yaw": 0
+        }
+    }
   },
   "RobotDefaultSettings": {
     "fieldOrient": true,

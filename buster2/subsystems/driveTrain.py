@@ -7,7 +7,7 @@ from wpilib import shuffleboard
 from wpilib import SmartDashboard
 from wpimath import controller, trajectory
 from subsystems.poseEstimator import PoseEstimatorSubsystem
-from math import hypot, radians, pi
+from math import hypot, radians, pi, atan2
 import commands2
 #from pathplannerlib import 
 
@@ -51,17 +51,25 @@ class DriveTrainSubSystem(commands2.SubsystemBase):
         self.targetPose = geometry.Pose2d()
         self.teleopInitiated = False
         
+        self.navxOffset = 0
+        
+        self.currentSpeed = 0
+        self.currentHeading = geometry.Rotation2d()
+        
     def getNAVXRotation2d(self):
-        ''' Returns the robot rotation as a Rotation2d object. '''
-        return self.navx.getRotation2d()
+        ''' Returns the robot rotation as a Rotation2d object and offsets by a given amount'''
+        return self.navx.getRotation2d().rotateBy(geometry.Rotation2d(radians(self.navxOffset)))
     
     def zeroGyro(self):
         self.navx.reset()
+        self.navxOffset = 0
     
     def drive(self, chassisSpeeds: kinematics.ChassisSpeeds, fieldRelative = True):
         if chassisSpeeds == kinematics.ChassisSpeeds(0, 0, 0):
             self.coast()
+            self.currentSpeed = 0
         else:
+            self.currentSpeed = hypot(chassisSpeeds.vx, chassisSpeeds.vy)
             if fieldRelative:
                 swerveModuleStates = self.KINEMATICS.toSwerveModuleStates(kinematics.ChassisSpeeds.fromFieldRelativeSpeeds(chassisSpeeds, self.getNAVXRotation2d()))
             else:
@@ -148,9 +156,10 @@ class DriveTrainSubSystem(commands2.SubsystemBase):
         
     def setSwerveStates(self, xSpeed: float, ySpeed: float, zSpeed: float, fieldOrient = True) -> None:
         if fieldOrient:
-                swerveModuleStates = self.KINEMATICS.toSwerveModuleStates(kinematics.ChassisSpeeds.fromFieldRelativeSpeeds(kinematics.ChassisSpeeds(xSpeed, ySpeed, zSpeed), self.getNAVXRotation2d()))
+                swerveModuleStates = self.KINEMATICS.toSwerveModuleStates(kinematics.ChassisSpeeds.fromFieldRelativeSpeeds(kinematics.ChassisSpeeds(xSpeed, ySpeed, zSpeed)), self.getNAVXRotation2d())
         else:
             swerveModuleStates = self.KINEMATICS.toSwerveModuleStates(kinematics.ChassisSpeeds(xSpeed, ySpeed, zSpeed))
+        
         self.KINEMATICS.desaturateWheelSpeeds(swerveModuleStates, self.kMaxSpeed)
         self.frontLeft.setState(swerveModuleStates[0])
         self.frontRight.setState(swerveModuleStates[1])
@@ -194,6 +203,7 @@ class DriveTrainSubSystem(commands2.SubsystemBase):
                self.frontRight.getSwerveModuleState(), 
                self.rearLeft.getSwerveModuleState(), 
                self.rearRight.getSwerveModuleState())
+        test = self.KINEMATICS.toTwist2d()
         return positions
         
     def resetSwerves(self):

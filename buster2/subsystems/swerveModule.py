@@ -149,7 +149,7 @@ class SwerveModule:
         self.driveMotor.set(ctre.ControlMode.PercentOutput, 0)
     
     def reZeroMotors(self):
-        self.driveMotor.setSelectedSensorPosition(0, 0, 50)
+        self.driveMotor.setSelectedSensorPosition(0, 0, 250)
         while (self.turnMotor.setSelectedSensorPosition(self.getAbsolutePositionZeroThreeSixty() * self.countsPerRotation * self.turningGearRatio / 360, 0, 50) != 0 and i > 0):
             print(f"Zeroing on {self.moduleName} failed. Retrying")
             i -= 1

@@ -16,6 +16,7 @@ from subsystems.mandible import MandibleSubSystem
 from subsystems.arm import ArmSubSystem
 
 from commands.mandibleIntakeCommand import MandibleIntakeCommand
+from commands.universalMacro import UniversalMacroCommand
 
 from auto.swerveAutoBuilder import SwerveAutoBuilder
 
@@ -70,8 +71,17 @@ class RobotContainer:
                                                    )
     
     def configureButtonBindings(self):
-        self.joystickButtonTwo = button.JoystickButton(self.joystick, 2)
-        self.joystickButtonTwo.whileHeld(cmd.run(lambda: self.driveTrain.xMode(), [self.driveTrain]))
+        self.joystickButtonFour = button.JoystickButton(self.joystick, 4)
+        self.joystickButtonFour.whileHeld(cmd.run(lambda: self.driveTrain.xMode(), [self.driveTrain]))
+        self.joystickButtonTwo = button.JoystickButton(self.joystick, 2) # using this as a universal button for macros
+        self.joystickButtonTwo.whileHeld(UniversalMacroCommand(self.SwerveAutoBuilder, 
+                                                               self.mandible, 
+                                                               self.arm, 
+                                                               self.poseEstimator,
+                                                               self.pathConstraints,
+                                                               self.eventMap,
+                                                               self.joystick,
+                                                               self.driveTrain))
         
     def getJoystickInput(self):
         inputs = (self.joystick.getX(), self.joystick.getY(), self.joystick.getZ())
