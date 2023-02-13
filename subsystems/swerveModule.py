@@ -9,7 +9,7 @@ class SwerveModule:
     countsPerRotation = 2048 # encoder ticks per rotation
     turningGearRatio = 12.8 # 12.8 motor spins per wheel spin
     drivingGearRatio = 8.14 # 8.14 motor spins per wheel spin
-    wheelDiameter = 0.1010 # in meters
+    wheelDiameter = 0.1016 # in meters
     motorEncoderConversionFactor = 2 * math.pi / countsPerRotation * 12.8
     '''
     TODO:
@@ -38,7 +38,9 @@ class SwerveModule:
         turnMotorConfig.slot0.kF = 0
         turnMotorConfig.slot0.integralZone = 100
         turnMotorConfig.slot0.allowableClosedloopError = 0
-        turnMotorConfig.supplyCurrLimit = ctre.SupplyCurrentLimitConfiguration.currentLimit = 30
+        turnSupplyCurrentConfig = ctre.SupplyCurrentLimitConfiguration()
+        turnSupplyCurrentConfig.currentLimit = 30.0
+        turnMotorConfig.supplyCurrLimit = turnSupplyCurrentConfig
         i = 5
         while (self.turnMotor.configAllSettings(turnMotorConfig, 50) != 0 and i > 0):
             print(f"Turn motor configuration on {self.moduleName} failed. Retrying")
@@ -62,7 +64,9 @@ class SwerveModule:
         driveMotorConfig.slot0.kF = 0.045
         driveMotorConfig.slot0.integralZone = 500
         driveMotorConfig.slot0.allowableClosedloopError = 0
-        driveMotorConfig.supplyCurrLimit = ctre.SupplyCurrentLimitConfiguration.currentLimit = 35
+        driveSupplyCurrentConfig = ctre.SupplyCurrentLimitConfiguration()
+        driveSupplyCurrentConfig.currentLimit = 35.0
+        driveMotorConfig.supplyCurrLimit = driveSupplyCurrentConfig
         i = 5
         while (self.driveMotor.configAllSettings(driveMotorConfig, 50) != 0 and i > 0):
             print(f"Drive motor configuration on {self.moduleName} failed. Retrying")
@@ -91,7 +95,7 @@ class SwerveModule:
         SmartDashboard.putNumber(f"{self.moduleName} Absolute:", self.absoluteEncoder.getAbsolutePosition())
         
     def getSwerveModuleState(self):
-        distanceMeters = self.driveMotor.getSelectedSensorPosition(0) * self.wheelDiameter * math.pi / self.countsPerRotation * self.drivingGearRatio # converting the clicks into distance values, in this case, meters
+        distanceMeters = self.driveMotor.getSelectedSensorPosition(0) * self.wheelDiameter * math.pi / (self.countsPerRotation * self.drivingGearRatio) # converting the clicks into distance values, in this case, meters
         angle = self.getTurnWheelState()
         return kinematics.SwerveModulePosition(distanceMeters, angle)
             
@@ -122,3 +126,11 @@ class SwerveModule:
     def stop(self):
         self.turnMotor.set(ctre.ControlMode.PercentOutput, 0)
         self.driveMotor.set(ctre.ControlMode.PercentOutput, 0)
+    
+    def reZeroMotors(self):
+        self.driveMotor.setSelectedSensorPosition(0, 0, 50)
+        while (self.turnMotor.setSelectedSensorPosition(self.absoluteEncoder.getAbsolutePosition() * self.countsPerRotation * self.turningGearRatio / 360, 0, 50) != 0 and i > 0):
+            print(f"Zeroing on {self.moduleName} failed. Retrying")
+            i -= 1
+            if (i == 0):
+                print(f"Zeroing on {self.moduleName} 5 times has failed. Please intervene.")

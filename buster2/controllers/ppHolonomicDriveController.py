@@ -20,10 +20,13 @@ class PPHolonomicDriveController:
         rotationTolerance = self.tolerance.rotation()
         return abs(self.translationError.X()) < translationTolerance.X() and abs(self.translationError.Y()) < translationTolerance.Y() and abs(self.rotationError.radians()) < rotationTolerance.radians()
     
-    def enable(self, enable: bool):
+    def setEnabled(self, enable: bool):
         self.enabled = enable
+        
+    def setTolerance(self, tolerance: geometry.Pose2d):
+        self.tolerance = tolerance
     
-    def ChassisSpeeds(self, currentPose: geometry.Pose2d, referenceState: PathPlannerTrajectory.PathPlannerState):
+    def Calculate(self, currentPose: geometry.Pose2d, referenceState: PathPlannerTrajectory.PathPlannerState):
         xFF = referenceState.velocity * referenceState.pose.rotation().cos()
         yFF = referenceState.velocity * referenceState.pose.rotation().sin()
         rotationFF = referenceState.holonomicAngularVelocity

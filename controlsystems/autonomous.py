@@ -3,7 +3,7 @@ from wpimath import controller
 from wpimath import geometry, kinematics
 from pathplannerlib import PathPlanner, PathPlannerTrajectory, PathConstraints, PathPoint
 from math import radians
-from controlsystems.ppHolonomicDriveController import PPHolonomicDriveController
+from buster2.ppHolonomicDriveController import PPHolonomicDriveController
 from controlsystems.commandController import CommandController
 
 ''' For intellisense: '''
