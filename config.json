@@ -3,48 +3,80 @@
     "frontLeft": {
       "driveMotorID": 1,
       "turnMotorID": 3,
-      "encoderID": 2,
-      "encoderOffset": 10.63476
+      "encoderID": 0,
+      "encoderOffset": 10.95,
+      "xAngle": -135
     },
     "frontRight": {
       "driveMotorID": 4,
       "turnMotorID": 6,
-      "encoderID": 5,
-      "encoderOffset": 68.994140625
+      "encoderID": 1,
+      "encoderOffset": 248.55,
+      "xAngle": 135
     },
     "rearLeft": {
       "driveMotorID": 10,
       "turnMotorID": 12,
-      "encoderID": 11,
-      "encoderOffset": 146.513671875
+      "encoderID": 2,
+      "encoderOffset": 326.337890625,
+      "xAngle": -45
     },
     "rearRight": {
       "driveMotorID": 7,
       "turnMotorID": 9,
-      "encoderID": 8,
-      "encoderOffset": 161.631
+      "encoderID": 3,
+      "encoderOffset": 163.5,
+      "xAngle": 45
     }
   },
   "RobotDimensions": {
     "trackWidth": 25.5,
     "wheelBase": 21.5,
-    "wheelDiameter": 4
+    "wheelDiameter": 4,
+    "PhotonCameras": {
+      "photonCameraOne": {
+        "x": 0,
+        "y": 0,
+        "z": 0,
+        "roll": 0,
+        "pitch": 0,
+        "yaw": 0
+      },
+      "photonCameraTwo": {
+        "x": 0,
+        "y": 0,
+        "z": 0,
+        "roll": 0,
+        "pitch": 0,
+        "yaw": 0
+      }
+    }
   },
   "RobotDefaultSettings": {
     "fieldOrient": true,
     "robotSpeedLimiter": 1,
-    "robotVelocityLimit": 3,
-    "robotAccelerationLimit": 1,
+    "robotVelocityLimit": 4,
+    "robotAccelerationLimit": 8,
     "DEBUGGING": true
   },
   "autonomousSettings": {
     "autoVelLimit": 4,
     "autoAccLimit": 3,
-    "xPoseToleranceMeters": 0.01,
-    "yPoseToleranceMeters": 0.01,
-    "thetaPoseToleranceDegrees": 0.25,
-    "translationPIDConstants": {},
-    "rotationPIDConstants": {}
+    "xPoseToleranceMeters": 0.03,
+    "yPoseToleranceMeters": 0.03,
+    "thetaPoseToleranceDegrees": 0.5,
+    "translationPIDConstants": {
+      "kP": 2.9,
+      "kI": 0,
+      "kD": 0,
+      "period": 0.02
+    },
+    "rotationPIDConstants": {
+      "kP": 3,
+      "kI": 0,
+      "kD": 0,
+      "period": 0.02
+    }
   },
   "driverStation": {
     "joystickUSB": 0,
@@ -53,6 +85,25 @@
       "xDeadZone": 0.1,
       "yDeadZone": 0.1,
       "zDeadZone": 0.1
+    },
+    "teleoperatedRobotConstants": {
+      "translationPIDConstants": {
+        "kP": 1,
+        "kI": 0,
+        "kD": 0,
+        "period": 0.02
+      },
+      "rotationPIDConstants": {
+        "kP": 1,
+        "kI": 0,
+        "kD": 0,
+        "period": 0.02
+      },
+      "xPoseToleranceMeters": 0.05,
+      "yPoseToleranceMeters": 0.05,
+      "thetaPoseToleranceDegrees": 1,
+      "teleopVelLimit": 4,
+      "teleopAccLimit": 3
     }
   }
 }

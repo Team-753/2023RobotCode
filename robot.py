@@ -1,42 +1,18 @@
 import wpilib
-import json
-import os
-#from networktables import NetworkTables
-import threading
-import photonvision
-from buster2.poseEstimator import PoseEstimatorSubsystem
-from controlsystems.operator import Operator
-from subsystems.driveTrain import DriveTrain
-from controlsystems.autonomous import Autonomous
-from wpimath import geometry
-from wpilib import shuffleboard
-import photonvision
+import commands2
+from robotContainer import RobotContainer
+'''
+TODO:
+- test teleoperated control with PID's, add compatibility with macros
+- Implement auto game piece placement macros
+- Implement auto game piece pickup macros
 
-'''cond = threading.Condition()
-notified = False
-def connectionListener(connected, info):
-	print(info, '; Connected=%s' % connected)
-	with cond:
-		notified = True
-		cond.notify()
-NetworkTables.initialize()
-NetworkTables.addConnectionListener(connectionListener, immediateNotify=True)'''
 
-class MyRobot(wpilib.TimedRobot):
-    aprilTagPreviouslyDetected = False 
+'''
+class MyRobot(commands2.TimedCommandRobot):
     def robotInit(self):
-        folderPath = os.path.dirname(os.path.abspath(__file__))
-        filePath = os.path.join(folderPath, 'config.json')
-        with open (filePath, "r") as f1:
-            self.config = json.load(f1)
-        tagPath = os.path.join(folderPath, '../apriltags.json')
-        with open (tagPath, "r") as f1:
-            self.tags = json.load(f1)
-        self.cameraOne = photonvision.PhotonCamera("cameraOne")
-        self.driveTrain = DriveTrain(self.config)
-        self.driverData = shuffleboard.Shuffleboard.getTab("Driver")
-        self.operator = Operator(self.config)
-        self.autonomous = Autonomous(self.config, self.tags, self.driveTrain, PoseEstimatorSubsystem(self.cameraOne, self.driveTrain, self.tags, geometry.Pose2d()))
+        self.robotContainer = RobotContainer(self)
+        self.autoCommand = commands2.Command()
         
     def disabledInit(self) -> None:
         ''''''
@@ -46,37 +22,37 @@ class MyRobot(wpilib.TimedRobot):
         return super().testInit()
     
     def testPeriodic(self) -> None:
-        self.autonomous.followAprilTag()
+        return super().testPeriodic()
     
     def autonomousInit(self):
-        pass
+        self.autoCommand = self.robotContainer.getAutonomousCommand()
+        if (self.autoCommand != commands2.Command()):
+            self.autoCommand.schedule()
         
     def autonomousPeriodic(self):
-        self.autonomous.bigDaddy()
+        pass
         
     def teleopInit(self):
-        pass
+        if (self.autoCommand != commands2.Command()):
+            self.autoCommand.cancel()
+        self.robotContainer.teleopInit()
         
     def teleopPeriodic(self):
         '''This function is called periodically during operator control.'''
-        self.autonomous.bigDaddy()
+        pass
     
     def disabledPeriodic(self):
         ''' Runs while the robot is idle '''
-        self.operator.checkInputDevices()
-        # checking whether or not an apriltag is detected
-        '''result = self.cameraOne.getLatestResult() # getting the latest result from the camera
-        if (result.hasTargets() and not self.aprilTagPreviouslyDetected): # checking if the photoncamera actually has any apriltags in view
-            id = result.getBestTarget().getFiducialId() # getting the id of the closest apriltag
-            self.driverData.add("Apriltag Detected", f"{id}") # adding the detection to driverstation
-            self.aprilTagPreviouslyDetected = True
-        elif (self.aprilTagPreviouslyDetected): # no apriltag detected :(
-            self.driverData.add("Apriltag Detected", "NONE") # adding "NONE" to the driverstation
-            self.aprilTagPreviouslyDetected = False'''
     
     def disabledInit(self) -> None:
-        self.driveTrain.coast()
-        
+        '''self.driveTrain.coast()'''
+        self.robotContainer.disabledInit()
+    
+    def testInit(self) -> None:
+        self.robotContainer.testInit()
+    
+    def testPeriodic(self) -> None:
+        self.robotContainer.turnTo()
     
 
 if __name__ == "__main__":
