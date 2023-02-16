@@ -120,11 +120,11 @@
     "FalconID": 56,
     "LimitSwitchID": 0,
     "FalconPIDValues": {
-      "kP": 0.0005,
-      "kI": 0.0005,
-      "kD": 0,
-      "kF": 0.045,
-      "iZone": 500,
+      "kP": 0.1,
+      "kI": 0.0001,
+      "kD": 0.0001,
+      "kF": 0,
+      "iZone": 100,
       "error": 0,
       "currentLimit": 39
     }

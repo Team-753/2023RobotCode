@@ -51,6 +51,8 @@ class RobotContainer:
         
         # additional configuration
         
+        # self.LEDS = wpilib.AddressableLED() NOTE: For later
+        
         self.generateSimpleAutonomousCommands()
         self.generateAutonomousMarkers()
         

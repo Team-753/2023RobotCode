@@ -13,12 +13,12 @@ from typing import List
 
 class PoseEstimatorSubsystem(commands2.SubsystemBase):
     ''' The infrastructure for estimating robot pose based off of vision and wheel odometry data '''
-    stateStdDevs = 0.5, 0.5, math.radians(10) # change this later
-    visionMeasurementStdDevs = 0, 0, 0 # change this later
+    visionMeasurementStdDevs = 0.005, 0.005, math.radians(0.1) # change this later
+    stateStdDevs = 0.01, 0.01, math.radians(0.2)  # change this later
     field = wpilib.Field2d()
     previousPipelineResultTimeStamp = 0 # useless for now...
-    camOneRelRobot = geometry.Transform3d(geometry.Translation3d(0, 0, 0), geometry.Rotation3d())
-    camTwoRelRobot = geometry.Transform3d(geometry.Translation3d(0, 0, 0), geometry.Rotation3d())
+    camOneRelRobot = geometry.Transform3d(geometry.Translation3d(-0.3302, 0, 0), geometry.Rotation3d(0, 0, 0))
+    camTwoRelRobot = geometry.Transform3d(geometry.Translation3d(0, 0, 0), geometry.Rotation3d(0, 0, 0))
     velocity = 0
     heading = geometry.Rotation2d()
     
