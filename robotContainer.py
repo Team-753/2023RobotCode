@@ -35,12 +35,12 @@ class RobotContainer:
     maxAngularVelocity = config["autonomousSettings"]["autoVelLimit"] / math.hypot(config["RobotDimensions"]["trackWidth"] / 2, config["RobotDimensions"]["wheelBase"] / 2)
     photonCameras = [photonvision.PhotonCamera("photonCameraOne"), photonvision.PhotonCamera("photonCameraOne")]
     
-    def __init__(self, MyRobot: commands2.TimedCommandRobot) -> None:
+    def __init__(self) -> None:
         # subsystems
         self.driveTrain = DriveTrainSubSystem(self.config)
         self.poseEstimator = PoseEstimatorSubsystem(self.photonCameras, self.driveTrain, geometry.Pose2d(), self.config) # NOTE: THE BLANK POSE2D IS TEMPORARY
-        self.mandible = MandibleSubSystem(98, 99)
-        self.arm = ArmSubSystem()
+        self.mandible = MandibleSubSystem(self.config)
+        self.arm = ArmSubSystem(self.config)
         self.auxiliaryStreamDeck = AuxiliaryStreamDeckSubsystem(1)
         
         # buttons
@@ -165,22 +165,3 @@ class RobotContainer:
                 cmd.runOnce(lambda: self.mandible.coast(), [self.mandible])
             ]
         )
-    def testInit(self):
-        self.initialAngle = 0
-        self.xboxController = button.CommandXboxController(0)
-        #self.xboxController.A().onTrue(cmd.run(lambda: self.turnTo(), [self.driveTrain]))
-        self.turnPID = controller.PIDController(0.025, 0, 0, 0.02)
-        self.turnPID.enableContinuousInput(-math.pi, math.pi)
-        
-    def turnTo(self):
-        x, y = self.xboxController.getLeftX(), self.xboxController.getLeftY()
-        if (abs(x) >= 0.25 and abs(y) >= 0.25):
-            angle = math.atan2(y, x)
-            self.initialAngle = angle
-        else:
-            angle = self.initialAngle
-        print(f"Target angle: {angle}")
-        currentAngle = self.driveTrain.getNAVXRotation2d().radians()
-        value = self.turnPID.calculate(currentAngle, angle)
-        print(f"Feed: {value}")
-        self.driveTrain.joystickDrive([0, 0, value], True)

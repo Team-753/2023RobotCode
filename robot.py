@@ -11,7 +11,7 @@ TODO:
 '''
 class MyRobot(commands2.TimedCommandRobot):
     def robotInit(self):
-        self.robotContainer = RobotContainer(self)
+        self.robotContainer = RobotContainer()
         self.autoCommand = commands2.Command()
         
     def disabledInit(self) -> None:
@@ -49,10 +49,10 @@ class MyRobot(commands2.TimedCommandRobot):
         self.robotContainer.disabledInit()
     
     def testInit(self) -> None:
-        self.robotContainer.testInit()
+        return super().testInit()
     
     def testPeriodic(self) -> None:
-        self.robotContainer.turnTo()
+        return super().testPeriodic()
     
 
 if __name__ == "__main__":

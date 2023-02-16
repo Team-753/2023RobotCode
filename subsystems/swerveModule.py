@@ -64,7 +64,7 @@ class SwerveModule:
         driveMotorConfig.slot0.integralZone = 500
         driveMotorConfig.slot0.allowableClosedloopError = 0
         driveSupplyCurrentConfig = ctre.SupplyCurrentLimitConfiguration()
-        driveSupplyCurrentConfig.currentLimit = 35.0
+        driveSupplyCurrentConfig.currentLimit = 37.5
         driveMotorConfig.supplyCurrLimit = driveSupplyCurrentConfig
         i = 5
         while (self.driveMotor.configAllSettings(driveMotorConfig, 50) != 0 and i > 0):

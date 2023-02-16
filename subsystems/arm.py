@@ -15,9 +15,35 @@ class ArmSubSystem(commands2.SubsystemBase):
         "midCube": 0.0
     }
     targetValue = 0
+    maxHeightInches = 60
+    encoderTicksToDistanceConversionFactor = 0.5 / (12 * 2048) # conversion factor, see details below
+    '''
+    1/2 inches of travel per lead screw rotation
+    12:1 gear ratio through planetary
+    2048 counts per rotation
+    so for example: 1 inch of travel is 49,152 encoder ticks of rotation
+    '''
+    zeroed = False # has the arm been zeroed using the limit switch yet
     
-    def __init__(self) -> None:
+    def __init__(self, config: dict) -> None:
         super().__init__()
+        self.config = config
+        self.limitSwitch = wpilib.DigitalInput(self.config["ArmConfig"]["LimitSwitchID"])
+        self.armFalcon = ctre.TalonFX(self.config["ArmConfig"]["FalconID"])
+        self.armFalcon.configSelectedFeedbackSensor(ctre.FeedbackDevice.IntegratedSensor, 0, 250)
+        armFalconConfig = ctre.TalonFXConfiguration()
+        armFalconConfig.absoluteSensorRange = ctre.AbsoluteSensorRange.Unsigned_0_to_360
+        pidConfig = self.config["ArmConfig"]["FalconPIDValues"]
+        armFalconConfig.slot0.kP = pidConfig["kP"]
+        armFalconConfig.slot0.kI = pidConfig["kI"]
+        armFalconConfig.slot0.kD = pidConfig["kD"]
+        armFalconConfig.slot0.kF = pidConfig["kF"]
+        armFalconConfig.slot0.integralZone = pidConfig["iZone"]
+        armFalconConfig.slot0.allowableClosedloopError = pidConfig["error"]
+        currentConfig = ctre.SupplyCurrentLimitConfiguration()
+        currentConfig.currentLimit = pidConfig["currentLimit"]
+        armFalconConfig.supplyCurrLimit = currentConfig
+        self.armFalcon.configAllSettings(armFalconConfig, 250)
 
     def periodic(self) -> None:
         ''' Runs every 20ms in all modes, keep that in mind Joe. '''
@@ -27,11 +53,24 @@ class ArmSubSystem(commands2.SubsystemBase):
         need to switch over PID's based on how far out the arm is extended.
         - Returns: whether it is within the setpoint threshold, very important for auto stuff
         '''
+        if not self.zeroed: # has the arm set its setpoint yet?
+            if self.limitSwitch.get(): # is the switch pressed
+                self.armFalcon.set(ctre.TalonFXControlMode.PercentOutput, 0) # stopping the motor
+                self.armFalcon.setNeutralMode(ctre.NeutralMode.Coast) # coasting the motor
+                self.armFalcon.setSelectedSensorPosition(0.0, 0, 250) # zeroing the motor
+                self.zeroed = True
+            else: # the switch isn't pressed yet; we haven't reached the bottom
+                self.armFalcon.set(ctre.TalonFXControlMode.PercentOutput, -0.1) # assuming negative makes it go down
+        else: # arm is zeroed, proceed as normal
+            self.armFalcon.set(ctre.ControlMode.Position, self.targetValue / self.encoderTicksToDistanceConversionFactor)
         return super().periodic()
+    
+    def reZero(self):
+        ''' In a perfect world this should never have to be used but I'm putting it here just in case. '''
+        self.zeroed = False
 
     def setPosition(self, position: str):
-        self.targetValue = self.constants[position]
-        print(f"Setting arm position: {position}")
+        self.targetValue = self.constants[position] # turning a string position into a value via a dictionary
         
     def coast(self):
         ''''''
@@ -39,9 +78,12 @@ class ArmSubSystem(commands2.SubsystemBase):
     def brake(self):
         ''''''
         
-    def zero(self):
-        ''' Returns the arm to the starting positon, hitting a limit switch and therefore finding the relative zero '''
-        
-    def manualControl(self, direction: str):
+    def manualControlIncrementor(self, direction: str):
         ''' As the function name says, will need some kind of linear/nonlinear scalar value as the arm speed is very non linear. '''
         # TODO: Implement control by changing position over time, think an incrementer every 20ms
+        coEff = 0.1
+        if direction == "reverse":
+            coEff = -coEff
+        if (self.targetValue + coEff > 0 and self.targetValue + coEff < self.maxHeightInches):
+            self.targetValue += coEff
+        # DEBUG: print(self.targetValue)

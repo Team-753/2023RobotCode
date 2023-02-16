@@ -1,4 +1,7 @@
 import wpilib
+from wpilib import DoubleSolenoid, PneumaticsModuleType
+from ctre import VictorSPX, VictorSPXControlMode
+import playingwithfusion
 import commands2
 
 '''
@@ -11,9 +14,18 @@ MANDIBLE TODO:
 class MandibleSubSystem(commands2.SubsystemBase):
     ''''''
     state = "cube"
+    gamePieceInPossessionDistance = 80 # in millimeters from the distance sensor, make this bigger later to be safe
     
-    def __init__(self, motorID_1: int, motorID_2: int) -> None:
+    def __init__(self, config: dict) -> None:
         super().__init__()
+        self.config = config
+        self.actuator = DoubleSolenoid(self.config["RobotDefaultSettings"]["PCMID"], PneumaticsModuleType.REVPH, self.config["MandibleConfig"]["DoubleSolenoid"]["ForwardChannel"], self.config["MandibleConfig"]["DoubleSolenoid"]["ReverseChannel"])
+        self.leftMotor = VictorSPX(self.config["MandibleConfig"]["LeftMotorID"])
+        self.rightMotor = VictorSPX(self.config["MandibleConfig"]["RightMotorID"])
+        self.distanceSensor = playingwithfusion.TimeOfFlight(self.config["MandibleConfig"]["DistanceSensorID"])
+        self.distanceSensor.setRangingMode(self.distanceSensor.RangingMode.kShort, 30)
+        #self.distanceSensor.setRangeOfInterest(p1, p1, p3, p4) NOTE: may need this
+        # TODO: Invert one of these motors once we get the mandible together
     
     def doSomething(self, todo: str):
         pass
@@ -21,23 +33,34 @@ class MandibleSubSystem(commands2.SubsystemBase):
     def contract(self):
         ''' Pretty self-explanatory '''
         self.state = "cone"
+        self.actuator.set(self.actuator.Value.kForward)
         
     def release(self):
         ''' Pretty self-explanatory '''
         self.state = "cube"
+        self.actuator.set(self.actuator.Value.kReverse)
         
-    def intake(self):
+    def intake(self) -> bool:
         ''' NOTE: Needs to check whether or not game piece is fully in the mandible, distance sensor??? will return false until true. '''
-        return bool
+        if self.inControlOfPiece():
+            self.leftMotor.set(VictorSPXControlMode.PercentOutput, 0)
+            self.rightMotor.set(VictorSPXControlMode.PercentOutput, 0)
+            return True
+        else:
+            self.leftMotor.set(VictorSPXControlMode.PercentOutput, 0.5)
+            self.rightMotor.set(VictorSPXControlMode.PercentOutput, 0.5)
+            return False
         
     def outtake(self):
         ''' Pretty self-explantory '''
+        self.leftMotor.set(VictorSPXControlMode.PercentOutput, -0.25)
+        self.rightMotor.set(VictorSPXControlMode.PercentOutput, -0.25)
         
-    def coast(self):
+    def stop(self):
         ''''''
+        self.leftMotor.set(VictorSPXControlMode.PercentOutput, 0)
+        self.rightMotor.set(VictorSPXControlMode.PercentOutput, 0)
     
-    def brake(self):
-        ''''''
     def getState(self):
         return self.state
     
@@ -46,14 +69,10 @@ class MandibleSubSystem(commands2.SubsystemBase):
         stateToSet: 'cone', 'cube' '''
         if stateToSet == "cone" and stateToSet != self.state: # we want a cone
             self.contract()
-            print("Mandible Contracting")
+            #print("Mandible Contracting")
         elif stateToSet == "cube" and stateToSet != self.state: # we want a cube
             self.release()
-            print("Mandible Releasing")
-    
-    def setNeutralWheelState(self, wheelStateToSet: str):
-        ''' Sets the state of the rotating wheels on the mandible.
-        wheelStateToSet: 'intake', 'outtake',  '''
+            #print("Mandible Releasing")
         
     def inControlOfPiece(self) -> bool:
         '''
@@ -64,4 +83,11 @@ class MandibleSubSystem(commands2.SubsystemBase):
         else:
             return False
         '''
-        return True # TODO: delete this at some point please, totally breaks a lot of code
+        if self.distanceSensor.getRange() <= self.gamePieceInPossessionDistance:
+            return True
+        else:
+            return False
+    
+    def isGamePieceInFront(self) -> bool:
+        ''' Need to test the distance sensor range first, but this would allow us to bypass operator confirmation of a game piece
+        being place in front of the robot on the substation. '''

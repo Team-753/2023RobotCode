@@ -12,6 +12,12 @@ import commands2
 
 class DriveTrainSubSystem(commands2.SubsystemBase):
     ''' Swerve drivetrain infrastructure '''
+    '''
+    NOTE:
+    2023 Robot Dimensions:
+    Trackwidth Meters: 0.4954524
+    Wheelbase Meters: 0.5969
+    '''
     def __init__(self, config: dict) -> None:
         super().__init__()
         self.config = config
@@ -109,15 +115,15 @@ class DriveTrainSubSystem(commands2.SubsystemBase):
         if xScalar == 0 and yScalar == 0 and zScalar == 0: # if we have no inputs, don't bother correcting
             if HOLDPOSITION:
                 if (abs(poseError.X()) > self.poseTolerance.X()):
-                    xSpeed = self.longitudinalPID.calculate(currentPose.X(), self.targetPose.X()) * self.kMaxSpeed
+                    xSpeed = self.longitudinalPID.calculate(currentPose.X(), self.targetPose.X())
                 else:
                     xSpeed = 0
                 if (abs(poseError.Y()) > self.poseTolerance.Y()):
-                    ySpeed = self.longitudinalPID.calculate(currentPose.Y(), self.targetPose.Y()) * self.kMaxSpeed
+                    ySpeed = self.latitudePID.calculate(currentPose.Y(), self.targetPose.Y())
                 else:
                     ySpeed = 0
                 if (abs(poseError.rotation().radians()) > self.poseTolerance.rotation().radians()):
-                    zSpeed = self.longitudinalPID.calculate(currentPose.rotation().radians(), self.targetPose.rotation().radians()) * self.maxAngularVelocity
+                    zSpeed = self.rotationPID.calculate(currentPose.rotation().radians(), self.targetPose.rotation().radians())
                 else:
                     zSpeed = 0
                 self.setSwerveStates(xSpeed, ySpeed, zSpeed) # we want to actually slow down in a normal capacity to facilitate finer control
@@ -134,7 +140,7 @@ class DriveTrainSubSystem(commands2.SubsystemBase):
                 xSpeed = xScalar * self.kMaxSpeed
             if yScalar == 0:
                 if (abs(poseError.Y()) > self.poseTolerance.Y()): # we are over the tolerance threshold
-                    ySpeed = self.longitudinalPID.calculate(currentPose.Y(), self.targetPose.Y()) # keep in mind this is not a scalar, this is a speed
+                    ySpeed = self.latitudePID.calculate(currentPose.Y(), self.targetPose.Y()) # keep in mind this is not a scalar, this is a speed
                 else:
                     ySpeed = 0 # no need to correct, leave the value alone
             else:
@@ -142,7 +148,7 @@ class DriveTrainSubSystem(commands2.SubsystemBase):
                 ySpeed = yScalar * self.kMaxSpeed
             if zScalar == 0:
                 if (abs(poseError.rotation().radians()) > self.poseTolerance.rotation().radians()): # we are over the tolerance threshold
-                    zSpeed = self.longitudinalPID.calculate(currentPose.rotation().radians(), self.targetPose.rotation().radians()) # keep in mind this is not a scalar, this is a speed
+                    zSpeed = self.rotationPID.calculate(currentPose.rotation().radians(), self.targetPose.rotation().radians()) # keep in mind this is not a scalar, this is a speed
                 else:
                     zSpeed = 0
             else:
