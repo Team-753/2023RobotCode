@@ -17,7 +17,7 @@ from subsystems.mandible import MandibleSubSystem
 from subsystems.arm import ArmSubSystem
 from subsystems.auxiliaryStreamDeck import AuxiliaryStreamDeckSubsystem
 
-from commands.mandibleIntakeCommand import MandibleIntakeCommand
+from commands.mandibleCommands import MandibleIntakeCommand, MandibleOuttakeCommand
 from commands.substationPickupCommand import SubstationPickupCommand
 from commands.placeOnGridCommand import PlaceOnGridCommand
 
@@ -41,13 +41,15 @@ class RobotContainer:
         self.poseEstimator = PoseEstimatorSubsystem(self.photonCameras, self.driveTrain, geometry.Pose2d(), self.config) # NOTE: THE BLANK POSE2D IS TEMPORARY
         self.mandible = MandibleSubSystem(self.config)
         self.arm = ArmSubSystem(self.config)
-        self.auxiliaryStreamDeck = AuxiliaryStreamDeckSubsystem(1)
+        self.auxiliaryStreamDeck = AuxiliaryStreamDeckSubsystem(2)
         
         # buttons
         self.joystick = button.CommandJoystick(0)
+        self.xboxController = button.CommandXboxController(1)
         
         #subsystem configuration
-        self.driveTrain.setDefaultCommand(cmd.run(lambda: self.driveTrain.joystickDrive(self.getJoystickInput(), self.poseEstimator.getCurrentPose()), [self.driveTrain]))
+        self.driveTrain.setDefaultCommand(cmd.run(lambda: self.driveTrain.joystickDrive(self.getJoystickInput(), self.poseEstimator.getCurrentPose()), [self.driveTrain])) # this is what makes the robot drive, since there isn't a way to bind commands to axes
+        self.arm.setDefaultCommand(cmd.run(lambda: self.arm.manualControlIncrementor(self.getStickInput(-self.xboxController.getLeftY(), self.config["ArmConfig"]["manualControlDeadzone"])), [self.arm])) # same issue here, no way to bind commands to axes so this is the solution
         
         # additional configuration
         
@@ -56,6 +58,7 @@ class RobotContainer:
         self.generateSimpleAutonomousCommands()
         self.generateAutonomousMarkers()
         
+        # this part can be extremely confusing but it is essentially just an initation for the helper class that makes swerve auto possible
         thetaControllerConstraints = [self.config["autonomousSettings"]["rotationPIDConstants"], trajectory.TrapezoidProfileRadians.Constraints(self.config["autonomousSettings"]["autoVelLimit"], self.maxAngularVelocity)]
         self.pathConstraints = pathplannerlib.PathConstraints(self.config["autonomousSettings"]["autoVelLimit"], self.config["autonomousSettings"]["autoAccLimit"])
         self.SwerveAutoBuilder = SwerveAutoBuilder(self.poseEstimator, 
@@ -97,6 +100,19 @@ class RobotContainer:
                                                                    self.pathConstraints, 
                                                                    self.eventMap, 
                                                                    self.joystick))
+        self.xboxController.A().whileTrue(MandibleIntakeCommand(self.mandible))
+        self.xboxController.Y().whileTrue(MandibleOuttakeCommand(self.mandible))
+        self.xboxController.X().onTrue(self.eventMap["CloseMandible"])
+        self.xboxController.B().onTrue(self.eventMap["OpenMandible"])
+    
+    def getStickInput(self, input: float, threshold: float) -> float:
+        if abs(input) > threshold:
+            adjustedValue = (abs(input) - threshold) / (1 - threshold)
+            if input < 0 and adjustedValue != 0:
+                adjustedValue = -adjustedValue
+        else:
+            adjustedValue = 0
+        return adjustedValue
         
     def getJoystickInput(self):
         inputs = (self.joystick.getX(), self.joystick.getY(), self.joystick.getZ())
@@ -129,7 +145,12 @@ class RobotContainer:
         return adjustedInputs
     
     def getAutonomousCommand(self):
-        return self.SwerveAutoBuilder.fullAuto(self.getPathGroup(self.selectedAutoName))
+        return commands2.SequentialCommandGroup(
+            [
+                PlaceOnGridCommand(self.SwerveAutoBuilder, self.mandible, self.arm, self.poseEstimator, self.pathConstraints, self.eventMap, self.joystick, self.auxiliaryStreamDeck),
+                self.SwerveAutoBuilder.fullAuto(self.getPathGroup(self.selectedAutoName)),
+            ]
+        )
     
     def getPath(self, pathName: str) -> pathplannerlib.PathPlannerTrajectory:
         return pathplannerlib.PathPlanner.loadPath(pathName, self.pathConstraints, False)

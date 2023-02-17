@@ -3,8 +3,7 @@ import wpilib
 import navx
 from subsystems.swerveModule import SwerveModule
 from ctre import NeutralMode
-from wpilib import shuffleboard
-from wpilib import SmartDashboard
+from wpilib import DriverStation
 from wpimath import controller, trajectory
 from math import hypot, radians, pi, atan2
 import commands2
@@ -59,6 +58,7 @@ class DriveTrainSubSystem(commands2.SubsystemBase):
         
         self.currentSpeed = 0
         self.currentHeading = geometry.Rotation2d()
+        self.alliance = DriverStation.getAlliance()
         
     def getNAVXRotation2d(self):
         ''' Returns the robot rotation as a Rotation2d object and offsets by a given amount'''
@@ -85,7 +85,7 @@ class DriveTrainSubSystem(commands2.SubsystemBase):
             self.rearLeft.setState(swerveModuleStates[2])
             self.rearRight.setState(swerveModuleStates[3])
     
-    def joystickDrive(self, inputs: list, fieldRelative = True) -> None:
+    '''def joystickDrive(self, inputs: list, fieldRelative = True) -> None:
         yScalar, xScalar, zScalar = inputs[0], inputs[1], inputs[2]
         if xScalar == 0 and yScalar == 0 and zScalar == 0: 
             self.coast()
@@ -94,7 +94,7 @@ class DriveTrainSubSystem(commands2.SubsystemBase):
             xScalar *= self.kMaxSpeed
             zScalar *= 0.5
             
-            self.setSwerveStates(xScalar, yScalar, zScalar, fieldRelative)
+            self.setSwerveStates(xScalar, yScalar, zScalar, fieldRelative)'''
     
     def joystickDrive(self, inputs: list, currentPose: geometry.Pose2d):
         '''
@@ -111,6 +111,9 @@ class DriveTrainSubSystem(commands2.SubsystemBase):
             self.teleopInitiated = True
         HOLDPOSITION = True # hard coded for testing
         yScalar, xScalar, zScalar = inputs[0], inputs[1], inputs[2] # grabbing our inputs and swapping the respective x and y by default
+        if self.alliance == DriverStation.Alliance.kRed: # our field oriented controls would be inverted, so lets fix that
+            yScalar = -yScalar
+            xScalar = -xScalar
         poseError = currentPose.relativeTo(self.targetPose) # how far are we off from where our axes setpoints were before?
         if xScalar == 0 and yScalar == 0 and zScalar == 0: # if we have no inputs, don't bother correcting
             if HOLDPOSITION:

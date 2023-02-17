@@ -127,6 +127,7 @@
       "iZone": 100,
       "error": 0,
       "currentLimit": 39
-    }
+    },
+    "manualControlDeadzone": 0.1
   }
 }

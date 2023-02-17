@@ -17,6 +17,7 @@ class ArmSubSystem(commands2.SubsystemBase):
     targetValue = 0
     maxHeightInches = 60
     encoderTicksToDistanceConversionFactor = 0.5 / (12 * 2048) # conversion factor, see details below
+    maxSpeedPer20MS = 12 * 0.02 # 12 inches per second
     '''
     1/2 inches of travel per lead screw rotation
     12:1 gear ratio through planetary
@@ -78,12 +79,9 @@ class ArmSubSystem(commands2.SubsystemBase):
     def brake(self):
         ''''''
         
-    def manualControlIncrementor(self, direction: str):
+    def manualControlIncrementor(self, scalar: float):
         ''' As the function name says, will need some kind of linear/nonlinear scalar value as the arm speed is very non linear. '''
-        # TODO: Implement control by changing position over time, think an incrementer every 20ms
-        coEff = 0.1
-        if direction == "reverse":
-            coEff = -coEff
-        if (self.targetValue + coEff > 0 and self.targetValue + coEff < self.maxHeightInches):
-            self.targetValue += coEff
+        increment = scalar * self.maxSpeedPer20MS
+        if (self.targetValue + increment > 0 and self.targetValue + increment < self.maxHeightInches):
+            self.targetValue += increment
         # DEBUG: print(self.targetValue)
