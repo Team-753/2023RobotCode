@@ -7,6 +7,12 @@ TODO:
 - Implement auto game piece placement macros
 - Implement auto game piece pickup macros
 
+What do you need to know to be able to understand the code:
+- OOP
+- Classes
+- Class Extensions
+- Polymorphism (you may ask what that is, don't even)
+
 
 '''
 class MyRobot(commands2.TimedCommandRobot):

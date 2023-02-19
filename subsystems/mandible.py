@@ -1,6 +1,6 @@
 import wpilib
 from wpilib import DoubleSolenoid, PneumaticsModuleType
-from ctre import VictorSPX, VictorSPXControlMode
+from ctre import VictorSPX, VictorSPXControlMode, NeutralMode
 import playingwithfusion
 import commands2
 
@@ -21,7 +21,9 @@ class MandibleSubSystem(commands2.SubsystemBase):
         self.config = config
         self.actuator = DoubleSolenoid(self.config["RobotDefaultSettings"]["PCMID"], PneumaticsModuleType.REVPH, self.config["MandibleConfig"]["DoubleSolenoid"]["ForwardChannel"], self.config["MandibleConfig"]["DoubleSolenoid"]["ReverseChannel"])
         self.leftMotor = VictorSPX(self.config["MandibleConfig"]["LeftMotorID"])
+        self.leftMotor.setNeutralMode(NeutralMode.Brake)
         self.rightMotor = VictorSPX(self.config["MandibleConfig"]["RightMotorID"])
+        self.rightMotor.setNeutralMode(NeutralMode.Brake)
         self.distanceSensor = playingwithfusion.TimeOfFlight(self.config["MandibleConfig"]["DistanceSensorID"])
         self.distanceSensor.setRangingMode(self.distanceSensor.RangingMode.kShort, 30)
         #self.distanceSensor.setRangeOfInterest(p1, p1, p3, p4) NOTE: may need this
