@@ -58,7 +58,8 @@
     "robotVelocityLimit": 4,
     "robotAccelerationLimit": 8,
     "DEBUGGING": true,
-    "PCMID": 61
+    "PDH_ID": 60,
+    "PCM_ID": 61
   },
   "autonomousSettings": {
     "autoVelLimit": 4,
@@ -112,9 +113,9 @@
       "ForwardChannel": 1,
       "ReverseChannel": 2
     },
-    "LeftMotorID": 57,
-    "RightMotorID": 58,
-    "DistanceSensorID": 59
+    "LeftMotorID": 10,
+    "RightMotorID": 11,
+    "DistanceSensorID": 12
   },
   "ArmConfig": {
     "FalconID": 56,

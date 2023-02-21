@@ -19,7 +19,7 @@ class MandibleSubSystem(commands2.SubsystemBase):
     def __init__(self, config: dict) -> None:
         super().__init__()
         self.config = config
-        self.actuator = DoubleSolenoid(self.config["RobotDefaultSettings"]["PCMID"], PneumaticsModuleType.REVPH, self.config["MandibleConfig"]["DoubleSolenoid"]["ForwardChannel"], self.config["MandibleConfig"]["DoubleSolenoid"]["ReverseChannel"])
+        self.actuator = DoubleSolenoid(self.config["RobotDefaultSettings"]["PCM_ID"], PneumaticsModuleType.REVPH, self.config["MandibleConfig"]["DoubleSolenoid"]["ForwardChannel"], self.config["MandibleConfig"]["DoubleSolenoid"]["ReverseChannel"])
         self.leftMotor = VictorSPX(self.config["MandibleConfig"]["LeftMotorID"])
         self.leftMotor.setNeutralMode(NeutralMode.Brake)
         self.rightMotor = VictorSPX(self.config["MandibleConfig"]["RightMotorID"])
