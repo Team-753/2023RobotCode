@@ -1,10 +1,6 @@
 import wpilib  
 from wpimath import estimator, geometry
-from wpilib import shuffleboard
-# import robotpy_apriltag # gone unused for now, may stay that way...
 import photonvision
-from os import path
-from json import load
 from subsystems.driveTrain import DriveTrainSubSystem
 import math
 import commands2
@@ -33,6 +29,7 @@ class PoseEstimatorSubsystem(commands2.SubsystemBase):
 
         self.driveTrain = driveTrain
         self.config = config
+        self.tags = config["Apriltags"]
         self.photonCameras = photonCameras
         self.cameraTransformations = []
         for camera in photonCameras:
@@ -46,11 +43,6 @@ class PoseEstimatorSubsystem(commands2.SubsystemBase):
                                                                  initialPose, 
                                                                  self.stateStdDevs,
                                                                  self.visionMeasurementStdDevs)
-        self.tab = shuffleboard.Shuffleboard.getTab("Odometry")
-        #self.driverData = shuffleboard.Shuffleboard.getTab("Driver")
-        #self.tab.addString("Pose", self.getFormattedPose()).withPosition(0, 0).withSize(2, 0)
-        self.tab.add("Field", self.field).withPosition(5, 0).withSize(6, 4)
-        #self.driverData.add("Apriltag Detected", "NONE").withPosition(3, 0)
         
     def periodic(self) -> None:
         ''' Call this function with every iteration of your autonomous and teleop loop. '''

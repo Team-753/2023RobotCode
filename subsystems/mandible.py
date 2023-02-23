@@ -4,13 +4,6 @@ from ctre import VictorSPX, VictorSPXControlMode, NeutralMode
 import playingwithfusion
 import commands2
 
-'''
-MANDIBLE TODO:
-- Implement motors and controllers
-- Finish up logic for functions
-- Implement distance sensor/limit switch and the associated logic
-'''
-
 class MandibleSubSystem(commands2.SubsystemBase):
     ''''''
     state = "cube"
@@ -47,9 +40,9 @@ class MandibleSubSystem(commands2.SubsystemBase):
         
     def intake(self) -> bool:
         ''' NOTE: Needs to check whether or not game piece is fully in the mandible, distance sensor??? will return false until true. '''
-        if False: #if self.inControlOfPiece():
-            self.leftMotor.set(VictorSPXControlMode.PercentOutput, 0)
-            self.rightMotor.set(VictorSPXControlMode.PercentOutput, 0)
+        if self.inControlOfPiece():
+            self.leftMotor.set(VictorSPXControlMode.PercentOutput, -0.25)
+            self.rightMotor.set(VictorSPXControlMode.PercentOutput, -0.25)
             return True
         else:
             self.leftMotor.set(VictorSPXControlMode.PercentOutput, -0.5)
@@ -96,3 +89,10 @@ class MandibleSubSystem(commands2.SubsystemBase):
     def isGamePieceInFront(self) -> bool:
         ''' Need to test the distance sensor range first, but this would allow us to bypass operator confirmation of a game piece
         being place in front of the robot on the substation. '''
+        
+    def cubePeriodic(self) -> None:
+        ''' Ensures we hold onto a cube once it is in our possession '''
+        if self.inControlOfPiece() and self.state == "cube":
+            self.intake()
+        else:
+            self.stop()

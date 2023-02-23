@@ -30,8 +30,12 @@ class RobotContainer:
     filePath = os.path.join(folderPath, 'config.json')
     with open (filePath, "r") as f1:
         config = json.load(f1)
-        
-    selectedAutoName = "Drive Forward" # NOTE: Change this to change active auto
+    tempAutoList = os.listdir(os.path.join(folderPath, 'deploy/pathplanner'))
+    autoList = []
+    for pathName in tempAutoList:
+        if pathName != "Taxi.path":   
+            autoList.append(pathName.removesuffix(".path"))
+    print(autoList)
     maxAngularVelocity = config["autonomousSettings"]["autoVelLimit"] / math.hypot(config["RobotDimensions"]["trackWidth"] / 2, config["RobotDimensions"]["wheelBase"] / 2)
     photonCameras = [photonvision.PhotonCamera("photonCameraOne"), photonvision.PhotonCamera("photonCameraOne")]
     
@@ -50,6 +54,7 @@ class RobotContainer:
         #subsystem configuration
         self.driveTrain.setDefaultCommand(cmd.run(lambda: self.driveTrain.joystickDrive(self.getJoystickInput(), self.poseEstimator.getCurrentPose()), [self.driveTrain])) # this is what makes the robot drive, since there isn't a way to bind commands to axes
         self.arm.setDefaultCommand(cmd.run(lambda: self.arm.manualControlIncrementor(self.getStickInput(-self.xboxController.getLeftY(), self.config["ArmConfig"]["manualControlDeadzone"])), [self.arm])) # same issue here, no way to bind commands to axes so this is the solution
+        self.mandible.setDefaultCommand(cmd.run(lambda: self.mandible.cubePeriodic(), [self.mandible]))
         
         # additional configuration
         
@@ -76,6 +81,18 @@ class RobotContainer:
                                                    )
         
         self.configureButtonBindings()
+        
+        self.gamePieceChooser = wpilib.SendableChooser()
+        self.gamePieceChooser.setDefaultOption("Cube", "kCube")
+        self.gamePieceChooser.addOption("Cone", "kCone")
+        wpilib.SmartDashboard.putData("Game Piece Chooser", self.gamePieceChooser)
+        
+        ''' Auto-populating our autonomous chooser with the paths we have in the deploy/pathplanner folder '''
+        self.autonomousChooser = wpilib.SendableChooser()
+        self.autonomousChooser.setDefaultOption("Taxi", "Taxi")
+        for pathName in self.autoList:
+            self.autonomousChooser.addOption(pathName, pathName)
+        wpilib.SmartDashboard.putData("Autonomous Chooser", self.autonomousChooser)
         
     
     def configureButtonBindings(self):

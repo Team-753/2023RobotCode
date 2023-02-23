@@ -10,15 +10,18 @@ class ArmSubSystem(commands2.SubsystemBase):
         "fullyRetracted": 0.0,
         "substation": 0.0,
         "floor": 0.0,
-        "highCone": 35.0,
-        "midCone": 0.0,
+        "highConePrep": 35.0,
+        "highConePlacement": 0.0,
+        "midConePrep": 0.0,
+        "midConePlacement": 0.0,
         "highCube": 0.0,
-        "midCube": 0.0
+        "midCube": 0.0,
+        "idealDriveExtension": 0.0
     }
     targetValue = 0
     maxHeightInches = 42.5
     encoderTicksToDistanceConversionFactor = 0.5 / (4 * 2048) # conversion factor, see details below
-    maxSpeedPer20MS = 12 * 0.02 # 12 inches per second
+    maxSpeedPer30MS = 12 * 0.03 # 12 inches per second
     '''
     1/2 inches of travel per lead screw rotation
     12:1 gear ratio through planetary
@@ -87,7 +90,7 @@ class ArmSubSystem(commands2.SubsystemBase):
         
     def manualControlIncrementor(self, scalar: float):
         ''' As the function name says, will need some kind of linear/nonlinear scalar value as the arm speed is very non linear. '''
-        increment = scalar * self.maxSpeedPer20MS
+        increment = scalar * self.maxSpeedPer30MS
         if (self.targetValue + increment > 0 and self.targetValue + increment < self.maxHeightInches):
             self.targetValue += increment
         # DEBUG: print(self.targetValue)
