@@ -1,5 +1,6 @@
 import wpilib
 import ctre
+from ctre.sensors import AbsoluteSensorRange
 import commands2
 
 class ArmSubSystem(commands2.SubsystemBase):
@@ -9,14 +10,14 @@ class ArmSubSystem(commands2.SubsystemBase):
         "fullyRetracted": 0.0,
         "substation": 0.0,
         "floor": 0.0,
-        "highCone": 0.0,
+        "highCone": 35.0,
         "midCone": 0.0,
         "highCube": 0.0,
         "midCube": 0.0
     }
     targetValue = 0
-    maxHeightInches = 60
-    encoderTicksToDistanceConversionFactor = 0.5 / (12 * 2048) # conversion factor, see details below
+    maxHeightInches = 42.5
+    encoderTicksToDistanceConversionFactor = 0.5 / (4 * 2048) # conversion factor, see details below
     maxSpeedPer20MS = 12 * 0.02 # 12 inches per second
     '''
     1/2 inches of travel per lead screw rotation
@@ -33,7 +34,7 @@ class ArmSubSystem(commands2.SubsystemBase):
         self.armFalcon = ctre.TalonFX(self.config["ArmConfig"]["FalconID"])
         self.armFalcon.configSelectedFeedbackSensor(ctre.FeedbackDevice.IntegratedSensor, 0, 250)
         armFalconConfig = ctre.TalonFXConfiguration()
-        armFalconConfig.absoluteSensorRange = ctre.AbsoluteSensorRange.Unsigned_0_to_360
+        armFalconConfig.absoluteSensorRange = AbsoluteSensorRange.Unsigned_0_to_360
         pidConfig = self.config["ArmConfig"]["FalconPIDValues"]
         armFalconConfig.slot0.kP = pidConfig["kP"]
         armFalconConfig.slot0.kI = pidConfig["kI"]
@@ -44,7 +45,9 @@ class ArmSubSystem(commands2.SubsystemBase):
         currentConfig = ctre.SupplyCurrentLimitConfiguration()
         currentConfig.currentLimit = pidConfig["currentLimit"]
         armFalconConfig.supplyCurrLimit = currentConfig
+        self.armFalcon.setNeutralMode(ctre.NeutralMode.Brake)
         self.armFalcon.configAllSettings(armFalconConfig, 250)
+        wpilib.SmartDashboard.putBoolean("arm zeroed", False)
 
     def periodic(self) -> None:
         ''' Runs every 20ms in all modes, keep that in mind Joe. '''
@@ -54,16 +57,19 @@ class ArmSubSystem(commands2.SubsystemBase):
         need to switch over PID's based on how far out the arm is extended.
         - Returns: whether it is within the setpoint threshold, very important for auto stuff
         '''
+        wpilib.SmartDashboard.putBoolean("arm limit switch", self.limitSwitch.get())
         if not self.zeroed: # has the arm set its setpoint yet?
             if self.limitSwitch.get(): # is the switch pressed
                 self.armFalcon.set(ctre.TalonFXControlMode.PercentOutput, 0) # stopping the motor
                 self.armFalcon.setNeutralMode(ctre.NeutralMode.Coast) # coasting the motor
                 self.armFalcon.setSelectedSensorPosition(0.0, 0, 250) # zeroing the motor
                 self.zeroed = True
+                wpilib.SmartDashboard.putBoolean("arm zeroed", True)
             else: # the switch isn't pressed yet; we haven't reached the bottom
-                self.armFalcon.set(ctre.TalonFXControlMode.PercentOutput, -0.1) # assuming negative makes it go down
+                self.armFalcon.set(ctre.TalonFXControlMode.PercentOutput, -0.2) # assuming negative makes it go down
         else: # arm is zeroed, proceed as normal
             self.armFalcon.set(ctre.ControlMode.Position, self.targetValue / self.encoderTicksToDistanceConversionFactor)
+            wpilib.SmartDashboard.putNumber("arm target position", self.targetValue)
         return super().periodic()
     
     def reZero(self):

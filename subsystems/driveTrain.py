@@ -16,6 +16,7 @@ class DriveTrainSubSystem(commands2.SubsystemBase):
     2023 Robot Dimensions:
     Trackwidth Meters: 0.4954524
     Wheelbase Meters: 0.5969
+    When Zeroing turn gears to the right
     '''
     def __init__(self, config: dict) -> None:
         super().__init__()
@@ -139,7 +140,7 @@ class DriveTrainSubSystem(commands2.SubsystemBase):
                 else:
                     xSpeed = 0
             else:
-                self.targetPose = geometry.Pose2d(geometry.Translation2d(currentPose.X(), self.targetPose.Y(), self.targetPose.rotation()))
+                self.targetPose = geometry.Pose2d(geometry.Translation2d(currentPose.X(), self.targetPose.Y()), self.targetPose.rotation())
                 xSpeed = xScalar * self.kMaxSpeed
             if yScalar == 0:
                 if (abs(poseError.Y()) > self.poseTolerance.Y()): # we are over the tolerance threshold
@@ -147,7 +148,7 @@ class DriveTrainSubSystem(commands2.SubsystemBase):
                 else:
                     ySpeed = 0 # no need to correct, leave the value alone
             else:
-                self.targetPose = geometry.Pose2d(geometry.Translation2d(self.targetPose.X(), currentPose.Y(), self.targetPose.rotation()))
+                self.targetPose = geometry.Pose2d(geometry.Translation2d(self.targetPose.X(), currentPose.Y()), self.targetPose.rotation())
                 ySpeed = yScalar * self.kMaxSpeed
             if zScalar == 0:
                 if (abs(poseError.rotation().radians()) > self.poseTolerance.rotation().radians()): # we are over the tolerance threshold
@@ -155,7 +156,7 @@ class DriveTrainSubSystem(commands2.SubsystemBase):
                 else:
                     zSpeed = 0
             else:
-                self.targetPose = geometry.Pose2d(geometry.Translation2d(self.targetPose.X(), self.targetPose.Y(), currentPose.rotation()))
+                self.targetPose = geometry.Pose2d(geometry.Translation2d(self.targetPose.X(), self.targetPose.Y()), currentPose.rotation())
                 zSpeed = zScalar * self.kMaxSpeed
             self.setSwerveStates(xSpeed, ySpeed, zSpeed)
             

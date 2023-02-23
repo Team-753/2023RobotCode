@@ -104,6 +104,12 @@ class RobotContainer:
         self.xboxController.Y().whileTrue(MandibleOuttakeCommand(self.mandible))
         self.xboxController.X().onTrue(self.eventMap["CloseMandible"])
         self.xboxController.B().onTrue(self.eventMap["OpenMandible"])
+        
+        self.joystickButtonTwelve = button.JoystickButton(self.joystick, 12)
+        self.joystickButtonTwelve.onTrue(cmd.run(lambda: self.arm.setPosition("highCone"), [self.arm]))
+        
+        self.joystickButtonSeven = button.JoystickButton(self.joystick, 7)
+        self.joystickButtonSeven.onTrue(cmd.run(lambda: self.arm.setPosition("fullyRetracted"), [self.arm]))
     
     def getStickInput(self, input: float, threshold: float) -> float:
         if abs(input) > threshold:
@@ -147,8 +153,8 @@ class RobotContainer:
     def getAutonomousCommand(self):
         return commands2.SequentialCommandGroup(
             [
-                PlaceOnGridCommand(self.SwerveAutoBuilder, self.mandible, self.arm, self.poseEstimator, self.pathConstraints, self.eventMap, self.joystick, self.auxiliaryStreamDeck),
-                self.SwerveAutoBuilder.fullAuto(self.getPathGroup(self.selectedAutoName)),
+                #PlaceOnGridCommand(self.SwerveAutoBuilder, self.mandible, self.arm, self.poseEstimator, self.pathConstraints, self.eventMap, self.joystick, self.auxiliaryStreamDeck),
+                self.SwerveAutoBuilder.fullAuto(self.getPathGroup(self.selectedAutoName))
             ]
         )
     
@@ -188,3 +194,13 @@ class RobotContainer:
                 cmd.runOnce(lambda: self.mandible.coast(), [self.mandible])
             ]
         )
+    
+    def testPeriodic(self):
+        limitSwitchPressed = not wpilib.DigitalInput(0).get()
+        wpilib.SmartDashboard.putBoolean("Limit Switch", limitSwitchPressed)
+        
+    def disabledPeriodic(self):
+        wpilib.SmartDashboard.putNumber("Front Left", self.driveTrain.frontLeft.getAbsolutePositionZeroThreeSixty())
+        wpilib.SmartDashboard.putNumber("Front Right", self.driveTrain.frontRight.getAbsolutePositionZeroThreeSixty())
+        wpilib.SmartDashboard.putNumber("Rear Right", self.driveTrain.rearRight.getAbsolutePositionZeroThreeSixty())
+        wpilib.SmartDashboard.putNumber("Rear Left", self.driveTrain.rearLeft.getAbsolutePositionZeroThreeSixty())

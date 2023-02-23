@@ -58,7 +58,7 @@ class PoseEstimatorSubsystem(commands2.SubsystemBase):
         '''
         For this next section of code we are referencing both of our cameras to find the best apriltag to esimate our position off of, if one is available
         '''
-        targetList = [] # creating a list to hold our targets and their given ambiguity
+        '''targetList = [] # creating a list to hold our targets and their given ambiguity
         for camera in self.photonCameras: # indexing through the list
             pipelineResult = camera.getLatestResult()
             resultTimeStamp = pipelineResult.getTimestamp()
@@ -88,7 +88,7 @@ class PoseEstimatorSubsystem(commands2.SubsystemBase):
                     if (abs(difference) > 1): # our navx is off by over a degree as calculated by an apriltag, this is very useful for the start of the match
                         self.driveTrain.navxOffset = difference # setting the new navx offset
             else:
-                i += 1
+                i += 1'''
         swerveModuleStates = self.driveTrain.getSwerveModulePositions()
         derivedState = self.driveTrain.KINEMATICS.toTwist2d(swerveModuleStates[0], swerveModuleStates[1], swerveModuleStates[2], swerveModuleStates[3])
         self.velocity = math.hypot(derivedState.dx, derivedState.dy)

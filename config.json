@@ -2,36 +2,36 @@
   "SwerveModules": {
     "frontLeft": {
       "driveMotorID": 1,
-      "turnMotorID": 3,
+      "turnMotorID": 2,
       "encoderID": 0,
-      "encoderOffset": 10.95,
+      "encoderOffset": 76,
       "xAngle": -135
     },
     "frontRight": {
-      "driveMotorID": 4,
-      "turnMotorID": 6,
+      "driveMotorID": 3,
+      "turnMotorID": 4,
       "encoderID": 1,
-      "encoderOffset": 248.55,
+      "encoderOffset": 309,
       "xAngle": 135
     },
-    "rearLeft": {
-      "driveMotorID": 10,
-      "turnMotorID": 12,
-      "encoderID": 2,
-      "encoderOffset": 326.337890625,
-      "xAngle": -45
-    },
     "rearRight": {
-      "driveMotorID": 7,
-      "turnMotorID": 9,
-      "encoderID": 3,
-      "encoderOffset": 163.5,
+      "driveMotorID": 5,
+      "turnMotorID": 6,
+      "encoderID": 2,
+      "encoderOffset": 227,
       "xAngle": 45
+    },
+    "rearLeft": {
+      "driveMotorID": 7,
+      "turnMotorID": 8,
+      "encoderID": 3,
+      "encoderOffset": 22.6,
+      "xAngle": -45
     }
   },
   "RobotDimensions": {
-    "trackWidth": 0.6477,
-    "wheelBase": 0.5461,
+    "trackWidth": 0.4954524,
+    "wheelBase": 0.5969,
     "wheelDiameter": 4,
     "PhotonCameras": {
       "photonCameraOne": {
@@ -68,13 +68,13 @@
     "yPoseToleranceMeters": 0.03,
     "thetaPoseToleranceDegrees": 0.5,
     "translationPIDConstants": {
-      "kP": 2.9,
+      "kP": 3,
       "kI": 0,
       "kD": 0,
       "period": 0.02
     },
     "rotationPIDConstants": {
-      "kP": 3,
+      "kP": 0.25,
       "kI": 0,
       "kD": 0,
       "period": 0.02
@@ -90,14 +90,14 @@
     },
     "teleoperatedRobotConstants": {
       "translationPIDConstants": {
-        "kP": 3,
-        "kI": 0,
+        "kP": 1,
+        "kI": 0.005,
         "kD": 0,
         "period": 0.02
       },
       "rotationPIDConstants": {
-        "kP": 1,
-        "kI": 0,
+        "kP": 0.25,
+        "kI": 0.0025,
         "kD": 0,
         "period": 0.02
       },
@@ -110,15 +110,15 @@
   },
   "MandibleConfig": {
     "DoubleSolenoid": {
-      "ForwardChannel": 1,
-      "ReverseChannel": 2
+      "ForwardChannel": 0,
+      "ReverseChannel": 1
     },
     "LeftMotorID": 10,
     "RightMotorID": 11,
     "DistanceSensorID": 12
   },
   "ArmConfig": {
-    "FalconID": 56,
+    "FalconID": 9,
     "LimitSwitchID": 0,
     "FalconPIDValues": {
       "kP": 0.1,
@@ -126,8 +126,8 @@
       "kD": 0.0001,
       "kF": 0,
       "iZone": 100,
-      "error": 0,
-      "currentLimit": 39
+      "error": 1024,
+      "currentLimit": 40
     },
     "manualControlDeadzone": 0.1
   }

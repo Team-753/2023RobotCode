@@ -20,10 +20,13 @@ class MandibleSubSystem(commands2.SubsystemBase):
         super().__init__()
         self.config = config
         self.actuator = DoubleSolenoid(self.config["RobotDefaultSettings"]["PCM_ID"], PneumaticsModuleType.REVPH, self.config["MandibleConfig"]["DoubleSolenoid"]["ForwardChannel"], self.config["MandibleConfig"]["DoubleSolenoid"]["ReverseChannel"])
+        self.compressor = wpilib.Compressor(self.config["RobotDefaultSettings"]["PCM_ID"], PneumaticsModuleType.REVPH)
+        self.compressor.enableDigital()
         self.leftMotor = VictorSPX(self.config["MandibleConfig"]["LeftMotorID"])
         self.leftMotor.setNeutralMode(NeutralMode.Brake)
         self.rightMotor = VictorSPX(self.config["MandibleConfig"]["RightMotorID"])
         self.rightMotor.setNeutralMode(NeutralMode.Brake)
+        self.rightMotor.setInverted(True)
         self.distanceSensor = playingwithfusion.TimeOfFlight(self.config["MandibleConfig"]["DistanceSensorID"])
         self.distanceSensor.setRangingMode(self.distanceSensor.RangingMode.kShort, 30)
         #self.distanceSensor.setRangeOfInterest(p1, p1, p3, p4) NOTE: may need this
@@ -44,19 +47,19 @@ class MandibleSubSystem(commands2.SubsystemBase):
         
     def intake(self) -> bool:
         ''' NOTE: Needs to check whether or not game piece is fully in the mandible, distance sensor??? will return false until true. '''
-        if self.inControlOfPiece():
+        if False: #if self.inControlOfPiece():
             self.leftMotor.set(VictorSPXControlMode.PercentOutput, 0)
             self.rightMotor.set(VictorSPXControlMode.PercentOutput, 0)
             return True
         else:
-            self.leftMotor.set(VictorSPXControlMode.PercentOutput, 0.5)
-            self.rightMotor.set(VictorSPXControlMode.PercentOutput, 0.5)
+            self.leftMotor.set(VictorSPXControlMode.PercentOutput, -0.5)
+            self.rightMotor.set(VictorSPXControlMode.PercentOutput, -0.5)
             return False
         
     def outtake(self):
         ''' Pretty self-explantory '''
-        self.leftMotor.set(VictorSPXControlMode.PercentOutput, -0.25)
-        self.rightMotor.set(VictorSPXControlMode.PercentOutput, -0.25)
+        self.leftMotor.set(VictorSPXControlMode.PercentOutput, 0.25)
+        self.rightMotor.set(VictorSPXControlMode.PercentOutput, 0.25)
         
     def stop(self):
         ''''''

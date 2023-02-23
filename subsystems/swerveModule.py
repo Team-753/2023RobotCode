@@ -1,7 +1,7 @@
 import ctre
 from wpimath import kinematics, geometry 
 import math
-from ctre import AbsoluteSensorRange, SensorInitializationStrategy
+from ctre.sensors import AbsoluteSensorRange, SensorInitializationStrategy
 from wpilib import SmartDashboard, AnalogEncoder 
 
 class SwerveModule:
@@ -26,7 +26,8 @@ class SwerveModule:
         self.turnMotor.configSelectedFeedbackSensor(ctre.FeedbackDevice.IntegratedSensor, 0, 250)
         
         self.absoluteEncoder = AnalogEncoder(config["encoderID"])
-        self.absoluteEncoder.setPositionOffset(config["encoderOffset"] / 360)
+        self.absoluteOffset = config["encoderOffset"]
+        #self.absoluteEncoder.setPositionOffset(config["encoderOffset"] / 360)
         
         turnMotorConfig = ctre.TalonFXConfiguration()
         turnMotorConfig.absoluteSensorRange = AbsoluteSensorRange.Unsigned_0_to_360
@@ -40,12 +41,7 @@ class SwerveModule:
         turnSupplyCurrentConfig = ctre.SupplyCurrentLimitConfiguration()
         turnSupplyCurrentConfig.currentLimit = 30.0
         turnMotorConfig.supplyCurrLimit = turnSupplyCurrentConfig
-        i = 5
-        while (self.turnMotor.configAllSettings(turnMotorConfig, 50) != 0 and i > 0):
-            print(f"Turn motor configuration on {self.moduleName} failed. Retrying")
-            i -= 1
-            if (i == 0):
-                print(f"Turn motor configuration on {self.moduleName} 5 times has failed. Please intervene.")
+        self.turnMotor.configAllSettings(turnMotorConfig, 50)
         i = 5
         while (self.turnMotor.setSelectedSensorPosition(self.getAbsolutePositionZeroThreeSixty() * self.countsPerRotation * self.turningGearRatio / 360, 0, 50) != 0 and i > 0):
             print(f"Zeroing on {self.moduleName} failed. Retrying")
@@ -66,16 +62,11 @@ class SwerveModule:
         driveSupplyCurrentConfig = ctre.SupplyCurrentLimitConfiguration()
         driveSupplyCurrentConfig.currentLimit = 37.5
         driveMotorConfig.supplyCurrLimit = driveSupplyCurrentConfig
-        i = 5
-        while (self.driveMotor.configAllSettings(driveMotorConfig, 50) != 0 and i > 0):
-            print(f"Drive motor configuration on {self.moduleName} failed. Retrying")
-            i -= 1
-            if (i == 0):
-                print(f"Drive motor configuration on {self.moduleName} 5 times has failed. Please intervene.")
+        self.driveMotor.configAllSettings(driveMotorConfig, 50)
         self.driveMotor.setNeutralMode(ctre.NeutralMode.Coast)
         
     def getAbsolutePositionZeroThreeSixty(self):
-        return self.absoluteEncoder.getAbsolutePosition() * 360 # returns 0-1, multipling by 360 to get degrees
+        return (self.absoluteEncoder.getAbsolutePosition() * 360) - self.absoluteOffset # returns 0-1, multipling by 360 to get degrees
     
     def getWheelAngleRadians(self):
         adjustedRelValDegrees = ((self.turnMotor.getSelectedSensorPosition(0) % (self.countsPerRotation * self.turningGearRatio)) * 360) / (self.countsPerRotation * self.turningGearRatio) # zero to 360 scale

@@ -49,16 +49,18 @@ class MyRobot(commands2.TimedCommandRobot):
     
     def disabledPeriodic(self):
         ''' Runs while the robot is idle '''
-    
+        self.robotContainer.disabledPeriodic()
+        
     def disabledInit(self) -> None:
         '''self.driveTrain.coast()'''
         self.robotContainer.disabledInit()
     
     def testInit(self) -> None:
-        return super().testInit()
+        pass
     
     def testPeriodic(self) -> None:
-        return super().testPeriodic()
+        #self.robotContainer.
+        pass
     
 
 if __name__ == "__main__":
