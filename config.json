@@ -55,7 +55,7 @@
   "RobotDefaultSettings": {
     "fieldOrient": true,
     "robotSpeedLimiter": 1,
-    "robotVelocityLimit": 4,
+    "wheelVelocityLimit": 4,
     "robotAccelerationLimit": 8,
     "DEBUGGING": true,
     "PDH_ID": 60,

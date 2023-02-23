@@ -16,7 +16,7 @@ class ArmSubSystem(commands2.SubsystemBase):
         "midConePlacement": 0.0,
         "highCube": 0.0,
         "midCube": 0.0,
-        "idealDriveExtension": 0.0
+        "optimized": 0.0
     }
     targetValue = 0
     maxHeightInches = 42.5

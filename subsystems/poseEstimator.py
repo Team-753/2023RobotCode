@@ -4,7 +4,7 @@ import photonvision
 from subsystems.driveTrain import DriveTrainSubSystem
 import math
 import commands2
-from wpilib import SmartDashboard
+from wpilib import SmartDashboard, shuffleboard
 from typing import List
 
 class PoseEstimatorSubsystem(commands2.SubsystemBase):
@@ -43,6 +43,8 @@ class PoseEstimatorSubsystem(commands2.SubsystemBase):
                                                                  initialPose, 
                                                                  self.stateStdDevs,
                                                                  self.visionMeasurementStdDevs)
+        self.tab = shuffleboard.Shuffleboard.getTab("Field")
+        self.tab.add("Field", self.field).withPosition(5, 0).withSize(6, 4)
         
     def periodic(self) -> None:
         ''' Call this function with every iteration of your autonomous and teleop loop. '''
@@ -90,6 +92,7 @@ class PoseEstimatorSubsystem(commands2.SubsystemBase):
             self.driveTrain.getNAVXRotation2d(),
             swerveModuleStates)
         currentPose = self.getCurrentPose()
+        self.field.setRobotPose(currentPose)
         SmartDashboard.putNumber("X Position", currentPose.X())
         SmartDashboard.putNumber("Y Position", currentPose.Y())
         SmartDashboard.putNumber("Rotation", currentPose.rotation().degrees())

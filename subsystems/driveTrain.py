@@ -25,7 +25,7 @@ class DriveTrainSubSystem(commands2.SubsystemBase):
             
         self.navx = navx.AHRS.create_spi()
         
-        self.kMaxSpeed = config["RobotDefaultSettings"]["robotVelocityLimit"]
+        self.kMaxSpeed = config["RobotDefaultSettings"]["wheelVelocityLimit"]
         self.wheelBase = self.config["RobotDimensions"]["wheelBase"]
         self.trackWidth = self.config["RobotDimensions"]["trackWidth"]
         
@@ -55,11 +55,9 @@ class DriveTrainSubSystem(commands2.SubsystemBase):
         self.targetPose = geometry.Pose2d()
         self.teleopInitiated = False
         
-        self.navxOffset = 0
-        
         self.currentSpeed = 0
         self.currentHeading = geometry.Rotation2d()
-        self.alliance = DriverStation.getAlliance()
+        self.alliance = DriverStation.Alliance.kBlue # default alliance
         
     def getNAVXRotation2d(self):
         ''' Returns the robot rotation as a Rotation2d object and offsets by a given amount'''
@@ -67,7 +65,6 @@ class DriveTrainSubSystem(commands2.SubsystemBase):
     
     def zeroGyro(self):
         self.navx.reset()
-        self.navxOffset = 0
     
     def drive(self, chassisSpeeds: kinematics.ChassisSpeeds, fieldRelative = True):
         if chassisSpeeds == kinematics.ChassisSpeeds(0, 0, 0):
@@ -110,7 +107,7 @@ class DriveTrainSubSystem(commands2.SubsystemBase):
         if not self.teleopInitiated:
             self.targetPose = currentPose # to prevent our robot from driving off when we enable and don't yet touch the joystick
             self.teleopInitiated = True
-        HOLDPOSITION = True # hard coded for testing
+        HOLDPOSITION = False # hard coded for testing, currently incompatible with some macro commands
         yScalar, xScalar, zScalar = inputs[0], inputs[1], inputs[2] # grabbing our inputs and swapping the respective x and y by default
         if self.alliance == DriverStation.Alliance.kRed: # our field oriented controls would be inverted, so lets fix that
             yScalar = -yScalar
@@ -161,9 +158,9 @@ class DriveTrainSubSystem(commands2.SubsystemBase):
             self.setSwerveStates(xSpeed, ySpeed, zSpeed)
             
         
-    def setSwerveStates(self, xSpeed: float, ySpeed: float, zSpeed: float, fieldOrient = True) -> None:
+    def setSwerveStates(self, xSpeed: float, ySpeed: float, zSpeed: float, currentPose: geometry.Pose2d, fieldOrient = True) -> None:
         if fieldOrient:
-            swerveModuleStates = self.KINEMATICS.toSwerveModuleStates(kinematics.ChassisSpeeds.fromFieldRelativeSpeeds(kinematics.ChassisSpeeds(xSpeed, ySpeed, zSpeed), self.getNAVXRotation2d()))
+            swerveModuleStates = self.KINEMATICS.toSwerveModuleStates(kinematics.ChassisSpeeds.fromFieldRelativeSpeeds(kinematics.ChassisSpeeds(xSpeed, ySpeed, zSpeed), currentPose.rotation()))
         else:
             swerveModuleStates = self.KINEMATICS.toSwerveModuleStates(kinematics.ChassisSpeeds(xSpeed, ySpeed, zSpeed))
         
@@ -196,7 +193,7 @@ class DriveTrainSubSystem(commands2.SubsystemBase):
         self.rearRight.stop()
     
     def balance(self):
-        ''' Needs a lot of work '''
+        ''' Needs to be written '''
     
     def xMode(self):
         ''' Turns the wheels to form an 'X' making the robot immobile without overcoming friction '''  
