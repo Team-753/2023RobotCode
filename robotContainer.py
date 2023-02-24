@@ -141,14 +141,14 @@ class RobotContainer:
         buttonCount = 1
         for g in range(3):
             for s in range(9):
-                button.JoystickButton(self.auxiliaryStreamDeck, buttonCount).onFalse(cmd.runOnce(lambda: self.setTargetGridPosition(g + 1, s + 1), []))
+                button.JoystickButton(self.auxiliaryStreamDeck, buttonCount).onTrue(cmd.runOnce(lambda: self.setTargetGridPosition(g + 1, s + 1), []))
                 buttonCount += 1
         # buttons 1-27 are now assigned to grid placement on the streamdeck
                 
-        button.JoystickButton(self.auxiliaryStreamDeck, 28).onFalse(cmd.runOnce(lambda: self.arm.setPosition("fullyRetracted"), []))
-        button.JoystickButton(self.auxiliaryStreamDeck, 29).onFalse(cmd.runOnce(lambda: self.arm.setPosition("optimized"), []))
-        button.JoystickButton(self.auxiliaryStreamDeck, 30).onFalse(cmd.runOnce(lambda: self.arm.setPosition("substation"), []))
-        button.JoystickButton(self.auxiliaryStreamDeck, 31).onFalse(cmd.runOnce(lambda: self.arm.setPosition("floor"), []))
+        button.JoystickButton(self.auxiliaryStreamDeck, 28).onTrue(cmd.runOnce(lambda: self.arm.setPosition("fullyRetracted"), []))
+        button.JoystickButton(self.auxiliaryStreamDeck, 29).onTrue(cmd.runOnce(lambda: self.arm.setPosition("optimized"), []))
+        button.JoystickButton(self.auxiliaryStreamDeck, 30).onTrue(cmd.runOnce(lambda: self.arm.setPosition("substation"), []))
+        button.JoystickButton(self.auxiliaryStreamDeck, 31).onTrue(cmd.runOnce(lambda: self.arm.setPosition("floor"), []))
     
     def setTargetGridPosition(self, grid: int, position: int):
         '''
@@ -188,7 +188,7 @@ class RobotContainer:
         return adjustedInputs
     
     def getAutonomousCommand(self):
-                self.SwerveAutoBuilder.fullAuto(self.getPathGroup(self.autonomousChooser.getSelected()))
+        return self.SwerveAutoBuilder.fullAuto(self.getPathGroup(self.autonomousChooser.getSelected()))
     
     def getPath(self, pathName: str) -> pathplannerlib.PathPlannerTrajectory:
         return pathplannerlib.PathPlanner.loadPath(pathName, self.pathConstraints, False)
@@ -197,7 +197,7 @@ class RobotContainer:
         return pathplannerlib.PathPlanner.loadPathGroup(groupName, [self.pathConstraints], False)
     
     def teleopInit(self):
-        self.driveTrain.navx.reset() # temporary
+        self.poseEstimator.resetFieldPosition()
         self.driveTrain.alliance = wpilib.DriverStation.getAlliance()
     
     def disabledInit(self):
@@ -235,7 +235,7 @@ class RobotContainer:
         self.poseEstimator.resetFieldPosition()
     
     def testPeriodic(self):
-        cmd.run(lambda: self.driveTrain.setSwerveStates(2, 0, 0, self.poseEstimator.getCurrentPose(), True))
+        cmd.run(lambda: self.driveTrain.setSwerveStates(2, 0, 0, self.poseEstimator.getCurrentPose(), True), [self.driveTrain])
         
     def disabledPeriodic(self):
         '''wpilib.SmartDashboard.putNumber("Front Left", self.driveTrain.frontLeft.getAbsolutePositionZeroThreeSixty())

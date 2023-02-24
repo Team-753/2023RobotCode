@@ -62,22 +62,22 @@
     "PCM_ID": 61
   },
   "autonomousSettings": {
-    "autoVelLimit": 4,
+    "autoVelLimit": 3,
     "autoAccLimit": 3,
     "xPoseToleranceMeters": 0.03,
     "yPoseToleranceMeters": 0.03,
     "thetaPoseToleranceDegrees": 0.5,
     "translationPIDConstants": {
-      "kP": 3,
+      "kP": 1,
       "kI": 0,
       "kD": 0,
-      "period": 0.03
+      "period": 0.035
     },
     "rotationPIDConstants": {
-      "kP": 0.25,
+      "kP": 5,
       "kI": 0,
       "kD": 0,
-      "period": 0.03
+      "period": 0.035
     }
   },
   "driverStation": {
@@ -90,14 +90,14 @@
     },
     "teleoperatedRobotConstants": {
       "translationPIDConstants": {
-        "kP": 1,
-        "kI": 0.005,
+        "kP": 0,
+        "kI": 0,
         "kD": 0,
         "period": 0.03
       },
       "rotationPIDConstants": {
-        "kP": 0.25,
-        "kI": 0.0025,
+        "kP": 0.0,
+        "kI": 0.0,
         "kD": 0,
         "period": 0.03
       },
@@ -110,8 +110,8 @@
   },
   "MandibleConfig": {
     "DoubleSolenoid": {
-      "ForwardChannel": 0,
-      "ReverseChannel": 1
+      "ForwardChannel": 1,
+      "ReverseChannel": 0
     },
     "LeftMotorID": 10,
     "RightMotorID": 11,

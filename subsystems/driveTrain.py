@@ -61,19 +61,22 @@ class DriveTrainSubSystem(commands2.SubsystemBase):
         
     def getNAVXRotation2d(self):
         ''' Returns the robot rotation as a Rotation2d object and offsets by a given amount'''
-        return self.navx.getRotation2d().rotateBy(geometry.Rotation2d(radians(self.navxOffset)))
+        return self.navx.getRotation2d()
     
     def zeroGyro(self):
         self.navx.reset()
     
     def drive(self, chassisSpeeds: kinematics.ChassisSpeeds, fieldRelative = True):
         if chassisSpeeds == kinematics.ChassisSpeeds(0, 0, 0):
-            self.coast()
+            self.brake()
             self.currentSpeed = 0
         else:
             self.currentSpeed = hypot(chassisSpeeds.vx, chassisSpeeds.vy)
+            wpilib.SmartDashboard.putNumber("targetVX", chassisSpeeds.vx)
+            wpilib.SmartDashboard.putNumber("targetVY", chassisSpeeds.vy)
+            wpilib.SmartDashboard.putNumber("targetVZ", chassisSpeeds.omega)
             if fieldRelative:
-                swerveModuleStates = self.KINEMATICS.toSwerveModuleStates(kinematics.ChassisSpeeds.fromFieldRelativeSpeeds(chassisSpeeds, self.getNAVXRotation2d()))
+                swerveModuleStates = self.KINEMATICS.toSwerveModuleStates(kinematics.ChassisSpeeds.fromFieldRelativeSpeeds(chassisSpeeds.vy, -chassisSpeeds.vx, -chassisSpeeds.omega, self.getNAVXRotation2d()))
             else:
                 swerveModuleStates = self.KINEMATICS.toSwerveModuleStates(chassisSpeeds)
             
@@ -127,7 +130,7 @@ class DriveTrainSubSystem(commands2.SubsystemBase):
                     zSpeed = self.rotationPID.calculate(currentPose.rotation().radians(), self.targetPose.rotation().radians())
                 else:
                     zSpeed = 0
-                self.setSwerveStates(xSpeed, ySpeed, zSpeed) # we want to actually slow down in a normal capacity to facilitate finer control
+                self.setSwerveStates(xSpeed, ySpeed, zSpeed, currentPose) # we want to actually slow down in a normal capacity to facilitate finer control
             else:
                 self.coast() # for when we just want to "drift" after letting go of the joystick
         else:
@@ -155,7 +158,7 @@ class DriveTrainSubSystem(commands2.SubsystemBase):
             else:
                 self.targetPose = geometry.Pose2d(geometry.Translation2d(self.targetPose.X(), self.targetPose.Y()), currentPose.rotation())
                 zSpeed = zScalar * self.kMaxSpeed
-            self.setSwerveStates(xSpeed, ySpeed, zSpeed)
+            self.setSwerveStates(xSpeed, ySpeed, zSpeed, currentPose)
             
         
     def setSwerveStates(self, xSpeed: float, ySpeed: float, zSpeed: float, currentPose: geometry.Pose2d, fieldOrient = True) -> None:
@@ -190,6 +193,17 @@ class DriveTrainSubSystem(commands2.SubsystemBase):
         self.rearLeft.setNeutralMode(NeutralMode.Coast)
         self.rearLeft.stop()
         self.rearRight.setNeutralMode(NeutralMode.Coast)
+        self.rearRight.stop()
+    
+    def coast(self):
+        ''' Whenever you don't want to power the wheels '''
+        self.frontLeft.setNeutralMode(NeutralMode.Brake)
+        self.frontLeft.stop()
+        self.frontRight.setNeutralMode(NeutralMode.Brake)
+        self.frontRight.stop()
+        self.rearLeft.setNeutralMode(NeutralMode.Brake)
+        self.rearLeft.stop()
+        self.rearRight.setNeutralMode(NeutralMode.Brake)
         self.rearRight.stop()
     
     def balance(self):

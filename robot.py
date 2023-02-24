@@ -56,11 +56,10 @@ class MyRobot(commands2.TimedCommandRobot):
         self.robotContainer.disabledInit()
     
     def testInit(self) -> None:
-        pass
+        self.robotContainer.testInit()
     
     def testPeriodic(self) -> None:
-        #self.robotContainer.
-        pass
+        self.robotContainer.testPeriodic()
     
 
 if __name__ == "__main__":

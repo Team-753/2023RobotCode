@@ -81,6 +81,7 @@ class MandibleSubSystem(commands2.SubsystemBase):
         else:
             return False
         '''
+        return False
         if self.distanceSensor.getRange() <= self.gamePieceInPossessionDistance:
             return True
         else:

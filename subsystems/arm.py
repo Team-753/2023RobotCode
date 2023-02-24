@@ -8,15 +8,15 @@ class ArmSubSystem(commands2.SubsystemBase):
     
     constants = { # what encoder value the arm's lead screw motor should go to according to the needed position
         "fullyRetracted": 0.0,
-        "substation": 0.0,
-        "floor": 0.0,
-        "highConePrep": 35.0,
-        "highConePlacement": 0.0,
-        "midConePrep": 0.0,
-        "midConePlacement": 0.0,
+        "substation": 37.9,
+        "floor": 42,
+        "highConePrep": 35.45,
+        "highConePlacement": 37.16,
+        "midConePrep": 37.6,
+        "midConePlacement": 38.5,
         "highCube": 0.0,
         "midCube": 0.0,
-        "optimized": 0.0
+        "optimized": 21.5
     }
     targetValue = 0
     maxHeightInches = 42.5
@@ -73,6 +73,7 @@ class ArmSubSystem(commands2.SubsystemBase):
         else: # arm is zeroed, proceed as normal
             self.armFalcon.set(ctre.ControlMode.Position, self.targetValue / self.encoderTicksToDistanceConversionFactor)
             wpilib.SmartDashboard.putNumber("arm target position", self.targetValue)
+            wpilib.SmartDashboard.putNumber("arm actual position", self.armFalcon.getSelectedSensorPosition(0) * self.encoderTicksToDistanceConversionFactor)
         return super().periodic()
     
     def reZero(self):
@@ -81,6 +82,7 @@ class ArmSubSystem(commands2.SubsystemBase):
 
     def setPosition(self, position: str):
         self.targetValue = self.constants[position] # turning a string position into a value via a dictionary
+        wpilib.SmartDashboard.putNumber("arm target position", self.targetValue)
         
     def coast(self):
         ''''''

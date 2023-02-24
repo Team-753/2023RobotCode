@@ -88,7 +88,7 @@ class SwerveModule:
         SmartDashboard.putNumber(f"{self.moduleName} Absolute:", self.getAbsolutePositionZeroThreeSixty())
         
     def getSwerveModuleState(self):
-        distanceMeters = self.driveMotor.getSelectedSensorPosition(0) * self.wheelDiameter * math.pi / (self.countsPerRotation * self.drivingGearRatio) # converting the clicks into distance values, in this case, meters
+        distanceMeters = -self.driveMotor.getSelectedSensorPosition(0) * self.wheelDiameter * math.pi / (self.countsPerRotation * self.drivingGearRatio) # converting the clicks into distance values, in this case, meters
         angle = self.getTurnWheelState()
         return kinematics.SwerveModulePosition(distanceMeters, angle)
     
