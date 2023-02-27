@@ -9,7 +9,7 @@ class ArmSubSystem(commands2.SubsystemBase):
     constants = { # what encoder value the arm's lead screw motor should go to according to the needed position
         "fullyRetracted": 0.0,
         "substation": 37.9,
-        "floor": 42,
+        "floor": 41.5,
         "highConePrep": 35.45,
         "highConePlacement": 37.16,
         "midConePrep": 37.6,
@@ -52,6 +52,7 @@ class ArmSubSystem(commands2.SubsystemBase):
         self.armFalcon.configAllSettings(armFalconConfig, 250)
         wpilib.SmartDashboard.putBoolean("arm zeroed", False)
         self.armStringPosition = "fullyRetracted"
+        self.tolerance = self.config["ArmConfig"]["autoPlacementTolerance"]
 
     def periodic(self) -> None:
         ''' Runs every 20ms in all modes, keep that in mind Joe. '''
@@ -91,7 +92,13 @@ class ArmSubSystem(commands2.SubsystemBase):
         
     def brake(self):
         ''''''
-        
+    
+    def atSetpoint(self):
+        if abs(self.targetValue - self.armFalcon.getSelectedSensorPosition(0) * self.encoderTicksToDistanceConversionFactor) < self.tolerance: # the arm is within the tolerance position threshold
+            return True
+        return False
+            
+    
     def manualControlIncrementor(self, scalar: float):
         ''' As the function name says, will need some kind of linear/nonlinear scalar value as the arm speed is very non linear. '''
         increment = scalar * self.maxSpeedPer30MS

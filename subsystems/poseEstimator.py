@@ -87,7 +87,7 @@ class PoseEstimatorSubsystem(commands2.SubsystemBase):
         #derivedState = self.driveTrain.KINEMATICS.toTwist2d(swerveModuleStates[0], swerveModuleStates[1], swerveModuleStates[2], swerveModuleStates[3])
         #self.velocity = math.hypot(derivedState.dx, derivedState.dy)
         #self.heading = geometry.Rotation2d(math.atan2(derivedState.dy, derivedState.dx))
-        self.chassisSpeeds = self.driveTrain.KINEMATICS.toChassisSpeeds(swerveModuleStates[0], swerveModuleStates[1], swerveModuleStates[2], swerveModuleStates[3])
+
         
         self.poseEstimator.update(
             self.driveTrain.getNAVXRotation2d(),

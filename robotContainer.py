@@ -35,7 +35,6 @@ class RobotContainer:
     for pathName in tempAutoList:
         if pathName != "Taxi.path":   
             autoList.append(pathName.removesuffix(".path"))
-    print(autoList)
     maxAngularVelocity = config["autonomousSettings"]["autoVelLimit"] / math.hypot(config["RobotDimensions"]["trackWidth"] / 2, config["RobotDimensions"]["wheelBase"] / 2)
     photonCameras = [photonvision.PhotonCamera("photonCameraOne")]
     targetGridPosition = (2, 5)
@@ -101,15 +100,18 @@ class RobotContainer:
         self.joystickButtonFour = button.JoystickButton(self.joystick, 4)
         self.joystickButtonFour.whileHeld(cmd.run(lambda: self.driveTrain.xMode(), [self.driveTrain]))
         
-        self.joystickButtonTwo = button.JoystickButton(self.joystick, 2) # using this as a universal button for macros
+        self.joystickButtonTwo = button.JoystickButton(self.joystick, 2)
         self.joystickButtonTwo.whileHeld(PlaceOnGridCommand(self.SwerveAutoBuilder, 
                                                             self.mandible, 
                                                             self.arm, 
                                                             self.poseEstimator, 
+                                                            self.driveTrain, 
                                                             self.pathConstraints, 
                                                             self.eventMap, 
                                                             self.joystick, 
-                                                            self.auxiliaryStreamDeck))
+                                                            False, 
+                                                            self.targetGridPosition, 
+                                                            self.config))
         
         self.joystickButtonThree = button.JoystickButton(self.joystick, 3)
         self.joystickButtonThree.whileHeld(SubstationPickupCommand(self.SwerveAutoBuilder, 

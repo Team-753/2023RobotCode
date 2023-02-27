@@ -160,7 +160,7 @@ class DriveTrainSubSystem(commands2.SubsystemBase):
                 zSpeed = zScalar * self.kMaxSpeed
             self.setSwerveStates(xSpeed, ySpeed, zSpeed, currentPose)
     
-    def joystickDriveThetaOverride(self, inputs: list, currentPose: geometry.Pose2d, rotationOverride = geometry.Rotation2d()):
+    def joystickDriveThetaOverride(self, inputs: list, currentPose: geometry.Pose2d, rotationOverride: geometry.Rotation2d) -> None:
         '''
         Drives the robot in teleop using PIDs to assist in keeping the robot where the operator wants to go.
         - Locks rotation to the last angle when over the twist threshold
@@ -170,6 +170,7 @@ class DriveTrainSubSystem(commands2.SubsystemBase):
             - Foreseeable issues with extremely quick motions and possible switching of directions.
             - To fix the latter, maybe implement some way where we don't set our target pose until the velocity of that axis has reached near-zero
         '''
+        rotationOverridePose = geometry.Pose2d(geometry.Translation2d(), rotationOverride)
         yScalar, xScalar = inputs[0], inputs[1] # grabbing our inputs and swapping the respective x and y by default
         if self.alliance == DriverStation.Alliance.kRed: # our field oriented controls would be inverted, so lets fix that
             yScalar = -yScalar
@@ -191,7 +192,7 @@ class DriveTrainSubSystem(commands2.SubsystemBase):
         else:
             self.targetPose = geometry.Pose2d(geometry.Translation2d(self.targetPose.X(), currentPose.Y()), self.targetPose.rotation())
             ySpeed = yScalar * self.kMaxSpeed
-        if (abs(currentPose.relativeTo(rotationOverride).rotation().radians()) > self.poseTolerance.rotation().radians()): # we are over the tolerance threshold
+        if (abs(currentPose.relativeTo(rotationOverridePose).rotation().radians()) > self.poseTolerance.rotation().radians()): # we are over the tolerance threshold
             zSpeed = self.rotationPID.calculate(currentPose.rotation().radians(), rotationOverride.radians()) # keep in mind this is not a scalar, this is a speed
         else:
             zSpeed = 0
@@ -257,11 +258,18 @@ class DriveTrainSubSystem(commands2.SubsystemBase):
         self.rearRight.xMode()
         
     def getSwerveModulePositions(self):
-        positions = (self.frontLeft.getSwerveModuleState(), 
+        positions = (self.frontLeft.getSwerveModulePosition(), 
+               self.frontRight.getSwerveModulePosition(), 
+               self.rearLeft.getSwerveModulePosition(), 
+               self.rearRight.getSwerveModulePosition())
+        return positions
+    
+    def actualChassiSpeeds(self) -> kinematics.ChassisSpeeds:
+        states = (self.frontLeft.getSwerveModuleState(), 
                self.frontRight.getSwerveModuleState(), 
                self.rearLeft.getSwerveModuleState(), 
                self.rearRight.getSwerveModuleState())
-        return positions
+        return self.KINEMATICS.toChassisSpeeds(states[0], states[1], states[2], states[3])
         
     def resetSwerves(self):
         self.frontLeft.reZeroMotors()

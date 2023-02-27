@@ -87,10 +87,15 @@ class SwerveModule:
         SmartDashboard.putNumber(f"{self.moduleName} Relative:", adjustedRelValDegrees)
         SmartDashboard.putNumber(f"{self.moduleName} Absolute:", self.getAbsolutePositionZeroThreeSixty())
         
-    def getSwerveModuleState(self):
+    def getSwerveModulePosition(self):
         distanceMeters = -self.driveMotor.getSelectedSensorPosition(0) * self.wheelDiameter * math.pi / (self.countsPerRotation * self.drivingGearRatio) # converting the clicks into distance values, in this case, meters
         angle = self.getTurnWheelState()
         return kinematics.SwerveModulePosition(distanceMeters, angle)
+    
+    def getSwerveModuleState(self):
+        velocityMetersPerSecond = (-self.driveMotor.getSelectedSensorVelocity(0) * 10 * self.wheelDiameter * math.pi) / (self.countsPerRotation * self.drivingGearRatio)
+        angle = self.getTurnWheelState()
+        return kinematics.SwerveModuleState(velocityMetersPerSecond, angle)
     
     def setStateTurnOnly(self, desiredStateAngle):
         #state.angle.rotateBy(geometry.Rotation2d(math.pi)) TODO: test this instead

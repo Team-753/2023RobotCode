@@ -9,15 +9,24 @@ class MandibleOuttakeCommand(commands2.CommandBase):
         super().__init__()
         self.addRequirements(mandibleSubSystem)
         self.mandible = mandibleSubSystem
+        self.timer = wpilib.Timer()
+        self.wait = 0.25
         '''
         Depending on implementation, may need to add an extra timer-based failsafe for this
         '''
+    
+    def initialize(self) -> None:
+        self.timer.start()
     
     def execute(self) -> None:
         self.mandible.outtake()
     
     def end(self, interrupted: bool) -> None:
         self.mandible.stop()
+        self.timer.stop()
+        
+    def isFinished(self) -> bool:
+        return self.timer.hasElapsed(self.wait)
 
 class MandibleIntakeCommand(commands2.CommandBase):
     ''' Command for setting the mandible to intake until it detects a game piece. '''

@@ -12,6 +12,8 @@ from subsystems.mandible import MandibleSubSystem
 from subsystems.arm import ArmSubSystem
 from subsystems.poseEstimator import PoseEstimatorSubsystem
 from subsystems.driveTrain import DriveTrainSubSystem
+from commands.armConfirmPlacementCommand import ArmConfirmPlacementCommand
+from commands.mandibleCommands import MandibleIntakeCommand, MandibleOuttakeCommand
 
 class PlaceOnGridCommand(commands2.CommandBase):
     GridLayout =  [
@@ -131,8 +133,14 @@ class PlaceOnGridCommand(commands2.CommandBase):
         ]
     ]
     FieldWidth = 16.54175
+    highConeOffset = 1.88595
+    highCubeOffset = 2 # this
+    midConeOffset = 2 # this
+    midCubeOffset = 2.15 # this
+    lowConeOffset = 1.5 # this
+    lowCubeOffset = 1.65 # and this are all total guesses, check them please
     
-    def __init__(self, SwerveAutoBuilder: SwerveAutoBuilder, Mandible: MandibleSubSystem, Arm: ArmSubSystem, PoseEstimator: PoseEstimatorSubsystem, DriveTrain: DriveTrainSubSystem, Constraints: pathplannerlib.PathConstraints, EventMap: dict, DriverJoystick: wpilib.Joystick, isAutonomous: bool, targetGridSlot: List[int, int], config: dict) -> None:
+    def __init__(self, SwerveAutoBuilder: SwerveAutoBuilder, Mandible: MandibleSubSystem, Arm: ArmSubSystem, PoseEstimator: PoseEstimatorSubsystem, DriveTrain: DriveTrainSubSystem, Constraints: pathplannerlib.PathConstraints, EventMap: dict, DriverJoystick: button.CommandJoystick, isAutonomous: bool, targetGridSlot: list, config: dict) -> None:
         super().__init__()
         self.addRequirements([Mandible, Arm, DriveTrain])
         self.swerveAutoBuilder = SwerveAutoBuilder
@@ -140,7 +148,7 @@ class PlaceOnGridCommand(commands2.CommandBase):
         self.arm = Arm
         self.poseEstimator = PoseEstimator
         self.eventMap = EventMap
-        self.driverJoystick = DriverJoystick
+        self.joystick = DriverJoystick
         self.constraints = Constraints
         self.driveTrain = DriveTrain
         self.isAutonomous = isAutonomous
@@ -149,20 +157,24 @@ class PlaceOnGridCommand(commands2.CommandBase):
         
         
     def initialize(self) -> None:
+        self.myTimeHasCome = False
         self.currentPose = self.poseEstimator.getCurrentPose()
-        self.sequence = self.getTargetGridValues(self.targetGridSlot[0], self.targetGridSlot[1])
-        self.arm.setPosition(self.sequence[1])
+        self.onlySetArmPosition(self.targetGridSlot[1])
         if self.isAutonomous:
-            onLeFlyTJ = pathplannerlib.PathPlanner.generatePath(self.constraints, [pathplannerlib.PathPoint.fromCurrentHolonomicState(self.currentPose, self.poseEstimator.chassisSpeeds), self.sequence[0]])
-            cmd.sequence([self.swerveAutoBuilder.followPath(onLeFlyTJ), self.sequence[2]])
+            self.sequence = self.getTargetGridValues(self.targetGridSlot[0], self.targetGridSlot[1])
+            onLeFlyTJ = self.swerveAutoBuilder.followPath(pathplannerlib.PathPlanner.generatePath(self.constraints, [pathplannerlib.PathPoint.fromCurrentHolonomicState(self.currentPose, self.driveTrain.actualChassiSpeeds()), pathplannerlib.PathPoint(self.sequence[0].translation(), geometry.Rotation2d(), self.sequence[0].rotation())]))
+            commands2.SequentialCommandGroup(onLeFlyTJ, self.sequence[1], cmd.runOnce(lambda: self.finished(), []))
             
-            
+    def finished(self):
+        self.myTimeHasCome = True
     
     def execute(self) -> None:
-        self.currentPose = self.poseEstimator.getCurrentPose()
         if not self.isAutonomous: # well shit it ain't autonomous that's for sure
-            if self.driverJoystick.getRawButton(1): # is the driver pulling the trigger (confirming game piece placement)
-                pass
+            self.currentPose = self.poseEstimator.getCurrentPose()
+            if self.joystick.getRawButton(1): # is the driver pulling the trigger (confirming game piece placement)
+                self.sequence = self.getTargetGridValues(self.targetGridSlot[0], self.targetGridSlot[1])
+                onLeFlyTJ = self.swerveAutoBuilder.followPath(pathplannerlib.PathPlanner.generatePath(self.constraints, [pathplannerlib.PathPoint.fromCurrentHolonomicState(self.currentPose, self.driveTrain.actualChassiSpeeds()), pathplannerlib.PathPoint(self.sequence[0].translation(), geometry.Rotation2d(), self.sequence[0].rotation())]))
+                commands2.SequentialCommandGroup(onLeFlyTJ, self.sequence[1], cmd.runOnce(lambda: self.finished(), []))
             else: # they are just holding the side button
                 targetRotation = self.calculateRobotAngle(self.currentPose)
                 inputs = (self.joystick.getX(), self.joystick.getY())
@@ -176,26 +188,64 @@ class PlaceOnGridCommand(commands2.CommandBase):
                     else:
                         adjustedValue = 0
                     adjustedInputs.append(adjustedValue)
-                self.driveTrain.joystickDrive(adjustedInputs, self.currentPose)
-            
-    def end(self, interrupted: bool) -> None:
-        return super().end(interrupted)
+                self.driveTrain.joystickDriveThetaOverride(adjustedInputs, self.currentPose, targetRotation)
     
     def isFinished(self) -> bool:
-        return super().isFinished()
+        return self.myTimeHasCome
     
-    def adjustToRedAlliance(self, xCoordinate: float):
-        return self.FieldWidth - xCoordinate
-    
-    def getTargetGridValues(self, grid: int, slot: int) -> Tuple[geometry.Pose2d, str, List[commands2.Command]]: # returns geometry.Pose2d, armPosition: str, List[commands2.Command]
+    def getTargetGridValues(self, grid: int, slot: int) -> Tuple[geometry.Pose2d, commands2.Command]:
         targetCoordinates = self.GridLayout[grid][slot]
-        if slot > 3: # mid-row
-            pass
+        allianceFactor = 1
+        if wpilib.DriverStation.getAlliance() == wpilib.DriverStation.Alliance.kRed: # we have to flip the x-coordinate if we are on red alliance because the placement coordinate system is based off blue alliance
+            targetCoordinates[0] = self.FieldWidth - targetCoordinates[0]
+            allianceFactor = -1
+        mandibleMode = self.mandible.state
+        if slot < 4: # low-row
+            if mandibleMode == "cone":
+                offset = self.lowConeOffset
+                placementSequence = cmd.sequence(ArmConfirmPlacementCommand(self.arm, "floor"), cmd.runOnce(lambda: self.mandible.setState('cube'), [self.mandible]), cmd.runOnce(lambda: self.arm.setPosition("optimized"), [self.arm]))
+            else:
+                offset = self.lowCubeOffset
+                placementSequence = cmd.sequence(ArmConfirmPlacementCommand(self.arm, "floor"), MandibleOuttakeCommand(self.mandible), cmd.runOnce(lambda: self.arm.setPosition("optimized"), [self.arm]))
+            robotAngle = self.calculateRobotAngle(self.poseEstimator.getCurrentPose())
+            piecePlacement = geometry.Pose2d(geometry.Translation2d(x = targetCoordinates[0], y = targetCoordinates[1]), geometry.Rotation2d())
+            robotPose = piecePlacement.transformBy(geometry.Transform2d(translation = geometry.Translation2d(x = -offset, y = 0), rotation = robotAngle)) # if errors persist, try making the offset positive
         elif slot > 6: # high-row
-            pass
-        else: # low-row
-            pass
+            # our only placement option is perpindicular to the grid and right up against it
+            # first we have to calculate our required robot position
+            if mandibleMode == "cone":
+                offset = self.highConeOffset
+                placementSequence = cmd.sequence(ArmConfirmPlacementCommand(self.arm, "highConePrep"), ArmConfirmPlacementCommand(self.arm, "highConePlacement"), cmd.runOnce(lambda: self.mandible.setState('cube'), [self.mandible]), cmd.runOnce(lambda: self.arm.setPosition("optimized"), [self.arm]))
+            else:
+                offset = self.highCubeOffset
+                placementSequence = cmd.sequence(ArmConfirmPlacementCommand(self.arm, "highCube"), MandibleOuttakeCommand(self.mandible), cmd.runOnce(lambda: self.arm.setPosition("optimized"), [self.arm]))
+            robotPose = geometry.Pose2d(targetCoordinates[0] + (offset * allianceFactor), targetCoordinates[1], geometry.Rotation2d(-1, 0))
+        else: # mid-row
+            if mandibleMode == "cone":
+                offset = self.midConeOffset
+                placementSequence = cmd.sequence(ArmConfirmPlacementCommand(self.arm, "midConePrep"), ArmConfirmPlacementCommand(self.arm, "midConePlacement"), cmd.runOnce(lambda: self.mandible.setState('cube'), [self.mandible]), cmd.runOnce(lambda: self.arm.setPosition("optimized"), [self.arm]))
+            else:
+                offset = self.midCubeOffset
+                placementSequence = cmd.sequence(ArmConfirmPlacementCommand(self.arm, "midCube"), MandibleOuttakeCommand(self.mandible), cmd.runOnce(lambda: self.arm.setPosition("optimized"), [self.arm]))
+            robotAngle = self.calculateRobotAngle(self.poseEstimator.getCurrentPose())
+            piecePlacement = geometry.Pose2d(geometry.Translation2d(x = targetCoordinates[0], y = targetCoordinates[1]), geometry.Rotation2d())
+            robotPose = piecePlacement.transformBy(geometry.Transform2d(translation = geometry.Translation2d(x = -offset, y = 0), rotation = robotAngle))
+        return robotPose, placementSequence
+    
+    def onlySetArmPosition(self, slot: int) -> None:
+        if slot < 4: # low-row
+            self.arm.setPosition("floor")
+        elif slot > 6: # high-row
+            if self.mandible.state == "cone":
+                self.arm.setPosition("highConePrep")
+            else:
+                self.arm.setPosition("highCube")
+        else: # mid-row
+            if self.mandible.state == "cone":
+                self.arm.setPosition("midConePrep")
+            else:
+                self.arm.setPosition("midCube")
         
     def calculateRobotAngle(self, currentPose: geometry.Pose2d) -> geometry.Rotation2d:
         targetCoordinates = self.GridLayout[self.targetGridSlot[0]][self.targetGridSlot[1]]
-        return geometry.Rotation2d(targetCoordinates[0] - currentPose.x, targetCoordinates[1] - currentPose.y)
+        return geometry.Rotation2d(targetCoordinates[0] - currentPose.X(), targetCoordinates[1] - currentPose.X())

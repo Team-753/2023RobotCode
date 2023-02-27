@@ -120,7 +120,7 @@ class SwerveAutoBuilder:
             commands.append(self.stopEventGroup(trajectory.getStartStopEvent()))
             commands.append(self.followPathWithEvents(trajectory))
         
-        commands.append(self.stopEventGroup(trajectoryGroup[len(trajectoryGroup) -1].getEndStopEvent()))
+        commands.append(self.stopEventGroup(trajectoryGroup[len(trajectoryGroup) - 1].getEndStopEvent()))
         
         return cmd.sequence(commands)
         
