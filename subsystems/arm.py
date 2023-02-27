@@ -51,6 +51,7 @@ class ArmSubSystem(commands2.SubsystemBase):
         self.armFalcon.setNeutralMode(ctre.NeutralMode.Brake)
         self.armFalcon.configAllSettings(armFalconConfig, 250)
         wpilib.SmartDashboard.putBoolean("arm zeroed", False)
+        self.armStringPosition = "fullyRetracted"
 
     def periodic(self) -> None:
         ''' Runs every 20ms in all modes, keep that in mind Joe. '''
@@ -82,6 +83,7 @@ class ArmSubSystem(commands2.SubsystemBase):
 
     def setPosition(self, position: str):
         self.targetValue = self.constants[position] # turning a string position into a value via a dictionary
+        self.armStringPosition = position
         wpilib.SmartDashboard.putNumber("arm target position", self.targetValue)
         
     def coast(self):

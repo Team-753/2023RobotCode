@@ -1,6 +1,7 @@
 from controllers.ppHolonomicDriveController import PPHolonomicDriveController
 from wpimath import controller, geometry, kinematics
 import math
+from typing import List
 import commands2
 from pathplannerlib import PathPlannerTrajectory
 from subsystems.poseEstimator import PoseEstimatorSubsystem
@@ -10,7 +11,7 @@ from wpimath import controller
 
 class PPSwerveDriveController(commands2.CommandBase):
     
-    def __init__(self, trajectory: PathPlannerTrajectory, driveTrain: DriveTrainSubSystem, poseEstimator: PoseEstimatorSubsystem, xController: controller.PIDController, yController: controller.PIDController, thetaController: controller.PIDController, useAllianceColor: bool, tolerance: geometry.Pose2d) -> None:
+    def __init__(self, trajectory: PathPlannerTrajectory, driveTrain: DriveTrainSubSystem, poseEstimator: PoseEstimatorSubsystem, xController: controller.PIDController, yController: controller.PIDController, thetaController: List[dict], useAllianceColor: bool, tolerance: geometry.Pose2d) -> None:
         super().__init__()
         self.trajectory = trajectory
         self.useAllianceColor = useAllianceColor

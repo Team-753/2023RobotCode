@@ -8,7 +8,7 @@ class PPHolonomicDriveController:
     rotationError = geometry.Rotation2d()
     enabled = True # default
     
-    def __init__(self, xController: controller.PIDController, yController: controller.PIDController, thetaController: controller.PIDController, tolerance: geometry.Pose2d) -> None:
+    def __init__(self, xController: controller.PIDController, yController: controller.PIDController, thetaController: controller.ProfiledPIDControllerRadians, tolerance: geometry.Pose2d) -> None:
         self.xController = xController
         self.yController = yController
         self.thetaController = thetaController

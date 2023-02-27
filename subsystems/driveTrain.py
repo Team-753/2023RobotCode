@@ -159,6 +159,46 @@ class DriveTrainSubSystem(commands2.SubsystemBase):
                 self.targetPose = geometry.Pose2d(geometry.Translation2d(self.targetPose.X(), self.targetPose.Y()), currentPose.rotation())
                 zSpeed = zScalar * self.kMaxSpeed
             self.setSwerveStates(xSpeed, ySpeed, zSpeed, currentPose)
+    
+    def joystickDriveThetaOverride(self, inputs: list, currentPose: geometry.Pose2d, rotationOverride = geometry.Rotation2d()):
+        '''
+        Drives the robot in teleop using PIDs to assist in keeping the robot where the operator wants to go.
+        - Locks rotation to the last angle when over the twist threshold
+        - Individually locks translation axes to their last relative postion given joystick use of said axis
+        - Possible issues:
+            - PID's are janky, and need to be tested
+            - Foreseeable issues with extremely quick motions and possible switching of directions.
+            - To fix the latter, maybe implement some way where we don't set our target pose until the velocity of that axis has reached near-zero
+        '''
+        yScalar, xScalar = inputs[0], inputs[1] # grabbing our inputs and swapping the respective x and y by default
+        if self.alliance == DriverStation.Alliance.kRed: # our field oriented controls would be inverted, so lets fix that
+            yScalar = -yScalar
+            xScalar = -xScalar
+        poseError = currentPose.relativeTo(self.targetPose) # how far are we off from where our axes setpoints were before?
+        if xScalar == 0: # first we check if 
+            if (abs(poseError.X()) > self.poseTolerance.X()): # we are over the tolerance threshold
+                xSpeed = self.longitudinalPID.calculate(currentPose.X(), self.targetPose.X()) # keep in mind this is not a scalar, this is a speed
+            else:
+                xSpeed = 0
+        else:
+            self.targetPose = geometry.Pose2d(geometry.Translation2d(currentPose.X(), self.targetPose.Y()), self.targetPose.rotation())
+            xSpeed = xScalar * self.kMaxSpeed
+        if yScalar == 0:
+            if (abs(poseError.Y()) > self.poseTolerance.Y()): # we are over the tolerance threshold
+                ySpeed = self.latitudePID.calculate(currentPose.Y(), self.targetPose.Y()) # keep in mind this is not a scalar, this is a speed
+            else:
+                ySpeed = 0 # no need to correct, leave the value alone
+        else:
+            self.targetPose = geometry.Pose2d(geometry.Translation2d(self.targetPose.X(), currentPose.Y()), self.targetPose.rotation())
+            ySpeed = yScalar * self.kMaxSpeed
+        if (abs(currentPose.relativeTo(rotationOverride).rotation().radians()) > self.poseTolerance.rotation().radians()): # we are over the tolerance threshold
+            zSpeed = self.rotationPID.calculate(currentPose.rotation().radians(), rotationOverride.radians()) # keep in mind this is not a scalar, this is a speed
+        else:
+            zSpeed = 0
+        if xSpeed == 0 and ySpeed == 0 and zSpeed == 0:
+            self.stationary()
+        else:
+            self.setSwerveStates(xSpeed, ySpeed, zSpeed, currentPose)
             
         
     def setSwerveStates(self, xSpeed: float, ySpeed: float, zSpeed: float, currentPose: geometry.Pose2d, fieldOrient = True) -> None:

@@ -9,8 +9,8 @@ from typing import List
 
 class PoseEstimatorSubsystem(commands2.SubsystemBase):
     ''' The infrastructure for estimating robot pose based off of vision and wheel odometry data '''
-    visionMeasurementStdDevs = 0.005, 0.005, math.radians(0.1) # change this later
-    stateStdDevs = 0.01, 0.01, math.radians(0.2)  # change this later
+    stateStdDevs = 0.05, 0.05, math.radians(5)
+    visionMeasurementStdDevs = 0.5, 0.5, math.radians(30)
     field = wpilib.Field2d()
     previousPipelineResultTimeStamp = 0 # useless for now...
     camOneRelRobot = geometry.Transform3d(geometry.Translation3d(-0.3302, 0, 0), geometry.Rotation3d(0, 0, 0))
@@ -52,7 +52,7 @@ class PoseEstimatorSubsystem(commands2.SubsystemBase):
         '''
         For this next section of code we are referencing both of our cameras to find the best apriltag to esimate our position off of, if one is available
         '''
-        '''targetList = [] # creating a list to hold our targets and their given ambiguity
+        targetList = [] # creating a list to hold our targets and their given ambiguity
         for camera in self.photonCameras: # indexing through the list
             pipelineResult = camera.getLatestResult()
             resultTimeStamp = pipelineResult.getTimestamp()
@@ -82,11 +82,12 @@ class PoseEstimatorSubsystem(commands2.SubsystemBase):
                     if (abs(difference) > 1): # our navx is off by over a degree as calculated by an apriltag, this is very useful for the start of the match
                         self.driveTrain.navxOffset = difference # setting the new navx offset
             else:
-                i += 1'''
+                i += 1
         swerveModuleStates = self.driveTrain.getSwerveModulePositions()
-        derivedState = self.driveTrain.KINEMATICS.toTwist2d(swerveModuleStates[0], swerveModuleStates[1], swerveModuleStates[2], swerveModuleStates[3])
-        self.velocity = math.hypot(derivedState.dx, derivedState.dy)
-        self.heading = geometry.Rotation2d(math.atan2(derivedState.dy, derivedState.dx))
+        #derivedState = self.driveTrain.KINEMATICS.toTwist2d(swerveModuleStates[0], swerveModuleStates[1], swerveModuleStates[2], swerveModuleStates[3])
+        #self.velocity = math.hypot(derivedState.dx, derivedState.dy)
+        #self.heading = geometry.Rotation2d(math.atan2(derivedState.dy, derivedState.dx))
+        self.chassisSpeeds = self.driveTrain.KINEMATICS.toChassisSpeeds(swerveModuleStates[0], swerveModuleStates[1], swerveModuleStates[2], swerveModuleStates[3])
         
         self.poseEstimator.update(
             self.driveTrain.getNAVXRotation2d(),

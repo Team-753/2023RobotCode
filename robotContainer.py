@@ -37,7 +37,7 @@ class RobotContainer:
             autoList.append(pathName.removesuffix(".path"))
     print(autoList)
     maxAngularVelocity = config["autonomousSettings"]["autoVelLimit"] / math.hypot(config["RobotDimensions"]["trackWidth"] / 2, config["RobotDimensions"]["wheelBase"] / 2)
-    photonCameras = [photonvision.PhotonCamera("photonCameraOne"), photonvision.PhotonCamera("photonCameraOne")]
+    photonCameras = [photonvision.PhotonCamera("photonCameraOne")]
     targetGridPosition = (2, 5)
     
     def __init__(self) -> None:
@@ -138,6 +138,7 @@ class RobotContainer:
     
     def initializeStreamDeck(self):
         # making an algorithm to automajically assign buttons to set the target grid and position
+        # TODO IMPORTANT: Flip stream deck inputs based off alliance, being on red alliance would flip the game piece slot *drastically*
         buttonCount = 1
         for g in range(3):
             for s in range(9):

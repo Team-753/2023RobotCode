@@ -16,6 +16,10 @@ What do you need to know to be able to understand the code:
 
 '''
 class MyRobot(commands2.TimedCommandRobot):
+    
+    def __init__(self, period = 0.03) -> None:
+        super().__init__(period)
+        
     def robotInit(self):
         self.robotContainer = RobotContainer()
         self.autoCommand = commands2.Command()
