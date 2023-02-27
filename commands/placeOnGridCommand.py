@@ -162,6 +162,7 @@ class PlaceOnGridCommand(commands2.CommandBase):
         self.onlySetArmPosition(self.targetGridSlot[1])
         if self.isAutonomous:
             self.sequence = self.getTargetGridValues(self.targetGridSlot[0], self.targetGridSlot[1])
+            self.swerveAutoBuilder.useAllianceColor = False
             onLeFlyTJ = self.swerveAutoBuilder.followPath(pathplannerlib.PathPlanner.generatePath(self.constraints, [pathplannerlib.PathPoint.fromCurrentHolonomicState(self.currentPose, self.driveTrain.actualChassiSpeeds()), pathplannerlib.PathPoint(self.sequence[0].translation(), geometry.Rotation2d(), self.sequence[0].rotation())]))
             commands2.SequentialCommandGroup(onLeFlyTJ, self.sequence[1], cmd.runOnce(lambda: self.finished(), []))
             
@@ -173,6 +174,7 @@ class PlaceOnGridCommand(commands2.CommandBase):
             self.currentPose = self.poseEstimator.getCurrentPose()
             if self.joystick.getRawButton(1): # is the driver pulling the trigger (confirming game piece placement)
                 self.sequence = self.getTargetGridValues(self.targetGridSlot[0], self.targetGridSlot[1])
+                self.swerveAutoBuilder.useAllianceColor = False
                 onLeFlyTJ = self.swerveAutoBuilder.followPath(pathplannerlib.PathPlanner.generatePath(self.constraints, [pathplannerlib.PathPoint.fromCurrentHolonomicState(self.currentPose, self.driveTrain.actualChassiSpeeds()), pathplannerlib.PathPoint(self.sequence[0].translation(), geometry.Rotation2d(), self.sequence[0].rotation())]))
                 commands2.SequentialCommandGroup(onLeFlyTJ, self.sequence[1], cmd.runOnce(lambda: self.finished(), []))
             else: # they are just holding the side button
@@ -249,3 +251,7 @@ class PlaceOnGridCommand(commands2.CommandBase):
     def calculateRobotAngle(self, currentPose: geometry.Pose2d) -> geometry.Rotation2d:
         targetCoordinates = self.GridLayout[self.targetGridSlot[0]][self.targetGridSlot[1]]
         return geometry.Rotation2d(targetCoordinates[0] - currentPose.X(), targetCoordinates[1] - currentPose.X())
+    
+    def end(self, interrupted: bool) -> None:
+        self.swerveAutoBuilder.useAllianceColor = True
+        return super().end(interrupted)
