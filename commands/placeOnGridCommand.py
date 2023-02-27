@@ -211,7 +211,7 @@ class PlaceOnGridCommand(commands2.CommandBase):
                 placementSequence = cmd.sequence(ArmConfirmPlacementCommand(self.arm, "floor"), MandibleOuttakeCommand(self.mandible), cmd.runOnce(lambda: self.arm.setPosition("optimized"), [self.arm]))
             robotAngle = self.calculateRobotAngle(self.poseEstimator.getCurrentPose())
             piecePlacement = geometry.Pose2d(geometry.Translation2d(x = targetCoordinates[0], y = targetCoordinates[1]), geometry.Rotation2d())
-            robotPose = piecePlacement.transformBy(geometry.Transform2d(translation = geometry.Translation2d(x = -offset, y = 0), rotation = robotAngle)) # if errors persist, try making the offset positive
+            robotPose = piecePlacement.transformBy(geometry.Transform2d(translation = geometry.Translation2d(x = (-offset * allianceFactor), y = 0), rotation = robotAngle)) # if errors persist, try making the offset positive
         elif slot > 6: # high-row
             # our only placement option is perpindicular to the grid and right up against it
             # first we have to calculate our required robot position
@@ -231,7 +231,7 @@ class PlaceOnGridCommand(commands2.CommandBase):
                 placementSequence = cmd.sequence(ArmConfirmPlacementCommand(self.arm, "midCube"), MandibleOuttakeCommand(self.mandible), cmd.runOnce(lambda: self.arm.setPosition("optimized"), [self.arm]))
             robotAngle = self.calculateRobotAngle(self.poseEstimator.getCurrentPose())
             piecePlacement = geometry.Pose2d(geometry.Translation2d(x = targetCoordinates[0], y = targetCoordinates[1]), geometry.Rotation2d())
-            robotPose = piecePlacement.transformBy(geometry.Transform2d(translation = geometry.Translation2d(x = -offset, y = 0), rotation = robotAngle))
+            robotPose = piecePlacement.transformBy(geometry.Transform2d(translation = geometry.Translation2d(x = (-offset * allianceFactor), y = 0), rotation = robotAngle))
         return robotPose, placementSequence
     
     def onlySetArmPosition(self, slot: int) -> None:
