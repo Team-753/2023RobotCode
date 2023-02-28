@@ -158,6 +158,25 @@ class RobotContainer:
         grid: input from 1 to 3, counting down from the top of the field.
         position: input from 1 to 9, reads like a numpad
         '''
+        alliance = wpilib.DriverStation.getAlliance()
+        if alliance == wpilib.DriverStation.Alliance.kRed: # are we on the red alliance, if so we have to flip the grid somewhat
+            grid = 4 - grid
+            if position > 6: # high grid
+                if position == 9:
+                    position = 7
+                elif position == 7:
+                    position = 9
+            elif position < 4: # low row
+                if position == 3:
+                    position = 1
+                elif position == 1:
+                    position = 3
+            else: # mid grid
+                if position == 6:
+                    position = 4
+                elif position == 4:
+                    position = 6
+        wpilib.SmartDashboard.putString("Target Blue Grid Val", f"Grid: {grid}, Slot: {position}")
         self.targetGridPosition = (grid, position)
         
     def getJoystickInput(self):
