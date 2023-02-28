@@ -81,8 +81,9 @@ class MandibleSubSystem(commands2.SubsystemBase):
         else:
             return False
         '''
-        return False
-        if self.distanceSensor.getRange() <= self.gamePieceInPossessionDistance:
+        distance = self.distanceSensor.getRange()
+        wpilib.SmartDashboard.putNumber("distance sensor", distance)
+        if distance <= self.gamePieceInPossessionDistance:
             return True
         else:
             return False
@@ -97,3 +98,4 @@ class MandibleSubSystem(commands2.SubsystemBase):
             self.intake()
         else:
             self.stop()
+    

@@ -36,7 +36,7 @@ class RobotContainer:
         if pathName != "Taxi.path":   
             autoList.append(pathName.removesuffix(".path"))
     maxAngularVelocity = config["autonomousSettings"]["autoVelLimit"] / math.hypot(config["RobotDimensions"]["trackWidth"] / 2, config["RobotDimensions"]["wheelBase"] / 2)
-    photonCameras = [photonvision.PhotonCamera("photonCameraOne")]
+    photonCameras = [photonvision.PhotonCamera("photoncameraone")]
     targetGridPosition = (2, 5)
     
     def __init__(self) -> None:
@@ -55,7 +55,7 @@ class RobotContainer:
         #subsystem configuration
         self.driveTrain.setDefaultCommand(cmd.run(lambda: self.driveTrain.joystickDrive(self.getJoystickInput(), self.poseEstimator.getCurrentPose()), [self.driveTrain])) # this is what makes the robot drive, since there isn't a way to bind commands to axes
         self.arm.setDefaultCommand(cmd.run(lambda: self.arm.manualControlIncrementor(self.getStickInput(-self.xboxController.getLeftY(), self.config["ArmConfig"]["manualControlDeadzone"])), [self.arm])) # same issue here, no way to bind commands to axes so this is the solution
-        self.mandible.setDefaultCommand(cmd.run(lambda: self.mandible.cubePeriodic(), [self.mandible]))
+        self.mandible.setDefaultCommand(cmd.run(lambda: self.mandible.cubePeriodic(), [self.mandible])) # this may not run in certain modes
         
         # additional configuration
         
@@ -122,7 +122,7 @@ class RobotContainer:
                                                                    self.eventMap, 
                                                                    self.joystick))
         self.xboxController.A().whileTrue(MandibleIntakeCommand(self.mandible))
-        self.xboxController.Y().whileTrue(MandibleOuttakeCommand(self.mandible))
+        self.xboxController.Y().whileTrue(cmd.run(lambda: self.mandible.outtake(), [self.mandible]))
         self.xboxController.X().onTrue(self.eventMap["CloseMandible"])
         self.xboxController.B().onTrue(self.eventMap["OpenMandible"])
         

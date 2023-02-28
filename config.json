@@ -34,15 +34,15 @@
     "wheelBase": 0.5969,
     "wheelDiameter": 4,
     "PhotonCameras": {
-      "photonCameraOne": {
-        "x": 0,
+      "photoncameraone": {
+        "x": 13.25,
         "y": 0,
-        "z": 0,
+        "z": 0.7493,
         "roll": 0,
         "pitch": 0,
         "yaw": 0
       },
-      "photonCameraTwo": {
+      "photoncameratwo": {
         "x": 0,
         "y": 0,
         "z": 0,

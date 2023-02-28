@@ -10,7 +10,7 @@ class MandibleOuttakeCommand(commands2.CommandBase):
         self.addRequirements(mandibleSubSystem)
         self.mandible = mandibleSubSystem
         self.timer = wpilib.Timer()
-        self.wait = 0.25
+        self.wait = 0.75
         '''
         Depending on implementation, may need to add an extra timer-based failsafe for this
         '''
