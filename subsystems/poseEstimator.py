@@ -17,6 +17,7 @@ class PoseEstimatorSubsystem(commands2.SubsystemBase):
     camTwoRelRobot = geometry.Transform3d(geometry.Translation3d(0, 0, 0), geometry.Rotation3d(0, 0, 0))
     velocity = 0
     heading = geometry.Rotation2d()
+    mostRecentVisionPose = geometry.Pose2d()
     
     def __init__(self, photonCameras: List[photonvision.PhotonCamera], driveTrain: DriveTrainSubSystem, initialPose: geometry.Pose2d, config: dict) -> None:
         ''' Initiates the PoseEstimator Subsystem
@@ -43,8 +44,9 @@ class PoseEstimatorSubsystem(commands2.SubsystemBase):
                                                                  initialPose, 
                                                                  self.stateStdDevs,
                                                                  self.visionMeasurementStdDevs)
-        self.tab = shuffleboard.Shuffleboard.getTab("Field")
-        self.tab.add("Field", self.field).withPosition(5, 0).withSize(6, 4)
+        #self.tab = shuffleboard.Shuffleboard.getTab("Field")
+        wpilib.SmartDashboard.putData("Field", self.field)
+        #self.tab.add("Field", self.field).withPosition(5, 0).withSize(6, 4)
         
     def periodic(self) -> None:
         ''' Call this function with every iteration of your autonomous and teleop loop. '''
@@ -78,9 +80,7 @@ class PoseEstimatorSubsystem(commands2.SubsystemBase):
                     robotPose = camPose.transformBy(self.cameraTransformations[i])
                     robotPose2d = robotPose.toPose2d()
                     self.poseEstimator.addVisionMeasurement(robotPose2d, resultTimeStamp)
-                    difference = robotPose2d.rotation().degrees() + 180 - self.driveTrain.getNAVXRotation2d().degrees() + 180
-                    if (abs(difference) > 1): # our navx is off by over a degree as calculated by an apriltag, this is very useful for the start of the match
-                        self.driveTrain.navxOffset = difference # setting the new navx offset
+                    self.mostRecentVisionPose = robotPose2d
             else:
                 i += 1
         swerveModuleStates = self.driveTrain.getSwerveModulePositions()

@@ -10,20 +10,20 @@
       "style": "0",
       "userScale": "2",
       "width": "1122",
-      "xpos": "166",
-      "ypos": "366"
+      "xpos": "445",
+      "ypos": "284"
     }
   },
   "Window": {
     "###FMS": {
       "Collapsed": "0",
-      "Pos": "5,413",
+      "Pos": "279,433",
       "Size": "283,146"
     },
     "###Joysticks": {
       "Collapsed": "0",
       "Pos": "330,358",
-      "Size": "796,120"
+      "Size": "796,73"
     },
     "###NetworkTables": {
       "Collapsed": "0",

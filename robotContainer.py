@@ -15,7 +15,7 @@ from subsystems.driveTrain import DriveTrainSubSystem
 from subsystems.poseEstimator import PoseEstimatorSubsystem
 from subsystems.mandible import MandibleSubSystem
 from subsystems.arm import ArmSubSystem
-from subsystems.auxiliaryStreamDeck import AuxiliaryStreamDeckSubsystem
+from commands.zeroOdometryFromVisionCommand import ZeroOdometryFromVisionCommand
 
 from commands.mandibleCommands import MandibleIntakeCommand, MandibleOuttakeCommand
 from commands.substationPickupCommand import SubstationPickupCommand
@@ -94,6 +94,7 @@ class RobotContainer:
         for pathName in self.autoList:
             self.autonomousChooser.addOption(pathName, pathName)
         wpilib.SmartDashboard.putData("Autonomous Chooser", self.autonomousChooser)
+        wpilib.SmartDashboard.putData("Vision Odometry Zero", ZeroOdometryFromVisionCommand(self.poseEstimator))
         
     
     def configureButtonBindings(self):
@@ -219,7 +220,7 @@ class RobotContainer:
         return pathplannerlib.PathPlanner.loadPathGroup(groupName, [self.pathConstraints], False)
     
     def teleopInit(self):
-        self.poseEstimator.resetFieldPosition()
+        # self.poseEstimator.resetFieldPosition()
         self.driveTrain.alliance = wpilib.DriverStation.getAlliance()
     
     def disabledInit(self):
