@@ -81,6 +81,9 @@ class PoseEstimatorSubsystem(commands2.SubsystemBase):
                     robotPose2d = robotPose.toPose2d()
                     self.poseEstimator.addVisionMeasurement(robotPose2d, resultTimeStamp)
                     self.mostRecentVisionPose = robotPose2d
+                    SmartDashboard.putNumber("Vision X Position", robotPose2d.X())
+                    SmartDashboard.putNumber("Vision Y Position", robotPose2d.Y())
+                    SmartDashboard.putNumber("Vision Rotation", robotPose2d.rotation().degrees())
             else:
                 i += 1
         swerveModuleStates = self.driveTrain.getSwerveModulePositions()

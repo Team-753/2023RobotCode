@@ -35,9 +35,9 @@
     "wheelDiameter": 4,
     "PhotonCameras": {
       "photoncameraone": {
-        "x": 13.25,
+        "x": -0.33655,
         "y": 0,
-        "z": 0.7493,
+        "z": -0.7493,
         "roll": 0,
         "pitch": 0,
         "yaw": 0
@@ -96,7 +96,7 @@
         "period": 0.03
       },
       "rotationPIDConstants": {
-        "kP": 0.0,
+        "kP": 1.5,
         "kI": 0.0,
         "kD": 0,
         "period": 0.03

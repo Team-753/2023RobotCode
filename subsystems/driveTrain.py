@@ -151,6 +151,7 @@ class DriveTrainSubSystem(commands2.SubsystemBase):
                 self.targetPose = geometry.Pose2d(geometry.Translation2d(self.targetPose.X(), currentPose.Y()), self.targetPose.rotation())
                 ySpeed = yScalar * self.kMaxSpeed
             if zScalar == 0:
+                wpilib.SmartDashboard.putNumber("target rotation", self.targetPose.rotation())
                 if (abs(poseError.rotation().radians()) > self.poseTolerance.rotation().radians()): # we are over the tolerance threshold
                     zSpeed = self.rotationPID.calculate(currentPose.rotation().radians(), self.targetPose.rotation().radians()) # keep in mind this is not a scalar, this is a speed
                 else:
@@ -175,10 +176,10 @@ class DriveTrainSubSystem(commands2.SubsystemBase):
         if self.alliance == DriverStation.Alliance.kRed: # i am not sure how necessary this is
             yScalar = -yScalar
             xScalar = -xScalar
-        poseError = currentPose.relativeTo(self.targetPose) # how far are we off from where our axes setpoints were before?
+        poseError = currentPose.relativeTo(rotationOverridePose) # how far are we off from where our axes setpoints were before?
         xSpeed = xScalar * self.kMaxSpeed
         ySpeed = yScalar * self.kMaxSpeed
-        if (abs(currentPose.relativeTo(rotationOverridePose).rotation().radians()) > self.poseTolerance.rotation().radians()): # we are over the tolerance threshold
+        if (abs(poseError.rotation().radians()) > self.poseTolerance.rotation().radians()): # we are over the tolerance threshold
             zSpeed = self.rotationPID.calculate(currentPose.rotation().radians(), rotationOverride.radians()) # keep in mind this is not a scalar, this is a speed
         else:
             zSpeed = 0

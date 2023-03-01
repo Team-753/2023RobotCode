@@ -94,8 +94,8 @@ class MandibleSubSystem(commands2.SubsystemBase):
         
     def cubePeriodic(self) -> None:
         ''' Ensures we hold onto a cube once it is in our possession '''
-        if self.inControlOfPiece() and self.state == "cube":
+        '''if self.inControlOfPiece() and self.state == "cube":
             self.intake()
         else:
-            self.stop()
+            self.stop()'''
     
