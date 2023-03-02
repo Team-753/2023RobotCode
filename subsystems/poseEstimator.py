@@ -4,17 +4,15 @@ import photonvision
 from subsystems.driveTrain import DriveTrainSubSystem
 import math
 import commands2
+import robotpy_apriltag
 from wpilib import SmartDashboard, shuffleboard
 from typing import List
-
 class PoseEstimatorSubsystem(commands2.SubsystemBase):
     ''' The infrastructure for estimating robot pose based off of vision and wheel odometry data '''
     stateStdDevs = 0.05, 0.05, math.radians(5)
     visionMeasurementStdDevs = 0.5, 0.5, math.radians(30)
     field = wpilib.Field2d()
     previousPipelineResultTimeStamp = 0 # useless for now...
-    camOneRelRobot = geometry.Transform3d(geometry.Translation3d(-0.3302, 0, 0), geometry.Rotation3d(0, 0, 0))
-    camTwoRelRobot = geometry.Transform3d(geometry.Translation3d(0, 0, 0), geometry.Rotation3d(0, 0, 0))
     velocity = 0
     heading = geometry.Rotation2d()
     mostRecentVisionPose = geometry.Pose2d()
@@ -32,10 +30,12 @@ class PoseEstimatorSubsystem(commands2.SubsystemBase):
         self.config = config
         self.tags = config["Apriltags"]
         self.photonCameras = photonCameras
-        self.cameraTransformations = []
+        self.cameraFinalList = []
         for camera in photonCameras:
             cameraParams = self.config["RobotDimensions"]["PhotonCameras"][camera.getCameraName()]
-            self.cameraTransformations.append(geometry.Transform3d(geometry.Translation3d(cameraParams["x"], cameraParams["y"], cameraParams["z"]), geometry.Rotation3d(cameraParams["roll"], cameraParams["pitch"], cameraParams["yaw"])))
+            transformation = geometry.Transform3d(geometry.Translation3d(cameraParams["x"], cameraParams["y"], cameraParams["z"]), geometry.Rotation3d(cameraParams["roll"], cameraParams["pitch"], cameraParams["yaw"]))
+            self.cameraFinalList.append((camera, transformation))
+        
             
         
         self.poseEstimator = estimator.SwerveDrive4PoseEstimator(self.driveTrain.KINEMATICS, 
@@ -44,6 +44,8 @@ class PoseEstimatorSubsystem(commands2.SubsystemBase):
                                                                  initialPose, 
                                                                  self.stateStdDevs,
                                                                  self.visionMeasurementStdDevs)
+        fieldLayout = robotpy_apriltag.AprilTagField.k2023ChargedUp
+        self.photonPoseEstimator = photonvision.RobotPoseEstimator(fieldLayout, photonvision.PoseStrategy.LOWEST_AMBIGUITY, self.cameraFinalList) # update this eventually to multi-tag PNP
         #self.tab = shuffleboard.Shuffleboard.getTab("Field")
         wpilib.SmartDashboard.putData("Field", self.field)
         #self.tab.add("Field", self.field).withPosition(5, 0).withSize(6, 4)
@@ -51,45 +53,12 @@ class PoseEstimatorSubsystem(commands2.SubsystemBase):
     def periodic(self) -> None:
         ''' Call this function with every iteration of your autonomous and teleop loop. '''
         
-        '''
-        For this next section of code we are referencing both of our cameras to find the best apriltag to esimate our position off of, if one is available
-        '''
-        targetList = [] # creating a list to hold our targets and their given ambiguity
-        for camera in self.photonCameras: # indexing through the list
-            pipelineResult = camera.getLatestResult()
-            resultTimeStamp = pipelineResult.getTimestamp()
-            if (resultTimeStamp != self.previousPipelineResultTimeStamp and pipelineResult.hasTargets()):
-                target = pipelineResult.getBestTarget()
-                targetList.append([pipelineResult, target.getPoseAmbiguity()])
-        lowestVal = 1
-        for apriltag in targetList:
-            if apriltag[1] < lowestVal and apriltag[1] != -1:
-                lowestVal = apriltag[1]
-        for apriltag in targetList:
-            i = 0
-            if apriltag[1] == lowestVal: # we have found the "best" apriltag to reference from
-                pipelineResult = apriltag[0]
-                resultTimeStamp = pipelineResult.getTimestamp()
-                self.previousPipelineResultTimeStamp = resultTimeStamp
-                target = pipelineResult.getBestTarget()
-                fiducialId = target.getFiducialId() # https://github.com/STMARobotics/swerve-test/blob/main/src/main/java/frc/robot/subsystems/PoseEstimatorSubsystem.java#L78
-                if (target.getPoseAmbiguity() <= 0.2 and fiducialId >= 0 and fiducialId < 9):
-                    targetPose = self.getTagPose(fiducialId) # need 3d poses of each apriltag id
-                    camToTarget = target.getBestCameraToTarget()
-                    camPose = targetPose.transformBy(camToTarget.inverse())
-                    robotPose = camPose.transformBy(self.cameraTransformations[i])
-                    robotPose2d = robotPose.toPose2d()
-                    self.poseEstimator.addVisionMeasurement(robotPose2d, resultTimeStamp)
-                    self.mostRecentVisionPose = robotPose2d
-                    SmartDashboard.putNumber("Vision X Position", robotPose2d.X())
-                    SmartDashboard.putNumber("Vision Y Position", robotPose2d.Y())
-                    SmartDashboard.putNumber("Vision Rotation", robotPose2d.rotation().degrees())
-            else:
-                i += 1
+        #self.photonPoseEstimator.setReferencePose(geometry.Pose3d(self.getCurrentPose()))
+        estimate = self.photonPoseEstimator.update()
+        if estimate[1] > self.previousPipelineResultTimeStamp:
+            estimate[0].toPose2d()
+            self.poseEstimator.addVisionMeasurement(estimate[0].toPose2d(), estimate[1])
         swerveModuleStates = self.driveTrain.getSwerveModulePositions()
-        #derivedState = self.driveTrain.KINEMATICS.toTwist2d(swerveModuleStates[0], swerveModuleStates[1], swerveModuleStates[2], swerveModuleStates[3])
-        #self.velocity = math.hypot(derivedState.dx, derivedState.dy)
-        #self.heading = geometry.Rotation2d(math.atan2(derivedState.dy, derivedState.dx))
 
         
         self.poseEstimator.update(

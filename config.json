@@ -37,15 +37,15 @@
       "photoncameraone": {
         "x": -0.33655,
         "y": 0,
-        "z": -0.7493,
+        "z": -0.5969,
         "roll": 0,
         "pitch": 0,
         "yaw": 0
       },
       "photoncameratwo": {
-        "x": 0,
+        "x": -0.33655,
         "y": 0,
-        "z": 0,
+        "z": -0.5969,
         "roll": 0,
         "pitch": 0,
         "yaw": 0
