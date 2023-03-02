@@ -153,6 +153,10 @@ class RobotContainer:
         button.JoystickButton(self.auxiliaryStreamDeck, 29).onTrue(cmd.runOnce(lambda: self.arm.setPosition("optimized"), []))
         button.JoystickButton(self.auxiliaryStreamDeck, 30).onTrue(cmd.runOnce(lambda: self.arm.setPosition("substation"), []))
         button.JoystickButton(self.auxiliaryStreamDeck, 31).onTrue(cmd.runOnce(lambda: self.arm.setPosition("floor"), []))
+        button.JoystickButton(self.auxiliaryStreamDeck, 32).onTrue(cmd.runOnce(lambda: self.arm.setPosition("midCube"), []))
+        button.JoystickButton(self.auxiliaryStreamDeck, 33).onTrue(cmd.runOnce(lambda: self.arm.setPosition("highCube"), []))
+        button.JoystickButton(self.auxiliaryStreamDeck, 34).onTrue(cmd.runOnce(lambda: self.arm.setPosition("midConePrep"), []))
+        button.JoystickButton(self.auxiliaryStreamDeck, 35).onTrue(cmd.runOnce(lambda: self.arm.setPosition("highConePrep"), []))
     
     def setTargetGridPosition(self, grid: int, position: int):
         '''

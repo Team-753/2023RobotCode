@@ -9,7 +9,7 @@ class ArmSubSystem(commands2.SubsystemBase):
     constants = { # what encoder value the arm's lead screw motor should go to according to the needed position
         "fullyRetracted": 0.0,
         "substation": 37.9,
-        "floor": 41.5,
+        "floor": 41.25,
         "highConePrep": 35.45,
         "highConePlacement": 37.16,
         "midConePrep": 37.6,
