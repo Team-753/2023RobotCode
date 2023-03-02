@@ -96,7 +96,7 @@
         "period": 0.03
       },
       "rotationPIDConstants": {
-        "kP": 1.5,
+        "kP": 0.0,
         "kI": 0.0,
         "kD": 0,
         "period": 0.03

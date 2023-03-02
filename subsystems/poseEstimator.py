@@ -44,8 +44,9 @@ class PoseEstimatorSubsystem(commands2.SubsystemBase):
                                                                  initialPose, 
                                                                  self.stateStdDevs,
                                                                  self.visionMeasurementStdDevs)
-        fieldLayout = robotpy_apriltag.AprilTagField.k2023ChargedUp
-        self.photonPoseEstimator = photonvision.RobotPoseEstimator(fieldLayout, photonvision.PoseStrategy.LOWEST_AMBIGUITY, self.cameraFinalList) # update this eventually to multi-tag PNP
+        '''fieldLayout = robotpy_apriltag.AprilTagFieldLayout(robotpy_apriltag.AprilTag())
+        fieldLayout.setOrigin(geometry.Pose3d(0, 0, 0, geometry.Rotation3d(0, 0, 0)))
+        self.photonPoseEstimator = photonvision.RobotPoseEstimator(fieldLayout, photonvision.PoseStrategy.LOWEST_AMBIGUITY, self.cameraFinalList) # update this eventually to multi-tag PNP'''
         #self.tab = shuffleboard.Shuffleboard.getTab("Field")
         wpilib.SmartDashboard.putData("Field", self.field)
         #self.tab.add("Field", self.field).withPosition(5, 0).withSize(6, 4)
@@ -54,10 +55,10 @@ class PoseEstimatorSubsystem(commands2.SubsystemBase):
         ''' Call this function with every iteration of your autonomous and teleop loop. '''
         
         #self.photonPoseEstimator.setReferencePose(geometry.Pose3d(self.getCurrentPose()))
-        estimate = self.photonPoseEstimator.update()
+        '''estimate = self.photonPoseEstimator.update()
         if estimate[1] > self.previousPipelineResultTimeStamp:
             estimate[0].toPose2d()
-            self.poseEstimator.addVisionMeasurement(estimate[0].toPose2d(), estimate[1])
+            self.poseEstimator.addVisionMeasurement(estimate[0].toPose2d(), estimate[1])'''
         swerveModuleStates = self.driveTrain.getSwerveModulePositions()
 
         

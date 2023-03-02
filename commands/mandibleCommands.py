@@ -43,10 +43,7 @@ class MandibleIntakeCommand(commands2.CommandBase):
         return super().initialize()
     
     def execute(self) -> None:
-        if (self.mandible.intake()):
-            self.done = True
-        else:
-            self.mandible.intake()
+        self.mandible.intake() # fix this for auto
     
     def end(self, interrupted: bool) -> None:
         self.mandible.stop()

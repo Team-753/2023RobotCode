@@ -151,7 +151,7 @@ class DriveTrainSubSystem(commands2.SubsystemBase):
                 self.targetPose = geometry.Pose2d(geometry.Translation2d(self.targetPose.X(), currentPose.Y()), self.targetPose.rotation())
                 ySpeed = yScalar * self.kMaxSpeed
             if zScalar == 0:
-                wpilib.SmartDashboard.putNumber("target rotation", self.targetPose.rotation())
+                wpilib.SmartDashboard.putNumber("target rotation", self.targetPose.rotation().degrees())
                 if (abs(poseError.rotation().radians()) > self.poseTolerance.rotation().radians()): # we are over the tolerance threshold
                     zSpeed = self.rotationPID.calculate(currentPose.rotation().radians(), self.targetPose.rotation().radians()) # keep in mind this is not a scalar, this is a speed
                 else:
