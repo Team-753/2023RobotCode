@@ -1,9 +1,8 @@
-from controllers.ppHolonomicDriveController import PPHolonomicDriveController
 from wpimath import controller, geometry, kinematics
 import math
 from typing import List
 import commands2
-from pathplannerlib import PathPlannerTrajectory
+from pathplannerlib import PathPlannerTrajectory, controllers
 from subsystems.poseEstimator import PoseEstimatorSubsystem
 from subsystems.driveTrain import DriveTrainSubSystem
 from wpilib import DriverStation, Timer
@@ -11,13 +10,13 @@ from wpimath import controller
 
 class PPSwerveDriveController(commands2.CommandBase):
     
-    def __init__(self, trajectory: PathPlannerTrajectory, driveTrain: DriveTrainSubSystem, poseEstimator: PoseEstimatorSubsystem, xController: controller.PIDController, yController: controller.PIDController, thetaController: List[dict], useAllianceColor: bool, tolerance: geometry.Pose2d) -> None:
+    def __init__(self, trajectory: PathPlannerTrajectory, driveTrain: DriveTrainSubSystem, poseEstimator: PoseEstimatorSubsystem, xController: controller.PIDController, yController: controller.PIDController, thetaController: controller.PIDController, useAllianceColor: bool, tolerance: geometry.Pose2d) -> None:
         super().__init__()
         self.trajectory = trajectory
         self.useAllianceColor = useAllianceColor
         self.poseEstimator = poseEstimator
-        thetaController = controller.ProfiledPIDControllerRadians(thetaController[0]["kP"], thetaController[0]["kI"], thetaController[0]["kD"], thetaController[1], thetaController[0]["period"])
-        self.controller = PPHolonomicDriveController(xController, yController, thetaController, tolerance)
+        self.controller = controllers.PPHolonomicDriveController(xController, yController, thetaController)
+        self.controller.setTolerance(tolerance)
         self.driveTrain = driveTrain
         self.addRequirements(self.driveTrain)
         

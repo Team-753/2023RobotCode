@@ -15,7 +15,6 @@ from subsystems.driveTrain import DriveTrainSubSystem
 from subsystems.poseEstimator import PoseEstimatorSubsystem
 from subsystems.mandible import MandibleSubSystem
 from subsystems.arm import ArmSubSystem
-from commands.zeroOdometryFromVisionCommand import ZeroOdometryFromVisionCommand
 
 from commands.mandibleCommands import MandibleIntakeCommand, MandibleOuttakeCommand
 from commands.substationPickupCommand import SubstationPickupCommand
@@ -65,7 +64,7 @@ class RobotContainer:
         self.generateAutonomousMarkers()
         
         # this part can be extremely confusing but it is essentially just an initation for the helper class that makes swerve auto possible
-        thetaControllerConstraints = [self.config["autonomousSettings"]["rotationPIDConstants"], trajectory.TrapezoidProfileRadians.Constraints(self.config["autonomousSettings"]["autoVelLimit"], self.maxAngularVelocity)]
+        thetaControllerConstraints = self.config["autonomousSettings"]["rotationPIDConstants"]
         self.pathConstraints = pathplannerlib.PathConstraints(self.config["autonomousSettings"]["autoVelLimit"], self.config["autonomousSettings"]["autoAccLimit"])
         self.SwerveAutoBuilder = SwerveAutoBuilder(self.poseEstimator, 
                                                    self.driveTrain, 
@@ -94,7 +93,6 @@ class RobotContainer:
         for pathName in self.autoList:
             self.autonomousChooser.addOption(pathName, pathName)
         wpilib.SmartDashboard.putData("Autonomous Chooser", self.autonomousChooser)
-        wpilib.SmartDashboard.putData("Vision Odometry Zero", ZeroOdometryFromVisionCommand(self.poseEstimator))
         
     
     def configureButtonBindings(self):
@@ -224,7 +222,6 @@ class RobotContainer:
         return pathplannerlib.PathPlanner.loadPathGroup(groupName, [self.pathConstraints], False)
     
     def teleopInit(self):
-        # self.poseEstimator.resetFieldPosition()
         self.driveTrain.alliance = wpilib.DriverStation.getAlliance()
     
     def disabledInit(self):
@@ -259,10 +256,14 @@ class RobotContainer:
         )
     
     def testInit(self):
-        self.poseEstimator.resetFieldPosition()
+        self.SwerveAutoBuilder.useAllianceColor = False
+        currentPose = self.poseEstimator.getCurrentPose()
+        transformation = geometry.Transform2d(translation = geometry.Translation2d(1, 0), rotation = geometry.Rotation2d())
+        driveOneMeter = pathplannerlib.PathPlanner.generatePath(self.pathConstraints, [pathplannerlib.PathPoint.fromCurrentHolonomicState(currentPose, self.driveTrain.actualChassisSpeeds()), pathplannerlib.PathPoint(currentPose.transformBy(transformation).translation(), geometry.Rotation2d(), currentPose.rotation())])
+        cmd.run(self.SwerveAutoBuilder.followPath(driveOneMeter))
     
     def testPeriodic(self):
-        cmd.run(lambda: self.driveTrain.setSwerveStates(2, 0, 0, self.poseEstimator.getCurrentPose(), True), [self.driveTrain])
+        pass
         
     def disabledPeriodic(self):
         '''wpilib.SmartDashboard.putNumber("Front Left", self.driveTrain.frontLeft.getAbsolutePositionZeroThreeSixty())

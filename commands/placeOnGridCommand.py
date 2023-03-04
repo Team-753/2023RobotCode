@@ -48,7 +48,7 @@ class PlaceOnGridCommand(commands2.CommandBase):
         if self.isAutonomous:
             self.sequence = self.getTargetGridValues(self.targetGridSlot[0], self.targetGridSlot[1])
             self.swerveAutoBuilder.useAllianceColor = False
-            onLeFlyTJ = self.swerveAutoBuilder.followPath(pathplannerlib.PathPlanner.generatePath(self.constraints, [pathplannerlib.PathPoint.fromCurrentHolonomicState(self.currentPose, self.driveTrain.actualChassiSpeeds()), pathplannerlib.PathPoint(self.sequence[0].translation(), geometry.Rotation2d(), self.sequence[0].rotation())]))
+            onLeFlyTJ = self.swerveAutoBuilder.followPath(pathplannerlib.PathPlanner.generatePath(self.constraints, [pathplannerlib.PathPoint.fromCurrentHolonomicState(self.currentPose, self.driveTrain.actualChassisSpeeds()), pathplannerlib.PathPoint(self.sequence[0].translation(), geometry.Rotation2d(), self.sequence[0].rotation())]))
             commands2.SequentialCommandGroup(onLeFlyTJ, self.sequence[1], cmd.runOnce(lambda: self.finished(), []))
             
     def finished(self):
@@ -60,7 +60,7 @@ class PlaceOnGridCommand(commands2.CommandBase):
             if self.joystick.getRawButton(1): # is the driver pulling the trigger (confirming game piece placement)
                 self.sequence = self.getTargetGridValues(self.targetGridSlot[0], self.targetGridSlot[1])
                 self.swerveAutoBuilder.useAllianceColor = False
-                onLeFlyTJ = self.swerveAutoBuilder.followPath(pathplannerlib.PathPlanner.generatePath(self.constraints, [pathplannerlib.PathPoint.fromCurrentHolonomicState(self.currentPose, self.driveTrain.actualChassiSpeeds()), pathplannerlib.PathPoint(self.sequence[0].translation(), geometry.Rotation2d(), self.sequence[0].rotation())]))
+                onLeFlyTJ = self.swerveAutoBuilder.followPath(pathplannerlib.PathPlanner.generatePath(self.constraints, [pathplannerlib.PathPoint.fromCurrentHolonomicState(self.currentPose, self.driveTrain.actualChassisSpeeds()), pathplannerlib.PathPoint(self.sequence[0].translation(), geometry.Rotation2d(), self.sequence[0].rotation())]))
                 commands2.SequentialCommandGroup(onLeFlyTJ, self.sequence[1], cmd.runOnce(lambda: self.finished(), []))
             else: # they are just holding the side button
                 targetRotation = self.calculateRobotAngle(self.currentPose)

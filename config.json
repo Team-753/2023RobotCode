@@ -55,7 +55,7 @@
   "RobotDefaultSettings": {
     "fieldOrient": true,
     "robotSpeedLimiter": 1,
-    "wheelVelocityLimit": 4,
+    "wheelVelocityLimit": 4.25,
     "robotAccelerationLimit": 8,
     "DEBUGGING": true,
     "PDH_ID": 60,
@@ -69,14 +69,14 @@
     "thetaPoseToleranceDegrees": 0.5,
     "translationPIDConstants": {
       "kP": 5,
-      "kI": 0,
-      "kD": 0,
+      "kI": 0.0,
+      "kD": 0.0,
       "period": 0.03
     },
     "rotationPIDConstants": {
-      "kP": 5,
-      "kI": 0,
-      "kD": 0,
+      "kP": 0.5,
+      "kI": 0.0,
+      "kD": 0.0,
       "period": 0.03
     }
   },
@@ -90,21 +90,21 @@
     },
     "teleoperatedRobotConstants": {
       "translationPIDConstants": {
-        "kP": 0,
-        "kI": 0,
-        "kD": 0,
+        "kP": 5.0,
+        "kI": 0.0,
+        "kD": 0.0,
         "period": 0.03
       },
       "rotationPIDConstants": {
-        "kP": 0.0,
+        "kP": 0.5,
         "kI": 0.0,
-        "kD": 0,
+        "kD": 0.0,
         "period": 0.03
       },
       "xPoseToleranceMeters": 0.05,
       "yPoseToleranceMeters": 0.05,
       "thetaPoseToleranceDegrees": 1,
-      "teleopVelLimit": 4,
+      "teleopVelLimit": 4.25,
       "teleopAccLimit": 3
     }
   },

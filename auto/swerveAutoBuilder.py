@@ -35,7 +35,7 @@ class SwerveAutoBuilder:
                                        self.poseEstimator, 
                                        self.PIDControllerFromConstants(self.translationConstants), 
                                        self.PIDControllerFromConstants(self.translationConstants),
-                                       self.rotationConstants,
+                                       self.PIDControllerFromConstants(self.rotationConstants),
                                        self.useAllianceColor,
                                        self.tolerance
                                        )
