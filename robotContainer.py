@@ -36,7 +36,7 @@ class RobotContainer:
         if pathName != "Taxi.path":   
             autoList.append(pathName.removesuffix(".path"))
     maxAngularVelocity = config["autonomousSettings"]["autoVelLimit"] / math.hypot(config["RobotDimensions"]["trackWidth"] / 2, config["RobotDimensions"]["wheelBase"] / 2)
-    photonCameras = [photonvision.PhotonCamera("photoncameraone")]
+    photonCameras = [photonvision.PhotonCamera("photoncameratwo")]
     targetGridPosition = (2, 5)
     
     def __init__(self) -> None:
