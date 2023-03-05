@@ -1,3 +1,9 @@
+'''
+TODO:
+Turn Stream deck into a subsystem that can supply grid placements and call other macros
+Add autonomous compatibility with the place on grid command
+'''
+
 import commands2
 from commands2 import button, cmd
 import wpilib

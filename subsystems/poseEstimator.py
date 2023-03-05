@@ -55,7 +55,7 @@ class PoseEstimatorSubsystem(commands2.SubsystemBase):
         '''
         For this next section of code we are referencing both of our cameras to find the best apriltag to esimate our position off of, if one is available
         '''
-        # NOTE: This algorithm is way too expensive.
+        # NOTE: This algorithm is way too expensive. Anyway, TODO: Implement dual-camera pose throwaway/averaging
         cameraIndex = 0
         for camera in self.photonCameras:
             pipelineResult = camera.getLatestResult()

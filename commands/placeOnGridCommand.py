@@ -16,6 +16,10 @@ from commands.armConfirmPlacementCommand import ArmConfirmPlacementCommand
 from commands.mandibleCommands import MandibleOuttakeCommand
 
 class PlaceOnGridCommand(commands2.CommandBase):
+    '''
+    TODO:
+    fix all other commands, turn stream deck into a subsystem supplier
+    '''
     GridLayout = [
         [
             [0.4191, 4.987417], 
