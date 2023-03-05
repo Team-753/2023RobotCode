@@ -16,11 +16,45 @@ from commands.armConfirmPlacementCommand import ArmConfirmPlacementCommand
 from commands.mandibleCommands import MandibleOuttakeCommand
 
 class PlaceOnGridCommand(commands2.CommandBase):
-    GridLayout = [[[0.4191, 4.987417], [0.4191, 4.424426], [0.4191, 3.861435], [0.8509, 4.987417], [0.8509, 4.424426], [0.8509, 3.861435], [1.27635, 4.987417], [1.27635, 4.424426], [1.27635, 3.861435]], [[0.4191, 3.311017], [0.4191, 2.748026], [0.4191, 2.185035], [0.8509, 3.311017], [0.8509, 2.748026], [0.8509, 2.185035], [1.27635, 3.311017], [1.27635, 2.748026], [1.27635, 2.185035]], [[0.4191, 1.634617], [0.4191, 1.071626], [0.4191, 0.508635], [0.8509, 1.634617], [0.8509, 1.071626], [0.8509, 0.508635], [1.27635, 1.634617], [1.27635, 1.071626], [1.27635, 0.508635]]]
+    GridLayout = [
+        [
+            [0.4191, 4.987417], 
+            [0.4191, 4.424426], 
+            [0.4191, 3.861435], 
+            [0.8509, 4.987417], 
+            [0.8509, 4.424426], 
+            [0.8509, 3.861435], 
+            [1.27635, 4.987417], 
+            [1.27635, 4.424426], 
+            [1.27635, 3.861435]
+            ], 
+        [
+            [0.4191, 3.311017], 
+            [0.4191, 2.748026], 
+            [0.4191, 2.185035], 
+            [0.8509, 3.311017], 
+            [0.8509, 2.748026], 
+            [0.8509, 2.185035], 
+            [1.27635, 3.311017], 
+            [1.27635, 2.748026], 
+            [1.27635, 2.185035]
+            ], 
+        [
+            [0.4191, 1.634617], 
+            [0.4191, 1.071626], 
+            [0.4191, 0.508635], 
+            [0.8509, 1.634617], 
+            [0.8509, 1.071626], 
+            [0.8509, 0.508635], 
+            [1.27635, 1.634617], 
+            [1.27635, 1.071626], 
+            [1.27635, 0.508635]
+            ]
+        ]
     FieldWidth = 16.54175
     highConeOffset = 1.88595
     highCubeOffset = 2 # this
-    midConeOffset = 2 # this
+    midConeOffset = 1.4986 # this
     midCubeOffset = 2.15 # this
     lowConeOffset = 1.5 # this
     lowCubeOffset = 1.65 # and this are all total guesses, check them please
@@ -42,6 +76,7 @@ class PlaceOnGridCommand(commands2.CommandBase):
         
         
     def initialize(self) -> None:
+        print("initializing command")
         self.myTimeHasCome = False
         self.currentPose = self.poseEstimator.getCurrentPose()
         self.onlySetArmPosition(self.targetGridSlot[1])
@@ -64,6 +99,7 @@ class PlaceOnGridCommand(commands2.CommandBase):
                 commands2.SequentialCommandGroup(onLeFlyTJ, self.sequence[1], cmd.runOnce(lambda: self.finished(), []))
             else: # they are just holding the side button
                 targetRotation = self.calculateRobotAngle(self.currentPose)
+                wpilib.SmartDashboard.putNumber("Target Grid Rotation", targetRotation.degrees())
                 inputs = (self.joystick.getX(), self.joystick.getY())
                 adjustedInputs = []
                 for idx, input in enumerate(inputs):
@@ -120,9 +156,9 @@ class PlaceOnGridCommand(commands2.CommandBase):
         return robotPose, placementSequence
     
     def onlySetArmPosition(self, slot: int) -> None:
-        if slot < 4: # low-row
+        if slot < 3: # low-row
             self.arm.setPosition("floor")
-        elif slot > 6: # high-row
+        elif slot > 5: # high-row
             if self.mandible.state == "cone":
                 self.arm.setPosition("highConePrep")
             else:
@@ -134,8 +170,15 @@ class PlaceOnGridCommand(commands2.CommandBase):
                 self.arm.setPosition("midCube")
         
     def calculateRobotAngle(self, currentPose: geometry.Pose2d) -> geometry.Rotation2d:
+        wpilib.SmartDashboard.putString("Target Blue Grid Val", f"Grid: {self.targetGridSlot[0]}, Slot: {self.targetGridSlot[1]}")
         targetCoordinates = self.GridLayout[self.targetGridSlot[0]][self.targetGridSlot[1]]
-        return geometry.Rotation2d(targetCoordinates[0] - currentPose.X(), targetCoordinates[1] - currentPose.X())
+        xDiff = currentPose.X() - targetCoordinates[0]
+        yDiff = currentPose.Y() - targetCoordinates[1]
+        wpilib.SmartDashboard.putNumber("Grid X", targetCoordinates[0])
+        wpilib.SmartDashboard.putNumber("Grid Y", targetCoordinates[1])
+        wpilib.SmartDashboard.putNumber("X Difference", xDiff)
+        wpilib.SmartDashboard.putNumber("Y Difference", yDiff)
+        return geometry.Rotation2d(xDiff, yDiff).rotateBy(geometry.Rotation2d(-math.pi))
     
     def end(self, interrupted: bool) -> None:
         self.swerveAutoBuilder.useAllianceColor = True

@@ -13,11 +13,12 @@ class PoseEstimatorSubsystem(commands2.SubsystemBase):
     visionMeasurementStdDevs = 0.5, 0.5, math.radians(30)
     field = wpilib.Field2d()
     previousPipelineResultTimeStamp = 0 # useless for now...
-    camOneRelRobot = geometry.Transform3d(geometry.Translation3d(-0.3302, 0, 0), geometry.Rotation3d(0, 0, 0))
-    camTwoRelRobot = geometry.Transform3d(geometry.Translation3d(0, 0, 0), geometry.Rotation3d(0, 0, 0))
     velocity = 0
     heading = geometry.Rotation2d()
     mostRecentVisionPose = geometry.Pose2d()
+    useVision = True
+    isDisabled = True
+    craziestVisionPose = geometry.Pose2d()
     
     def __init__(self, photonCameras: List[photonvision.PhotonCamera], driveTrain: DriveTrainSubSystem, initialPose: geometry.Pose2d, config: dict) -> None:
         ''' Initiates the PoseEstimator Subsystem
@@ -54,11 +55,33 @@ class PoseEstimatorSubsystem(commands2.SubsystemBase):
         '''
         For this next section of code we are referencing both of our cameras to find the best apriltag to esimate our position off of, if one is available
         '''
+        # NOTE: This algorithm is way too expensive.
+        cameraIndex = 0
+        for camera in self.photonCameras:
+            pipelineResult = camera.getLatestResult()
+            resultTimeStamp = pipelineResult.getTimestamp()
+            if (resultTimeStamp > self.previousPipelineResultTimeStamp and pipelineResult.hasTargets()):
+                target = pipelineResult.getBestTarget()
+                fiducialId = target.getFiducialId()
+                if target.getPoseAmbiguity() <= 0.05 and fiducialId > 0 and fiducialId < 9:
+                    targetPose = self.getTagPose(fiducialId) # need 3d poses of each apriltag id
+                    camToTarget = target.getBestCameraToTarget()
+                    camPose = targetPose.transformBy(camToTarget.inverse())
+                    robotPose = camPose.transformBy(self.cameraTransformations[cameraIndex])
+                    robotPose2d = robotPose.toPose2d()
+                    if self.isDisabled: # are we disabled
+                        self.poseEstimator.addVisionMeasurement(robotPose2d, resultTimeStamp)
+                    else:
+
+                        self.poseEstimator.addVisionMeasurement(robotPose2d, resultTimeStamp)
+                            
+        '''for camera in self.photonCameras: # indexing through the list
+            pipelineResult = camera.getLatestResult()
         targetList = [] # creating a list to hold our targets and their given ambiguity
         for camera in self.photonCameras: # indexing through the list
             pipelineResult = camera.getLatestResult()
             resultTimeStamp = pipelineResult.getTimestamp()
-            if (resultTimeStamp != self.previousPipelineResultTimeStamp and pipelineResult.hasTargets()):
+            if (resultTimeStamp > self.previousPipelineResultTimeStamp and pipelineResult.hasTargets()):
                 target = pipelineResult.getBestTarget()
                 targetList.append([pipelineResult, target.getPoseAmbiguity()])
         lowestVal = 1
@@ -85,7 +108,7 @@ class PoseEstimatorSubsystem(commands2.SubsystemBase):
                     SmartDashboard.putNumber("Vision Y Position", robotPose2d.Y())
                     SmartDashboard.putNumber("Vision Rotation", robotPose2d.rotation().degrees())
             else:
-                i += 1
+                i += 1'''
         swerveModuleStates = self.driveTrain.getSwerveModulePositions()
         #derivedState = self.driveTrain.KINEMATICS.toTwist2d(swerveModuleStates[0], swerveModuleStates[1], swerveModuleStates[2], swerveModuleStates[3])
         #self.velocity = math.hypot(derivedState.dx, derivedState.dy)
@@ -104,6 +127,22 @@ class PoseEstimatorSubsystem(commands2.SubsystemBase):
     def getFormattedPose(self):
         pose = self.getCurrentPose()
         return f"{pose.X()}, {pose.Y()}, {pose.rotation().degrees()} Degrees"
+    
+    def zeroWithVision(self):
+        cameraIndex = 0
+        for camera in self.photonCameras:
+            pipelineResult = camera.getLatestResult()
+            resultTimeStamp = pipelineResult.getTimestamp()
+            if (resultTimeStamp > self.previousPipelineResultTimeStamp and pipelineResult.hasTargets()):
+                target = pipelineResult.getBestTarget()
+                fiducialId = target.getFiducialId()
+                if target.getPoseAmbiguity() <= 0.15 and fiducialId > 0 and fiducialId < 9:
+                    targetPose = self.getTagPose(fiducialId) # need 3d poses of each apriltag id
+                    camToTarget = target.getBestCameraToTarget()
+                    camPose = targetPose.transformBy(camToTarget.inverse())
+                    robotPose = camPose.transformBy(self.cameraTransformations[cameraIndex])
+                    robotPose2d = robotPose.toPose2d()
+                    self.poseEstimator.addVisionMeasurement(robotPose2d, resultTimeStamp)
     
     def getCurrentPose(self):
         return self.poseEstimator.getEstimatedPosition()

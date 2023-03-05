@@ -5,7 +5,7 @@ import photonvision
 from wpimath import controller
 import os
 import json
-from wpimath import geometry, trajectory
+from wpimath import geometry, trajectory, kinematics
 from math import radians
 import math
 import pathplannerlib
@@ -19,6 +19,7 @@ from subsystems.arm import ArmSubSystem
 from commands.mandibleCommands import MandibleIntakeCommand, MandibleOuttakeCommand
 from commands.substationPickupCommand import SubstationPickupCommand
 from commands.placeOnGridCommand import PlaceOnGridCommand
+from commands.defaultDriveCommand import DefaultDriveCommand
 
 from auto.swerveAutoBuilder import SwerveAutoBuilder
 
@@ -36,7 +37,8 @@ class RobotContainer:
             autoList.append(pathName.removesuffix(".path"))
     maxAngularVelocity = config["autonomousSettings"]["autoVelLimit"] / math.hypot(config["RobotDimensions"]["trackWidth"] / 2, config["RobotDimensions"]["wheelBase"] / 2)
     photonCameras = [photonvision.PhotonCamera("photoncameratwo")]
-    targetGridPosition = (2, 5)
+    targetGridPosition = (2 - 1, 6 - 1)
+    wpilib.SmartDashboard.putNumber("Target Rotation Degrees", 180)
     
     def __init__(self) -> None:
         # subsystems
@@ -52,7 +54,6 @@ class RobotContainer:
         self.auxiliaryStreamDeck = button.CommandJoystick(2)
         
         #subsystem configuration
-        self.driveTrain.setDefaultCommand(cmd.run(lambda: self.driveTrain.joystickDrive(self.getJoystickInput(), self.poseEstimator.getCurrentPose()), [self.driveTrain])) # this is what makes the robot drive, since there isn't a way to bind commands to axes
         self.arm.setDefaultCommand(cmd.run(lambda: self.arm.manualControlIncrementor(self.getStickInput(self.xboxController.getLeftY(), self.config["ArmConfig"]["manualControlDeadzone"])), [self.arm])) # same issue here, no way to bind commands to axes so this is the solution
         self.mandible.setDefaultCommand(cmd.run(lambda: self.mandible.cubePeriodic(), [self.mandible])) # this may not run in certain modes
         
@@ -65,7 +66,7 @@ class RobotContainer:
         
         # this part can be extremely confusing but it is essentially just an initation for the helper class that makes swerve auto possible
         thetaControllerConstraints = self.config["autonomousSettings"]["rotationPIDConstants"]
-        self.pathConstraints = pathplannerlib.PathConstraints(self.config["autonomousSettings"]["autoVelLimit"], self.config["autonomousSettings"]["autoAccLimit"])
+        self.pathConstraints = pathplannerlib.PathConstraints(maxVel = self.config["autonomousSettings"]["autoVelLimit"], maxAccel = self.config["autonomousSettings"]["autoAccLimit"])
         self.SwerveAutoBuilder = SwerveAutoBuilder(self.poseEstimator, 
                                                    self.driveTrain, 
                                                    self.eventMap, 
@@ -140,21 +141,22 @@ class RobotContainer:
     def initializeStreamDeck(self):
         # making an algorithm to automajically assign buttons to set the target grid and position
         # TODO IMPORTANT: Flip stream deck inputs based off alliance, being on red alliance would flip the game piece slot *drastically*
-        buttonCount = 1
+        '''buttonCount = 1
         for g in range(3):
             for s in range(9):
                 button.JoystickButton(self.auxiliaryStreamDeck, buttonCount).onTrue(cmd.runOnce(lambda: self.setTargetGridPosition(g + 1, s + 1), []))
-                buttonCount += 1
+                buttonCount += 1'''
         # buttons 1-27 are now assigned to grid placement on the streamdeck
                 
         button.JoystickButton(self.auxiliaryStreamDeck, 28).onTrue(cmd.runOnce(lambda: self.arm.setPosition("fullyRetracted"), []))
         button.JoystickButton(self.auxiliaryStreamDeck, 29).onTrue(cmd.runOnce(lambda: self.arm.setPosition("optimized"), []))
         button.JoystickButton(self.auxiliaryStreamDeck, 30).onTrue(cmd.runOnce(lambda: self.arm.setPosition("substation"), []))
         button.JoystickButton(self.auxiliaryStreamDeck, 31).onTrue(cmd.runOnce(lambda: self.arm.setPosition("floor"), []))
-        button.JoystickButton(self.auxiliaryStreamDeck, 32).onTrue(cmd.runOnce(lambda: self.arm.setPosition("midCube"), []))
+        '''button.JoystickButton(self.auxiliaryStreamDeck, 32).onTrue(cmd.runOnce(lambda: self.arm.setPosition("midCube"), []))
         button.JoystickButton(self.auxiliaryStreamDeck, 33).onTrue(cmd.runOnce(lambda: self.arm.setPosition("highCube"), []))
         button.JoystickButton(self.auxiliaryStreamDeck, 34).onTrue(cmd.runOnce(lambda: self.arm.setPosition("midConePrep"), []))
-        button.JoystickButton(self.auxiliaryStreamDeck, 35).onTrue(cmd.runOnce(lambda: self.arm.setPosition("highConePrep"), []))
+        button.JoystickButton(self.auxiliaryStreamDeck, 35).onTrue(cmd.runOnce(lambda: self.arm.setPosition("highConePrep"), []))'''
+        self.setTargetGridPosition(2, 6)
     
     def setTargetGridPosition(self, grid: int, position: int):
         '''
@@ -179,22 +181,8 @@ class RobotContainer:
                     position = 4
                 elif position == 4:
                     position = 6
-        wpilib.SmartDashboard.putString("Target Blue Grid Val", f"Grid: {grid}, Slot: {position}")
-        self.targetGridPosition = (grid, position)
+        self.targetGridPosition = (grid - 1, position - 1)
         
-    def getJoystickInput(self):
-        inputs = (self.joystick.getX(), self.joystick.getY(), self.joystick.getZ())
-        adjustedInputs = []
-        for idx, input in enumerate(inputs):
-            threshold = self.config["driverStation"]["joystickDeadZones"][(list(self.config["driverStation"]["joystickDeadZones"])[idx])]
-            if abs(input) > threshold: 
-                adjustedValue = (abs(input) - threshold) / (1 - threshold)
-                if input < 0 and adjustedValue != 0:
-                    adjustedValue = -adjustedValue
-            else:
-                adjustedValue = 0
-            adjustedInputs.append(adjustedValue)
-        return adjustedInputs[0], adjustedInputs[1], adjustedInputs[2]
     
     def evaluateDeadzones(self, inputs):
         '''This method takes in a list consisting of x input, y input, z input
@@ -213,7 +201,10 @@ class RobotContainer:
         return adjustedInputs
     
     def getAutonomousCommand(self):
-        return self.SwerveAutoBuilder.fullAuto(self.getPathGroup(self.autonomousChooser.getSelected()))
+        autoPath = self.getPathGroup(self.autonomousChooser.getSelected())
+        startingTrajectory = pathplannerlib.PathPlanner.generatePath(self.pathConstraints, [pathplannerlib.PathPoint.fromCurrentHolonomicState(self.poseEstimator.getCurrentPose(), self.driveTrain.actualChassisSpeeds()), pathplannerlib.PathPoint.fromCurrentHolonomicState(autoPath[0].getInitialHolonomicPose(), kinematics.ChassisSpeeds(0, 0, 0))])
+        autoPath.insert(0, startingTrajectory)
+        return self.SwerveAutoBuilder.fullAuto(autoPath)
     
     def getPath(self, pathName: str) -> pathplannerlib.PathPlannerTrajectory:
         return pathplannerlib.PathPlanner.loadPath(pathName, self.pathConstraints, False)
@@ -226,6 +217,10 @@ class RobotContainer:
     
     def disabledInit(self):
         self.driveTrain.coast()
+        self.poseEstimator.isDisabled = True
+        
+    def disabledExit(self):
+        self.poseEstimator.isDisabled = False
     
     def generateAutonomousMarkers(self):
         self.eventMap = {
@@ -256,17 +251,16 @@ class RobotContainer:
         )
     
     def testInit(self):
-        self.SwerveAutoBuilder.useAllianceColor = False
-        currentPose = self.poseEstimator.getCurrentPose()
-        transformation = geometry.Transform2d(translation = geometry.Translation2d(1, 0), rotation = geometry.Rotation2d())
-        driveOneMeter = pathplannerlib.PathPlanner.generatePath(self.pathConstraints, [pathplannerlib.PathPoint.fromCurrentHolonomicState(currentPose, self.driveTrain.actualChassisSpeeds()), pathplannerlib.PathPoint(currentPose.transformBy(transformation).translation(), geometry.Rotation2d(), currentPose.rotation())])
-        cmd.run(self.SwerveAutoBuilder.followPath(driveOneMeter))
+        self.driveTrain.setDefaultCommand(cmd.run(lambda: None, [self.driveTrain]))
     
     def testPeriodic(self):
-        pass
+        self.driveTrain.drive(kinematics.ChassisSpeeds(0, 1, 0), False)
         
     def disabledPeriodic(self):
-        '''wpilib.SmartDashboard.putNumber("Front Left", self.driveTrain.frontLeft.getAbsolutePositionZeroThreeSixty())
-        wpilib.SmartDashboard.putNumber("Front Right", self.driveTrain.frontRight.getAbsolutePositionZeroThreeSixty())
-        wpilib.SmartDashboard.putNumber("Rear Right", self.driveTrain.rearRight.getAbsolutePositionZeroThreeSixty())
-        wpilib.SmartDashboard.putNumber("Rear Left", self.driveTrain.rearLeft.getAbsolutePositionZeroThreeSixty())'''
+        pass
+    
+    def autonomousInit(self):
+        self.driveTrain.setDefaultCommand(cmd.run(lambda: None, [self.driveTrain])) # stupid ass command based POS
+        
+    def teleopInit(self):
+        self.driveTrain.setDefaultCommand(DefaultDriveCommand(self.joystick, self.driveTrain, self.poseEstimator, self.config)) # this is what makes the robot drive, since there isn't a way to bind commands to axes

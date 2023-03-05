@@ -6,15 +6,15 @@ import commands2
 
 class MandibleSubSystem(commands2.SubsystemBase):
     ''''''
-    state = "cube"
+    state = "cone" # ideally cube
     gamePieceInPossessionDistance = 80 # in millimeters from the distance sensor, make this bigger later to be safe
     
     def __init__(self, config: dict) -> None:
         super().__init__()
         self.config = config
         self.actuator = DoubleSolenoid(self.config["RobotDefaultSettings"]["PCM_ID"], PneumaticsModuleType.REVPH, self.config["MandibleConfig"]["DoubleSolenoid"]["ForwardChannel"], self.config["MandibleConfig"]["DoubleSolenoid"]["ReverseChannel"])
-        self.compressor = wpilib.Compressor(self.config["RobotDefaultSettings"]["PCM_ID"], PneumaticsModuleType.REVPH)
-        self.compressor.enableDigital()
+        '''self.compressor = wpilib.Compressor(self.config["RobotDefaultSettings"]["PCM_ID"], PneumaticsModuleType.REVPH)
+        self.compressor.enableDigital()''' # NOTE: TEMPORARY
         self.leftMotor = VictorSPX(self.config["MandibleConfig"]["LeftMotorID"])
         self.leftMotor.setNeutralMode(NeutralMode.Brake)
         self.rightMotor = VictorSPX(self.config["MandibleConfig"]["RightMotorID"])

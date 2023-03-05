@@ -44,9 +44,9 @@ class DriveTrainSubSystem(commands2.SubsystemBase):
         self.longitudinalPID = controller.PIDController(teleopConstants["translationPIDConstants"]["kP"], teleopConstants["translationPIDConstants"]["kI"], teleopConstants["translationPIDConstants"]["kD"], teleopConstants["translationPIDConstants"]["period"])
         self.latitudePID = controller.PIDController(teleopConstants["translationPIDConstants"]["kP"], teleopConstants["translationPIDConstants"]["kI"], teleopConstants["translationPIDConstants"]["kD"], teleopConstants["translationPIDConstants"]["period"])
         
-        self.maxAngularVelocity = teleopConstants["teleopVelLimit"] / hypot(self.config["RobotDimensions"]["trackWidth"] / 2, self.config["RobotDimensions"]["wheelBase"] / 2)
-        rotationConstants = teleopConstants["rotationPIDConstants"]
-        self.rotationPID = controller.PIDController(rotationConstants["kP"], rotationConstants["kI"], rotationConstants["kD"], rotationConstants["period"])
+        self.maxAngularVelocity = teleopConstants["teleopVelLimit"] / hypot(self.config["RobotDimensions"]["trackWidth"] / 2, self.config["RobotDimensions"]["wheelBase"] / 2) # about 11 rads per second
+        rotationConstants = self.config["autonomousSettings"]["rotationPIDConstants"]
+        self.rotationPID = controller.PIDController(rotationConstants["kP"], 0.05, rotationConstants["kD"], rotationConstants["period"])
         self.rotationPID.enableContinuousInput(-pi, pi)
         
         self.poseTolerance = geometry.Pose2d(geometry.Translation2d(x=teleopConstants["xPoseToleranceMeters"], 
@@ -63,17 +63,18 @@ class DriveTrainSubSystem(commands2.SubsystemBase):
         ''' Returns the robot rotation as a Rotation2d object and offsets by a given amount'''
         return self.navx.getRotation2d()
     
-    def drive(self, chassisSpeeds: kinematics.ChassisSpeeds, fieldRelative = True):
+    def autoDrive(self, chassisSpeeds: kinematics.ChassisSpeeds, currentPose: geometry.Pose2d, fieldRelative = True):
         if chassisSpeeds == kinematics.ChassisSpeeds(0, 0, 0):
-            self.brake()
+            self.stationary()
             self.currentSpeed = 0
         else:
+            chassisSpeeds.omega = -chassisSpeeds.omega
             self.currentSpeed = hypot(chassisSpeeds.vx, chassisSpeeds.vy)
             wpilib.SmartDashboard.putNumber("targetVX", chassisSpeeds.vx)
             wpilib.SmartDashboard.putNumber("targetVY", chassisSpeeds.vy)
             wpilib.SmartDashboard.putNumber("targetVZ", chassisSpeeds.omega)
             if fieldRelative:
-                swerveModuleStates = self.KINEMATICS.toSwerveModuleStates(kinematics.ChassisSpeeds.fromFieldRelativeSpeeds(chassisSpeeds.vy, chassisSpeeds.vx, chassisSpeeds.omega, self.getNAVXRotation2d())) # invert vx and omega
+                swerveModuleStates = self.KINEMATICS.toSwerveModuleStates(kinematics.ChassisSpeeds.fromFieldRelativeSpeeds(chassisSpeeds.vx, chassisSpeeds.vy, chassisSpeeds.omega, currentPose.rotation())) # invert vx and omega
             else:
                 swerveModuleStates = self.KINEMATICS.toSwerveModuleStates(chassisSpeeds)
             
@@ -93,12 +94,11 @@ class DriveTrainSubSystem(commands2.SubsystemBase):
             - Foreseeable issues with extremely quick motions and possible switching of directions.
             - To fix the latter, maybe implement some way where we don't set our target pose until the velocity of that axis has reached near-zero
         '''
-        print("DEBUG: Running teleop joystick drive default command")
-        yScalar, xScalar, zScalar = inputs[0], inputs[1], inputs[2] # grabbing our inputs and swapping the respective x and y by default
+        ySpeed, xSpeed, zSpeed = inputs[0], inputs[1], inputs[2] # grabbing our inputs and swapping the respective x and y by default
         if self.alliance == DriverStation.Alliance.kRed: # our field oriented controls would be inverted, so lets fix that
-            yScalar = -yScalar
-            xScalar = -xScalar
-        if xScalar == 0 and yScalar == 0 and zScalar == 0:
+            ySpeed = -ySpeed
+            xSpeed = -xSpeed
+        if xSpeed == 0 and ySpeed == 0 and zSpeed == 0:
             self.stationary()
         else:
             xSpeed *= self.kMaxSpeed
@@ -124,6 +124,8 @@ class DriveTrainSubSystem(commands2.SubsystemBase):
         poseError = currentPose.relativeTo(rotationOverridePose) # how far are we off from where our axes setpoints were before?
         xSpeed = xScalar * self.kMaxSpeed
         ySpeed = yScalar * self.kMaxSpeed
+        angularVelocityFF = (poseError.rotation().radians() / pi) * self.maxAngularVelocity
+        wpilib.SmartDashboard.putNumber("AngularVelocityFFOutput", angularVelocityFF)
         if (abs(poseError.rotation().radians()) > self.poseTolerance.rotation().radians()): # we are over the tolerance threshold
             zSpeed = self.rotationPID.calculate(currentPose.rotation().radians(), rotationOverride.radians()) # keep in mind this is not a scalar, this is a speed
         else:
@@ -131,10 +133,11 @@ class DriveTrainSubSystem(commands2.SubsystemBase):
         if xSpeed == 0 and ySpeed == 0 and zSpeed == 0:
             self.stationary()
         else:
-            self.setSwerveStates(xSpeed, ySpeed, zSpeed, currentPose, False)
+            self.setSwerveStates(xSpeed, ySpeed, angularVelocityFF + zSpeed, currentPose, False)
             
         
     def setSwerveStates(self, xSpeed: float, ySpeed: float, zSpeed: float, currentPose: geometry.Pose2d, fieldOrient = True) -> None:
+        self.currentSpeed = hypot(xSpeed, ySpeed)
         if fieldOrient:
             swerveModuleStates = self.KINEMATICS.toSwerveModuleStates(kinematics.ChassisSpeeds.fromFieldRelativeSpeeds(kinematics.ChassisSpeeds(xSpeed, ySpeed, zSpeed), currentPose.rotation()))
         else:

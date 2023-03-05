@@ -9,7 +9,7 @@ class ArmSubSystem(commands2.SubsystemBase):
     constants = { # what encoder value the arm's lead screw motor should go to according to the needed position
         "fullyRetracted": 0.0,
         "substation": 37.9,
-        "floor": 41.25,
+        "floor": 41.75,
         "highConePrep": 35.45,
         "highConePlacement": 37.16,
         "midConePrep": 37.6,
@@ -74,7 +74,6 @@ class ArmSubSystem(commands2.SubsystemBase):
                 self.armFalcon.set(ctre.TalonFXControlMode.PercentOutput, -0.2) # assuming negative makes it go down
         else: # arm is zeroed, proceed as normal
             self.armFalcon.set(ctre.ControlMode.Position, self.targetValue / self.encoderTicksToDistanceConversionFactor)
-            wpilib.SmartDashboard.putNumber("arm target position", self.targetValue)
             wpilib.SmartDashboard.putNumber("arm actual position", self.armFalcon.getSelectedSensorPosition(0) * self.encoderTicksToDistanceConversionFactor)
         return super().periodic()
     
@@ -85,7 +84,7 @@ class ArmSubSystem(commands2.SubsystemBase):
     def setPosition(self, position: str):
         self.targetValue = self.constants[position] # turning a string position into a value via a dictionary
         self.armStringPosition = position
-        wpilib.SmartDashboard.putNumber("arm target position", self.targetValue)
+        wpilib.SmartDashboard.putString("arm target position", position)
         
     def coast(self):
         ''''''

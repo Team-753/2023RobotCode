@@ -54,7 +54,6 @@
   },
   "RobotDefaultSettings": {
     "fieldOrient": true,
-    "robotSpeedLimiter": 1,
     "wheelVelocityLimit": 4.25,
     "robotAccelerationLimit": 8,
     "DEBUGGING": true,
@@ -62,7 +61,7 @@
     "PCM_ID": 61
   },
   "autonomousSettings": {
-    "autoVelLimit": 3,
+    "autoVelLimit": 2,
     "autoAccLimit": 3,
     "xPoseToleranceMeters": 0.03,
     "yPoseToleranceMeters": 0.03,
@@ -71,13 +70,13 @@
       "kP": 5,
       "kI": 0.0,
       "kD": 0.0,
-      "period": 0.03
+      "period": 0.025
     },
     "rotationPIDConstants": {
       "kP": 0.5,
       "kI": 0.0,
       "kD": 0.0,
-      "period": 0.03
+      "period": 0.025
     }
   },
   "driverStation": {
@@ -93,13 +92,13 @@
         "kP": 5.0,
         "kI": 0.0,
         "kD": 0.0,
-        "period": 0.03
+        "period": 0.025
       },
       "rotationPIDConstants": {
         "kP": 0.5,
         "kI": 0.0,
         "kD": 0.0,
-        "period": 0.03
+        "period": 0.025
       },
       "xPoseToleranceMeters": 0.05,
       "yPoseToleranceMeters": 0.05,

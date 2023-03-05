@@ -18,7 +18,7 @@ class PPSwerveDriveController(commands2.CommandBase):
         self.controller = controllers.PPHolonomicDriveController(xController, yController, thetaController)
         self.controller.setTolerance(tolerance)
         self.driveTrain = driveTrain
-        self.addRequirements(self.driveTrain)
+        self.addRequirements(driveTrain)
         
         self.timer = Timer()
         '''
@@ -38,20 +38,23 @@ class PPSwerveDriveController(commands2.CommandBase):
             
         self.timer.reset()
         self.timer.start()
+        print("initializing swerve controller command")
     
     def execute(self):
+        print("running auto")
         currentTime = self.timer.get()
         desiredState = self.transformedTrajectory.sample(currentTime)
         currentPose = self.poseEstimator.getCurrentPose()
         
-        targetChassisSpeeds = self.controller.Calculate(currentPose, desiredState)
-        self.driveTrain.drive(targetChassisSpeeds)
+        targetChassisSpeeds = self.controller.calculate(currentPose, desiredState)
+        self.driveTrain.drive(targetChassisSpeeds, currentPose)
         
     def end(self, interruped: bool):
+        print("auto done")
         self.timer.stop()
         
         if (interruped or abs(self.transformedTrajectory.getEndState().velocity < 0.1)):
-            self.driveTrain.drive(kinematics.ChassisSpeeds(0, 0, 0))
+            self.driveTrain.drive(kinematics.ChassisSpeeds(0, 0, 0), geometry.Pose2d())
             
     def isFinished(self):
         return self.timer.hasElapsed(self.transformedTrajectory.getTotalTime())

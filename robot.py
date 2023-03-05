@@ -17,7 +17,7 @@ What do you need to know to be able to understand the code:
 '''
 class MyRobot(commands2.TimedCommandRobot):
     
-    def __init__(self, period = 0.03) -> None:
+    def __init__(self, period = 0.025) -> None:
         super().__init__(period)
         
     def robotInit(self):
@@ -35,9 +35,13 @@ class MyRobot(commands2.TimedCommandRobot):
         return super().testPeriodic()
     
     def autonomousInit(self):
+        self.robotContainer.autonomousInit()
         self.autoCommand = self.robotContainer.getAutonomousCommand()
         if (self.autoCommand != commands2.Command()):
             self.autoCommand.schedule()
+    
+    def disabledExit(self) -> None:
+        self.robotContainer.disabledExit()
         
     def autonomousPeriodic(self):
         pass
