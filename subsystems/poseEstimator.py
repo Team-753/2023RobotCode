@@ -56,6 +56,7 @@ class PoseEstimatorSubsystem(commands2.SubsystemBase):
         For this next section of code we are referencing both of our cameras to find the best apriltag to esimate our position off of, if one is available
         '''
         # NOTE: This algorithm is way too expensive. Anyway, TODO: Implement dual-camera pose throwaway/averaging
+        # NOTE: GIANT BREAKTHROUGH MENTALLY: AFTER NAVX HAS BEEN ZEROED BY VISION, ONLY RELY ON NAVX ROTATION AND USE THAT TO FILTER TAG POSES
         cameraIndex = 0
         for camera in self.photonCameras:
             pipelineResult = camera.getLatestResult()
@@ -69,10 +70,11 @@ class PoseEstimatorSubsystem(commands2.SubsystemBase):
                     camPose = targetPose.transformBy(camToTarget.inverse())
                     robotPose = camPose.transformBy(self.cameraTransformations[cameraIndex])
                     robotPose2d = robotPose.toPose2d()
+                    self.previousPipelineResultTimeStamp = resultTimeStamp
                     if self.isDisabled: # are we disabled
                         self.poseEstimator.addVisionMeasurement(robotPose2d, resultTimeStamp)
-                    else:
-                        pass
+                    elif abs(self.getCurrentPose().relativeTo(robotPose2d).rotation().degrees()) < 2: # is the vision pose estimate within 2 degrees of our navx estimate
+                        self.poseEstimator.addVisionMeasurement(robotPose2d, resultTimeStamp)
                         #self.poseEstimator.addVisionMeasurement(robotPose2d, resultTimeStamp)
                             
         '''for camera in self.photonCameras: # indexing through the list

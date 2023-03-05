@@ -1,6 +1,5 @@
 '''
 TODO:
-Turn Stream deck into a subsystem that can supply grid placements and call other macros
 Add autonomous compatibility with the place on grid command
 '''
 
@@ -21,6 +20,7 @@ from subsystems.driveTrain import DriveTrainSubSystem
 from subsystems.poseEstimator import PoseEstimatorSubsystem
 from subsystems.mandible import MandibleSubSystem
 from subsystems.arm import ArmSubSystem
+from subsystems.streamDeck import StreamDeckSubsystem
 
 from commands.mandibleCommands import MandibleIntakeCommand, MandibleOuttakeCommand
 from commands.substationPickupCommand import SubstationPickupCommand
@@ -47,17 +47,19 @@ class RobotContainer:
     wpilib.SmartDashboard.putNumber("Target Rotation Degrees", 180)
     
     def __init__(self) -> None:
+        # buttons
+        self.joystick = button.CommandJoystick(0)
+        self.xboxController = button.CommandXboxController(1)
+        self.auxiliaryStreamDeckJoystick = button.CommandJoystick(2)
+        
         # subsystems
         self.driveTrain = DriveTrainSubSystem(self.config)
         self.poseEstimator = PoseEstimatorSubsystem(self.photonCameras, self.driveTrain, geometry.Pose2d(), self.config) # NOTE: THE BLANK POSE2D IS TEMPORARY
         self.mandible = MandibleSubSystem(self.config)
         self.arm = ArmSubSystem(self.config)
+        self.streamDeckSubsystem = StreamDeckSubsystem(self.arm, self.auxiliaryStreamDeckJoystick)
         
         
-        # buttons
-        self.joystick = button.CommandJoystick(0)
-        self.xboxController = button.CommandXboxController(1)
-        self.auxiliaryStreamDeck = button.CommandJoystick(2)
         
         #subsystem configuration
         self.arm.setDefaultCommand(cmd.run(lambda: self.arm.manualControlIncrementor(self.getStickInput(self.xboxController.getLeftY(), self.config["ArmConfig"]["manualControlDeadzone"])), [self.arm])) # same issue here, no way to bind commands to axes so this is the solution
@@ -132,8 +134,6 @@ class RobotContainer:
         self.xboxController.X().onTrue(self.eventMap["CloseMandible"])
         self.xboxController.B().onTrue(self.eventMap["OpenMandible"])
         
-        self.initializeStreamDeck()
-        
     
     def getStickInput(self, input: float, threshold: float) -> float:
         if abs(input) > threshold:
@@ -142,53 +142,7 @@ class RobotContainer:
                 adjustedValue = -adjustedValue
         else:
             adjustedValue = 0
-        return adjustedValue
-    
-    def initializeStreamDeck(self):
-        # making an algorithm to automajically assign buttons to set the target grid and position
-        # TODO IMPORTANT: Flip stream deck inputs based off alliance, being on red alliance would flip the game piece slot *drastically*
-        '''buttonCount = 1
-        for g in range(3):
-            for s in range(9):
-                button.JoystickButton(self.auxiliaryStreamDeck, buttonCount).onTrue(cmd.runOnce(lambda: self.setTargetGridPosition(g + 1, s + 1), []))
-                buttonCount += 1'''
-        # buttons 1-27 are now assigned to grid placement on the streamdeck
-                
-        button.JoystickButton(self.auxiliaryStreamDeck, 28).onTrue(cmd.runOnce(lambda: self.arm.setPosition("fullyRetracted"), []))
-        button.JoystickButton(self.auxiliaryStreamDeck, 29).onTrue(cmd.runOnce(lambda: self.arm.setPosition("optimized"), []))
-        button.JoystickButton(self.auxiliaryStreamDeck, 30).onTrue(cmd.runOnce(lambda: self.arm.setPosition("substation"), []))
-        button.JoystickButton(self.auxiliaryStreamDeck, 31).onTrue(cmd.runOnce(lambda: self.arm.setPosition("floor"), []))
-        '''button.JoystickButton(self.auxiliaryStreamDeck, 32).onTrue(cmd.runOnce(lambda: self.arm.setPosition("midCube"), []))
-        button.JoystickButton(self.auxiliaryStreamDeck, 33).onTrue(cmd.runOnce(lambda: self.arm.setPosition("highCube"), []))
-        button.JoystickButton(self.auxiliaryStreamDeck, 34).onTrue(cmd.runOnce(lambda: self.arm.setPosition("midConePrep"), []))
-        button.JoystickButton(self.auxiliaryStreamDeck, 35).onTrue(cmd.runOnce(lambda: self.arm.setPosition("highConePrep"), []))'''
-        self.setTargetGridPosition(2, 6)
-    
-    def setTargetGridPosition(self, grid: int, position: int):
-        '''
-        grid: input from 1 to 3, counting down from the top of the field.
-        position: input from 1 to 9, reads like a numpad
-        '''
-        alliance = wpilib.DriverStation.getAlliance()
-        if alliance == wpilib.DriverStation.Alliance.kRed: # are we on the red alliance, if so we have to flip the grid somewhat
-            grid = 4 - grid
-            if position > 6: # high grid
-                if position == 9:
-                    position = 7
-                elif position == 7:
-                    position = 9
-            elif position < 4: # low row
-                if position == 3:
-                    position = 1
-                elif position == 1:
-                    position = 3
-            else: # mid grid
-                if position == 6:
-                    position = 4
-                elif position == 4:
-                    position = 6
-        self.targetGridPosition = (grid - 1, position - 1)
-        
+        return adjustedValue    
     
     def evaluateDeadzones(self, inputs):
         '''This method takes in a list consisting of x input, y input, z input
