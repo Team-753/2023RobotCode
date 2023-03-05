@@ -101,7 +101,7 @@ class RobotContainer:
         self.joystickButtonFour.whileHeld(cmd.run(lambda: self.driveTrain.xMode(), [self.driveTrain]))
         
         self.joystickButtonTwo = button.JoystickButton(self.joystick, 2)
-        self.joystickButtonTwo.whileHeld(PlaceOnGridCommand(self.SwerveAutoBuilder, 
+        self.joystickButtonTwo.whenHeld(PlaceOnGridCommand(self.SwerveAutoBuilder, 
                                                             self.mandible, 
                                                             self.arm, 
                                                             self.poseEstimator, 

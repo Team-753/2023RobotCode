@@ -54,7 +54,7 @@ class PlaceOnGridCommand(commands2.CommandBase):
     FieldWidth = 16.54175
     highConeOffset = 1.88595
     highCubeOffset = 2 # this
-    midConeOffset = 1.4986 # this
+    midConeOffset = 1.45 # this 1.4986
     midCubeOffset = 2.15 # this
     lowConeOffset = 1.5 # this
     lowCubeOffset = 1.65 # and this are all total guesses, check them please
@@ -83,8 +83,10 @@ class PlaceOnGridCommand(commands2.CommandBase):
         if self.isAutonomous:
             self.sequence = self.getTargetGridValues(self.targetGridSlot[0], self.targetGridSlot[1])
             self.swerveAutoBuilder.useAllianceColor = False
+            self.myTimeHasCome = True
             onLeFlyTJ = self.swerveAutoBuilder.followPath(pathplannerlib.PathPlanner.generatePath(self.constraints, [pathplannerlib.PathPoint.fromCurrentHolonomicState(self.currentPose, self.driveTrain.actualChassisSpeeds()), pathplannerlib.PathPoint(self.sequence[0].translation(), geometry.Rotation2d(), self.sequence[0].rotation())]))
-            commands2.SequentialCommandGroup(onLeFlyTJ, self.sequence[1], cmd.runOnce(lambda: self.finished(), []))
+            self.command = commands2.SequentialCommandGroup(onLeFlyTJ, self.sequence[1], [])
+
             
     def finished(self):
         self.myTimeHasCome = True
@@ -95,9 +97,11 @@ class PlaceOnGridCommand(commands2.CommandBase):
             if self.joystick.getRawButton(1): # is the driver pulling the trigger (confirming game piece placement)
                 self.sequence = self.getTargetGridValues(self.targetGridSlot[0], self.targetGridSlot[1])
                 self.swerveAutoBuilder.useAllianceColor = False
+                self.myTimeHasCome = True
                 onLeFlyTJ = self.swerveAutoBuilder.followPath(pathplannerlib.PathPlanner.generatePath(self.constraints, [pathplannerlib.PathPoint.fromCurrentHolonomicState(self.currentPose, self.driveTrain.actualChassisSpeeds()), pathplannerlib.PathPoint(self.sequence[0].translation(), geometry.Rotation2d(), self.sequence[0].rotation())]))
-                commands2.SequentialCommandGroup(onLeFlyTJ, self.sequence[1], cmd.runOnce(lambda: self.finished(), []))
+                self.command = commands2.SequentialCommandGroup(onLeFlyTJ, self.sequence[1], cmd.runOnce(lambda: self.finished(), []))
             else: # they are just holding the side button
+                print("running default shit oh boy!!!")
                 targetRotation = self.calculateRobotAngle(self.currentPose)
                 wpilib.SmartDashboard.putNumber("Target Grid Rotation", targetRotation.degrees())
                 inputs = (self.joystick.getX(), self.joystick.getY())
@@ -123,7 +127,8 @@ class PlaceOnGridCommand(commands2.CommandBase):
             targetCoordinates[0] = self.FieldWidth - targetCoordinates[0]
             allianceFactor = -1
         mandibleMode = self.mandible.state
-        if slot < 4: # low-row
+        if slot < 3: # low-row
+            wpilib.SmartDashboard.putString("target row", "low")
             if mandibleMode == "cone":
                 offset = self.lowConeOffset
                 placementSequence = cmd.sequence(ArmConfirmPlacementCommand(self.arm, "floor"), cmd.runOnce(lambda: self.mandible.setState('cube'), [self.mandible]), cmd.runOnce(lambda: self.arm.setPosition("optimized"), [self.arm]))
@@ -133,9 +138,10 @@ class PlaceOnGridCommand(commands2.CommandBase):
             robotAngle = self.calculateRobotAngle(self.poseEstimator.getCurrentPose())
             piecePlacement = geometry.Pose2d(geometry.Translation2d(x = targetCoordinates[0], y = targetCoordinates[1]), geometry.Rotation2d())
             robotPose = piecePlacement.transformBy(geometry.Transform2d(translation = geometry.Translation2d(x = (-offset * allianceFactor), y = 0), rotation = robotAngle)) # if errors persist, try making the offset positive
-        elif slot > 6: # high-row
+        elif slot > 5: # high-row
             # our only placement option is perpindicular to the grid and right up against it
             # first we have to calculate our required robot position
+            wpilib.SmartDashboard.putString("target row", "high")
             if mandibleMode == "cone":
                 offset = self.highConeOffset
                 placementSequence = cmd.sequence(ArmConfirmPlacementCommand(self.arm, "highConePrep"), ArmConfirmPlacementCommand(self.arm, "highConePlacement"), cmd.runOnce(lambda: self.mandible.setState('cube'), [self.mandible]), cmd.runOnce(lambda: self.arm.setPosition("optimized"), [self.arm]))
@@ -144,15 +150,17 @@ class PlaceOnGridCommand(commands2.CommandBase):
                 placementSequence = cmd.sequence(ArmConfirmPlacementCommand(self.arm, "highCube"), MandibleOuttakeCommand(self.mandible), cmd.runOnce(lambda: self.arm.setPosition("optimized"), [self.arm]))
             robotPose = geometry.Pose2d(targetCoordinates[0] + (offset * allianceFactor), targetCoordinates[1], geometry.Rotation2d(-1, 0))
         else: # mid-row
+            wpilib.SmartDashboard.putString("target row", "mid")
             if mandibleMode == "cone":
                 offset = self.midConeOffset
-                placementSequence = cmd.sequence(ArmConfirmPlacementCommand(self.arm, "midConePrep"), ArmConfirmPlacementCommand(self.arm, "midConePlacement"), cmd.runOnce(lambda: self.mandible.setState('cube'), [self.mandible]), cmd.runOnce(lambda: self.arm.setPosition("optimized"), [self.arm]))
+                placementSequence = cmd.sequence(ArmConfirmPlacementCommand(self.arm, "midConePrep"), ArmConfirmPlacementCommand(self.arm, "midConePlacement"), cmd.runOnce(lambda: self.mandible.setState('cube'), [self.mandible]), cmd.runOnce(lambda: self.arm.setPosition("optimized"), [self.arm]), commands2.WaitCommand(0.25), cmd.runOnce(lambda: self.mandible.setState('cone')))
             else:
                 offset = self.midCubeOffset
                 placementSequence = cmd.sequence(ArmConfirmPlacementCommand(self.arm, "midCube"), MandibleOuttakeCommand(self.mandible), cmd.runOnce(lambda: self.arm.setPosition("optimized"), [self.arm]))
-            robotAngle = self.calculateRobotAngle(self.poseEstimator.getCurrentPose())
-            piecePlacement = geometry.Pose2d(geometry.Translation2d(x = targetCoordinates[0], y = targetCoordinates[1]), geometry.Rotation2d())
-            robotPose = piecePlacement.transformBy(geometry.Transform2d(translation = geometry.Translation2d(x = (-offset * allianceFactor), y = 0), rotation = robotAngle))
+            #robotAngle = self.calculateRobotAngle(self.poseEstimator.getCurrentPose())
+            piecePlacement = geometry.Pose2d(geometry.Translation2d(x = targetCoordinates[0], y = targetCoordinates[1]), geometry.Rotation2d(0.5 * math.pi + (allianceFactor * 0.5 * math.pi)))
+            robotPose = piecePlacement.transformBy(geometry.Transform2d(translation = geometry.Translation2d(x = -(offset * allianceFactor), y = 0), rotation = geometry.Rotation2d()))
+        wpilib.SmartDashboard.putString("targetRobotPose", f"X: {robotPose.X()}, Y: {robotPose.Y()}, Z: {robotPose.rotation().degrees()}")
         return robotPose, placementSequence
     
     def onlySetArmPosition(self, slot: int) -> None:
@@ -174,12 +182,9 @@ class PlaceOnGridCommand(commands2.CommandBase):
         targetCoordinates = self.GridLayout[self.targetGridSlot[0]][self.targetGridSlot[1]]
         xDiff = currentPose.X() - targetCoordinates[0]
         yDiff = currentPose.Y() - targetCoordinates[1]
-        wpilib.SmartDashboard.putNumber("Grid X", targetCoordinates[0])
-        wpilib.SmartDashboard.putNumber("Grid Y", targetCoordinates[1])
-        wpilib.SmartDashboard.putNumber("X Difference", xDiff)
-        wpilib.SmartDashboard.putNumber("Y Difference", yDiff)
         return geometry.Rotation2d(xDiff, yDiff).rotateBy(geometry.Rotation2d(-math.pi))
     
     def end(self, interrupted: bool) -> None:
+        if not interrupted:
+            self.command.schedule()
         self.swerveAutoBuilder.useAllianceColor = True
-        return super().end(interrupted)

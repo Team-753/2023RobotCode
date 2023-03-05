@@ -72,8 +72,8 @@ class PoseEstimatorSubsystem(commands2.SubsystemBase):
                     if self.isDisabled: # are we disabled
                         self.poseEstimator.addVisionMeasurement(robotPose2d, resultTimeStamp)
                     else:
-
-                        self.poseEstimator.addVisionMeasurement(robotPose2d, resultTimeStamp)
+                        pass
+                        #self.poseEstimator.addVisionMeasurement(robotPose2d, resultTimeStamp)
                             
         '''for camera in self.photonCameras: # indexing through the list
             pipelineResult = camera.getLatestResult()

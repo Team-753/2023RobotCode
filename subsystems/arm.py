@@ -12,7 +12,7 @@ class ArmSubSystem(commands2.SubsystemBase):
         "floor": 41.75,
         "highConePrep": 35.45,
         "highConePlacement": 37.16,
-        "midConePrep": 37.6,
+        "midConePrep": 37.6, # 37.6
         "midConePlacement": 38.5,
         "highCube": 0.0,
         "midCube": 0.0,

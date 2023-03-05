@@ -25,7 +25,8 @@ class DriveTrainSubSystem(commands2.SubsystemBase):
             
         self.navx = navx.AHRS.create_spi()
         
-        self.kMaxSpeed = config["RobotDefaultSettings"]["wheelVelocityLimit"]
+        self.kMaxSpeed = self.config["RobotDefaultSettings"]["wheelVelocityLimit"]
+        self.kMaxAutoSpeed = self.config["autonomousSettings"]["autoVelLimit"]
         self.wheelBase = self.config["RobotDimensions"]["wheelBase"]
         self.trackWidth = self.config["RobotDimensions"]["trackWidth"]
         
@@ -78,7 +79,7 @@ class DriveTrainSubSystem(commands2.SubsystemBase):
             else:
                 swerveModuleStates = self.KINEMATICS.toSwerveModuleStates(chassisSpeeds)
             
-            self.KINEMATICS.desaturateWheelSpeeds(swerveModuleStates, self.kMaxSpeed)
+            self.KINEMATICS.desaturateWheelSpeeds(swerveModuleStates, self.kMaxAutoSpeed)
             self.frontLeft.setState(swerveModuleStates[0])
             self.frontRight.setState(swerveModuleStates[1])
             self.rearLeft.setState(swerveModuleStates[2])

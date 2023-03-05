@@ -47,14 +47,14 @@ class PPSwerveDriveController(commands2.CommandBase):
         currentPose = self.poseEstimator.getCurrentPose()
         
         targetChassisSpeeds = self.controller.calculate(currentPose, desiredState)
-        self.driveTrain.drive(targetChassisSpeeds, currentPose)
+        self.driveTrain.autoDrive(targetChassisSpeeds, currentPose)
         
     def end(self, interruped: bool):
         print("auto done")
         self.timer.stop()
         
         if (interruped or abs(self.transformedTrajectory.getEndState().velocity < 0.1)):
-            self.driveTrain.drive(kinematics.ChassisSpeeds(0, 0, 0), geometry.Pose2d())
+            self.driveTrain.autoDrive(kinematics.ChassisSpeeds(0, 0, 0), geometry.Pose2d())
             
     def isFinished(self):
         return self.timer.hasElapsed(self.transformedTrajectory.getTotalTime())

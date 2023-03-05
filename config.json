@@ -61,11 +61,11 @@
     "PCM_ID": 61
   },
   "autonomousSettings": {
-    "autoVelLimit": 2,
-    "autoAccLimit": 3,
+    "autoVelLimit": 0.5,
+    "autoAccLimit": 2,
     "xPoseToleranceMeters": 0.03,
     "yPoseToleranceMeters": 0.03,
-    "thetaPoseToleranceDegrees": 0.5,
+    "thetaPoseToleranceDegrees": 0.25,
     "translationPIDConstants": {
       "kP": 5,
       "kI": 0.0,
@@ -73,8 +73,8 @@
       "period": 0.025
     },
     "rotationPIDConstants": {
-      "kP": 0.5,
-      "kI": 0.0,
+      "kP": 0.75,
+      "kI": 0.05,
       "kD": 0.0,
       "period": 0.025
     }
