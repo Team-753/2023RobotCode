@@ -85,12 +85,12 @@ class PlaceOnGridCommand(commands2.CommandBase):
         self.myTimeHasCome = False
         self.allianceColor = wpilib.DriverStation.getAlliance()
         if self.isAutonomous:
-            self.currentPose = self.poseEstimator.getCurrentPose()
+            '''self.currentPose = self.poseEstimator.getCurrentPose()
             self.sequence = self.getTargetGridValues(self.targetGridSlot[0], self.targetGridSlot[1])
             self.swerveAutoBuilder.useAllianceColor = False
             self.myTimeHasCome = True
             onLeFlyTJ = self.swerveAutoBuilder.followPath(pathplannerlib.PathPlanner.generatePath(self.constraints, [pathplannerlib.PathPoint.fromCurrentHolonomicState(self.currentPose, self.driveTrain.actualChassisSpeeds()), pathplannerlib.PathPoint(self.sequence[0].translation(), geometry.Rotation2d(), self.sequence[0].rotation())]))
-            self.command = commands2.SequentialCommandGroup(onLeFlyTJ, self.sequence[1], [])
+            self.command = commands2.SequentialCommandGroup(onLeFlyTJ, self.sequence[1], [])'''
         else:
             self.targetGridSlot = self.streamDeck.getSelectedGridSlot()
             self.onlySetArmPosition(self.targetGridSlot[1])
@@ -109,7 +109,6 @@ class PlaceOnGridCommand(commands2.CommandBase):
                 onLeFlyTJ = self.swerveAutoBuilder.followPath(pathplannerlib.PathPlanner.generatePath(self.constraints, [pathplannerlib.PathPoint.fromCurrentHolonomicState(self.currentPose, self.driveTrain.actualChassisSpeeds()), pathplannerlib.PathPoint(self.sequence[0].translation(), geometry.Rotation2d(), self.sequence[0].rotation())]))
                 self.command = commands2.SequentialCommandGroup(onLeFlyTJ, self.sequence[1], cmd.runOnce(lambda: self.finished(), []))
             else: # they are just holding the side button
-                print("running default shit oh boy!!!")
                 targetRotation = self.calculateRobotAngle(self.currentPose)
                 wpilib.SmartDashboard.putNumber("Target Grid Rotation", targetRotation.degrees())
                 inputs = (self.joystick.getX(), self.joystick.getY())
@@ -180,9 +179,9 @@ class PlaceOnGridCommand(commands2.CommandBase):
         
     def calculateRobotAngle(self, currentPose: geometry.Pose2d) -> geometry.Rotation2d:
         wpilib.SmartDashboard.putString("Target Blue Grid Val", f"Grid: {self.targetGridSlot[0] + 1}, Slot: {self.targetGridSlot[1] + 1}")
+        targetCoordinates = self.GridLayout[self.targetGridSlot[0]][self.targetGridSlot[1]]
         if self.allianceColor == wpilib.DriverStation.Alliance.kRed: # we have to flip the x-coordinate if we are on red alliance because the placement coordinate system is based off blue alliance
             targetCoordinates[0] = self.FieldWidth - targetCoordinates[0]
-        targetCoordinates = self.GridLayout[self.targetGridSlot[0]][self.targetGridSlot[1]]
         xDiff = currentPose.X() - targetCoordinates[0]
         yDiff = currentPose.Y() - targetCoordinates[1]
         return geometry.Rotation2d(xDiff, yDiff).rotateBy(geometry.Rotation2d(-math.pi))

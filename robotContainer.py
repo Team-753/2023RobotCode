@@ -118,7 +118,7 @@ class RobotContainer:
                                                             self.eventMap, 
                                                             self.joystick, 
                                                             False, 
-                                                            self.targetGridPosition, 
+                                                            self.streamDeckSubsystem, 
                                                             self.config))
         
         self.joystickButtonThree = button.JoystickButton(self.joystick, 3)
