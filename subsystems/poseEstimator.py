@@ -30,6 +30,7 @@ class PoseEstimatorSubsystem(commands2.SubsystemBase):
         super().__init__()
 
         self.driveTrain = driveTrain
+        self.navx = self.driveTrain.navx
         self.config = config
         self.tags = config["Apriltags"]
         self.photonCameras = photonCameras
@@ -48,6 +49,10 @@ class PoseEstimatorSubsystem(commands2.SubsystemBase):
         #self.tab = shuffleboard.Shuffleboard.getTab("Field")
         wpilib.SmartDashboard.putData("Field", self.field)
         #self.tab.add("Field", self.field).withPosition(5, 0).withSize(6, 4)
+        self.YRotation = geometry.Rotation2d()
+        self.YTimeStamp = 0
+        self.YTimer = wpilib.Timer()
+        self.YTimer.start()
         
     def periodic(self) -> None:
         ''' Call this function with every iteration of your autonomous and teleop loop. '''
@@ -87,6 +92,15 @@ class PoseEstimatorSubsystem(commands2.SubsystemBase):
         SmartDashboard.putNumber("Y Position", currentPose.Y())
         SmartDashboard.putNumber("Rotation", currentPose.rotation().degrees())
         
+        oldYRotation = self.YRotation
+        self.YRotation = self.getAngleAboutYAxis()
+        oldTimeStamp = self.YTimeStamp
+        self.YTimeStamp = self.YTimer.get()
+        deltaYTheta = (self.YRotation.degrees() - oldYRotation.degrees()) / (self.YTimeStamp - oldTimeStamp) # in degrees per second
+        SmartDashboard.putNumber("Field Orient Y Theta", self.YRotation)
+        SmartDashboard.putNumber("Delta Y Theta", deltaYTheta)
+        
+        
     def getFormattedPose(self):
         pose = self.getCurrentPose()
         return f"{pose.X()}, {pose.Y()}, {pose.rotation().degrees()} Degrees"
@@ -107,3 +121,12 @@ class PoseEstimatorSubsystem(commands2.SubsystemBase):
         tagRotation = geometry.Rotation3d(0, 0, tag["theta"])
         tagPose = geometry.Pose3d(tag["x"], tag["y"], tag["z"], tagRotation)
         return tagPose
+    
+    def getAngleAboutYAxis(self):
+        roll = geometry.Rotation2d(math.radians(self.navx.getRoll())) # robot tilting forward/backward
+        pitch = geometry.Rotation2d(math.radians(self.navx.getPitch())) # robot tilting laterally
+        yaw = self.getCurrentPose().rotation()
+        rotationContainer = geometry.Rotation3d(roll, pitch, yaw)
+        rotationDifference = geometry.Pose2d(geometry.Translation2d(), yaw).relativeTo(geometry.Pose2d()).rotation()
+        resultantRoll = rotationContainer.rotateBy(geometry.Rotation3d(geometry.Rotation2d(), geometry.Rotation2d(), rotationDifference))
+        return geometry.Rotation2d(resultantRoll.X())
