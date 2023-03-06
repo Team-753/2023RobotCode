@@ -10,7 +10,7 @@ class StreamDeckSubsystem(commands2.SubsystemBase):
         super().__init__()
         self.arm = ArmSubSystem
         self.streamDeck = StreamDeck
-        self.selectedGridSlot = (3, 6)
+        self.selectedGridSlot = (2, 5)
         button.JoystickButton(self.streamDeck, 13).onTrue(cmd.runOnce(lambda: self.arm.setPosition("fullyRetracted"), []))
         button.JoystickButton(self.streamDeck, 14).onTrue(cmd.runOnce(lambda: self.arm.setPosition("optimized"), []))
         button.JoystickButton(self.streamDeck, 15).onTrue(cmd.runOnce(lambda: self.arm.setPosition("substation"), []))
@@ -35,13 +35,13 @@ class StreamDeckSubsystem(commands2.SubsystemBase):
             if switches[f"{i + 1}"]:
                 self.selectedGridSlot = (self.selectedGridSlot[0], i + 1)
                 wpilib.SmartDashboard.putNumber("Selected Grid Slot", i + 1)
-        if "GridOne":
+        if switches["GridOne"]:
             self.selectedGridSlot = (1, self.selectedGridSlot[1])
             wpilib.SmartDashboard.putNumber("Selected Grid", 1)
-        elif "GridTwo":
+        elif switches["GridTwo"]:
             self.selectedGridSlot = (2, self.selectedGridSlot[1])
             wpilib.SmartDashboard.putNumber("Selected Grid", 2)
-        elif "GridThree":
+        elif switches["GridThree"]:
             self.selectedGridSlot = (3, self.selectedGridSlot[1])
             wpilib.SmartDashboard.putNumber("Selected Grid", 3)
     
@@ -65,4 +65,4 @@ class StreamDeckSubsystem(commands2.SubsystemBase):
                     position = 4
                 elif position == 4:
                     position = 6
-        return (2, 5)#(grid - 1, position - 1)
+        return (grid - 1, position - 1)

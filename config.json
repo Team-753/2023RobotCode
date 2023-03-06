@@ -61,13 +61,13 @@
     "PCM_ID": 61
   },
   "autonomousSettings": {
-    "autoVelLimit": 0.5,
-    "autoAccLimit": 2,
+    "autoVelLimit": 1,
+    "autoAccelLimit": 2,
     "xPoseToleranceMeters": 0.03,
     "yPoseToleranceMeters": 0.03,
     "thetaPoseToleranceDegrees": 0.25,
     "translationPIDConstants": {
-      "kP": 5,
+      "kP": 5.0,
       "kI": 0.0,
       "kD": 0.0,
       "period": 0.025
@@ -81,7 +81,8 @@
   },
   "driverStation": {
     "joystickUSB": 0,
-    "streamDeckUSB": 1,
+    "xboxUSB": 1,
+    "streamDeckUSB": 2,
     "joystickDeadZones": {
       "xDeadZone": 0.1,
       "yDeadZone": 0.1,
@@ -95,7 +96,7 @@
         "period": 0.025
       },
       "rotationPIDConstants": {
-        "kP": 0.5,
+        "kP": 0.75,
         "kI": 0.0,
         "kD": 0.0,
         "period": 0.025
@@ -104,7 +105,7 @@
       "yPoseToleranceMeters": 0.05,
       "thetaPoseToleranceDegrees": 1,
       "teleopVelLimit": 4.25,
-      "teleopAccLimit": 3
+      "teleopAccelLimit": 3
     }
   },
   "MandibleConfig": {

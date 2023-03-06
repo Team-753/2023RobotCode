@@ -7,16 +7,16 @@ class ArmSubSystem(commands2.SubsystemBase):
     ''''''
     
     constants = { # what encoder value the arm's lead screw motor should go to according to the needed position
-        "fullyRetracted": 0.0,
-        "substation": 37.9,
-        "floor": 41.75,
-        "highConePrep": 35.45,
-        "highConePlacement": 37.16,
-        "midConePrep": 37.6, # 37.6
-        "midConePlacement": 38.5,
-        "highCube": 0.0,
-        "midCube": 0.0,
-        "optimized": 21.5
+        "FullyRetracted": 0.0,
+        "Substation": 37.9,
+        "Floor": 41.75,
+        "HighConePrep": 35.45,
+        "HighConePlacement": 37.16,
+        "MidConePrep": 37.6, # 37.6
+        "MidConePlacement": 38.5,
+        "HighCube": 0.0,
+        "MidCube": 0.0,
+        "Optimized": 21.5
     }
     targetValue = 0
     maxHeightInches = 42.5
@@ -35,7 +35,7 @@ class ArmSubSystem(commands2.SubsystemBase):
         self.config = config
         self.limitSwitch = wpilib.DigitalInput(self.config["ArmConfig"]["LimitSwitchID"])
         self.armFalcon = ctre.TalonFX(self.config["ArmConfig"]["FalconID"])
-        self.armFalcon.configSelectedFeedbackSensor(ctre.FeedbackDevice.IntegratedSensor, 0, 250)
+        self.armFalcon.configSelectedFeedbackSensor(ctre.FeedbackDevice.IntegratedSensor, 0, 50)
         armFalconConfig = ctre.TalonFXConfiguration()
         armFalconConfig.absoluteSensorRange = AbsoluteSensorRange.Unsigned_0_to_360
         pidConfig = self.config["ArmConfig"]["FalconPIDValues"]
@@ -49,8 +49,7 @@ class ArmSubSystem(commands2.SubsystemBase):
         currentConfig.currentLimit = pidConfig["currentLimit"]
         armFalconConfig.supplyCurrLimit = currentConfig
         self.armFalcon.setNeutralMode(ctre.NeutralMode.Brake)
-        self.armFalcon.configAllSettings(armFalconConfig, 250)
-        wpilib.SmartDashboard.putBoolean("arm zeroed", False)
+        self.armFalcon.configAllSettings(armFalconConfig, 50)
         self.armStringPosition = "fullyRetracted"
         self.tolerance = self.config["ArmConfig"]["autoPlacementTolerance"]
 
@@ -62,19 +61,18 @@ class ArmSubSystem(commands2.SubsystemBase):
         need to switch over PID's based on how far out the arm is extended.
         - Returns: whether it is within the setpoint threshold, very important for auto stuff
         '''
-        wpilib.SmartDashboard.putBoolean("arm limit switch", self.limitSwitch.get())
+        wpilib.SmartDashboard.putBoolean("Arm Limit Switch", self.limitSwitch.get())
         if not self.zeroed: # has the arm set its setpoint yet?
             if self.limitSwitch.get(): # is the switch pressed
                 self.armFalcon.set(ctre.TalonFXControlMode.PercentOutput, 0) # stopping the motor
                 self.armFalcon.setNeutralMode(ctre.NeutralMode.Coast) # coasting the motor
-                self.armFalcon.setSelectedSensorPosition(0.0, 0, 250) # zeroing the motor
+                self.armFalcon.setSelectedSensorPosition(0.0, 0, 50) # zeroing the motor
                 self.zeroed = True
-                wpilib.SmartDashboard.putBoolean("arm zeroed", True)
             else: # the switch isn't pressed yet; we haven't reached the bottom
                 self.armFalcon.set(ctre.TalonFXControlMode.PercentOutput, -0.2) # assuming negative makes it go down
         else: # arm is zeroed, proceed as normal
             self.armFalcon.set(ctre.ControlMode.Position, self.targetValue / self.encoderTicksToDistanceConversionFactor)
-            wpilib.SmartDashboard.putNumber("arm actual position", self.armFalcon.getSelectedSensorPosition(0) * self.encoderTicksToDistanceConversionFactor)
+            wpilib.SmartDashboard.putNumber("Arm Position", self.armFalcon.getSelectedSensorPosition(0) * self.encoderTicksToDistanceConversionFactor)
         return super().periodic()
     
     def reZero(self):
@@ -84,14 +82,8 @@ class ArmSubSystem(commands2.SubsystemBase):
     def setPosition(self, position: str):
         self.targetValue = self.constants[position] # turning a string position into a value via a dictionary
         self.armStringPosition = position
-        wpilib.SmartDashboard.putString("arm target position", position)
-        
-    def coast(self):
-        ''''''
-        
-    def brake(self):
-        ''''''
-    
+        wpilib.SmartDashboard.putString("Target Arm Position", position)
+
     def atSetpoint(self):
         if abs(self.targetValue - self.armFalcon.getSelectedSensorPosition(0) * self.encoderTicksToDistanceConversionFactor) < self.tolerance: # the arm is within the tolerance position threshold
             return True

@@ -92,8 +92,8 @@ class RobotContainer:
         self.configureButtonBindings()
         
         self.gamePieceChooser = wpilib.SendableChooser()
-        self.gamePieceChooser.setDefaultOption("Cube", "kCube")
-        self.gamePieceChooser.addOption("Cone", "kCone")
+        self.gamePieceChooser.setDefaultOption("Cube", "Cube")
+        self.gamePieceChooser.addOption("Cone", "Cone")
         wpilib.SmartDashboard.putData("Game Piece Chooser", self.gamePieceChooser)
         
         ''' Auto-populating our autonomous chooser with the paths we have in the deploy/pathplanner folder '''
@@ -172,32 +172,22 @@ class RobotContainer:
     def getPathGroup(self, groupName: str) -> List[pathplannerlib.PathPlannerTrajectory]:
         return pathplannerlib.PathPlanner.loadPathGroup(groupName, [self.pathConstraints], False)
     
-    def teleopInit(self):
-        self.driveTrain.alliance = wpilib.DriverStation.getAlliance()
-    
-    def disabledInit(self):
-        self.driveTrain.coast()
-        self.poseEstimator.isDisabled = True
-        
-    def disabledExit(self):
-        self.poseEstimator.isDisabled = False
-    
     def generateAutonomousMarkers(self):
         self.eventMap = {
-            "OpenMandible": cmd.runOnce(lambda: self.mandible.setState('cube'), [self.mandible]),
-            "CloseMandible": cmd.runOnce(lambda: self.mandible.setState("cone"), [self.mandible]),
+            "OpenMandible": cmd.runOnce(lambda: self.mandible.setState('Cube'), [self.mandible]),
+            "CloseMandible": cmd.runOnce(lambda: self.mandible.setState("Cone"), [self.mandible]),
             "OuttakeMandible": MandibleOuttakeCommand(self.mandible),
             "IntakeMandible": MandibleIntakeCommand(self.mandible),
-            "armFullyRetracted": cmd.runOnce(lambda: self.arm.setPosition("fullyRetracted"), [self.arm]),
-            "armSubstation": cmd.runOnce(lambda: self.arm.setPosition("substation"), [self.arm]),
-            "armFloor": cmd.runOnce(lambda: self.arm.setPosition("floor"), [self.arm]),
-            "armHighConePrep": cmd.runOnce(lambda: self.arm.setPosition("highConePrep"), [self.arm]),
-            "armMidConePrep": cmd.runOnce(lambda: self.arm.setPosition("midConePrep"), [self.arm]),
-            "armHighConePlacement": cmd.runOnce(lambda: self.arm.setPosition("highConePlacement"), [self.arm]),
-            "armMidConePlacement": cmd.runOnce(lambda: self.arm.setPosition("midConePlacement"), [self.arm]),
-            "armHighCube": cmd.runOnce(lambda: self.arm.setPosition("highCube"), [self.arm]),
-            "armMidCube": cmd.runOnce(lambda: self.arm.setPosition("midCube"), [self.arm]),
-            "armOptimized": cmd.runOnce(lambda: self.arm.setPosition("optimized"), [self.arm])
+            "armFullyRetracted": cmd.runOnce(lambda: self.arm.setPosition("FullyRetracted"), [self.arm]),
+            "armSubstation": cmd.runOnce(lambda: self.arm.setPosition("Substation"), [self.arm]),
+            "armFloor": cmd.runOnce(lambda: self.arm.setPosition("Floor"), [self.arm]),
+            "armHighConePrep": cmd.runOnce(lambda: self.arm.setPosition("HighConePrep"), [self.arm]),
+            "armMidConePrep": cmd.runOnce(lambda: self.arm.setPosition("MidConePrep"), [self.arm]),
+            "armHighConePlacement": cmd.runOnce(lambda: self.arm.setPosition("HighConePlacement"), [self.arm]),
+            "armMidConePlacement": cmd.runOnce(lambda: self.arm.setPosition("MidConePlacement"), [self.arm]),
+            "armHighCube": cmd.runOnce(lambda: self.arm.setPosition("HighCube"), [self.arm]),
+            "armMidCube": cmd.runOnce(lambda: self.arm.setPosition("MidCube"), [self.arm]),
+            "armOptimized": cmd.runOnce(lambda: self.arm.setPosition("Optimized"), [self.arm])
         }
     
     def generateSimpleAutonomousCommands(self):
@@ -211,16 +201,36 @@ class RobotContainer:
         )
     
     def testInit(self):
-        self.driveTrain.setDefaultCommand(cmd.run(lambda: None, [self.driveTrain]))
+        self.driveTrain.setDefaultCommand(DefaultDriveCommand(self.joystick, self.driveTrain, self.poseEstimator, self.config))
+        self.arm.setPosition("FullyRetracted")
+        self.mandible.setState("Cube") # we need to always be in cube mode or else we can't fit in starting config
     
     def testPeriodic(self):
-        self.driveTrain.drive(kinematics.ChassisSpeeds(0, 1, 0), False)
+        pass
         
+    def disabledInit(self):
+        self.driveTrain.coast()
+        self.poseEstimator.isDisabled = True
+    
     def disabledPeriodic(self):
         pass
     
+    def disabledExit(self):
+        self.poseEstimator.isDisabled = False
+    
     def autonomousInit(self):
         self.driveTrain.setDefaultCommand(cmd.run(lambda: None, [self.driveTrain])) # stupid ass command based POS
+        self.arm.setPosition("Optimized")
+        self.mandible.setState(self.gamePieceChooser.getSelected())
+    
+    def autonomousPeriodic(self):
+        pass
         
     def teleopInit(self):
+        self.SwerveAutoBuilder.useAllianceColor = False
+        self.driveTrain.alliance = wpilib.DriverStation.getAlliance()
         self.driveTrain.setDefaultCommand(DefaultDriveCommand(self.joystick, self.driveTrain, self.poseEstimator, self.config)) # this is what makes the robot drive, since there isn't a way to bind commands to axes
+    
+    def teleopPeriodic(self):
+        pass
+        

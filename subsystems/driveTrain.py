@@ -6,6 +6,7 @@ from ctre import NeutralMode
 from wpilib import DriverStation
 from wpimath import controller, trajectory
 from math import hypot, radians, pi, atan2
+from typing import List
 import commands2
 #from pathplannerlib import 
 
@@ -22,8 +23,7 @@ class DriveTrainSubSystem(commands2.SubsystemBase):
         super().__init__()
         self.config = config
             
-            
-        self.navx = navx.AHRS.create_spi()
+        self.navx = navx.AHRS.create_spi(update_rate_hz=100)
         
         self.kMaxSpeed = self.config["RobotDefaultSettings"]["wheelVelocityLimit"]
         self.kMaxAutoSpeed = self.config["autonomousSettings"]["autoVelLimit"]
@@ -42,8 +42,6 @@ class DriveTrainSubSystem(commands2.SubsystemBase):
         self.rearRight = SwerveModule(self.config["SwerveModules"]["rearRight"], "rearRight")
         
         teleopConstants = self.config["driverStation"]["teleoperatedRobotConstants"]
-        self.longitudinalPID = controller.PIDController(teleopConstants["translationPIDConstants"]["kP"], teleopConstants["translationPIDConstants"]["kI"], teleopConstants["translationPIDConstants"]["kD"], teleopConstants["translationPIDConstants"]["period"])
-        self.latitudePID = controller.PIDController(teleopConstants["translationPIDConstants"]["kP"], teleopConstants["translationPIDConstants"]["kI"], teleopConstants["translationPIDConstants"]["kD"], teleopConstants["translationPIDConstants"]["period"])
         
         self.maxAngularVelocity = teleopConstants["teleopVelLimit"] / hypot(self.config["RobotDimensions"]["trackWidth"] / 2, self.config["RobotDimensions"]["wheelBase"] / 2) # about 11 rads per second
         rotationConstants = self.config["autonomousSettings"]["rotationPIDConstants"]
@@ -53,27 +51,17 @@ class DriveTrainSubSystem(commands2.SubsystemBase):
         self.poseTolerance = geometry.Pose2d(geometry.Translation2d(x=teleopConstants["xPoseToleranceMeters"], 
                                                                                           y=teleopConstants["yPoseToleranceMeters"]), 
                                                                                           geometry.Rotation2d(radians(teleopConstants["thetaPoseToleranceDegrees"])))
-        self.targetPose = geometry.Pose2d()
-        self.teleopInitiated = False
-        
-        self.currentSpeed = 0
-        self.currentHeading = geometry.Rotation2d()
         self.alliance = DriverStation.Alliance.kBlue # default alliance
         
-    def getNAVXRotation2d(self):
-        ''' Returns the robot rotation as a Rotation2d object and offsets by a given amount'''
+    def getNAVXRotation2d(self) -> geometry.Rotation2d:
+        ''' Returns the NAVX rotation represented as a Rotation2d object'''
         return self.navx.getRotation2d()
     
-    def autoDrive(self, chassisSpeeds: kinematics.ChassisSpeeds, currentPose: geometry.Pose2d, fieldRelative = True):
+    def autoDrive(self, chassisSpeeds: kinematics.ChassisSpeeds, currentPose: geometry.Pose2d, fieldRelative = True) -> None:
         if chassisSpeeds == kinematics.ChassisSpeeds(0, 0, 0):
             self.stationary()
-            self.currentSpeed = 0
         else:
-            chassisSpeeds.omega = -chassisSpeeds.omega
-            self.currentSpeed = hypot(chassisSpeeds.vx, chassisSpeeds.vy)
-            wpilib.SmartDashboard.putNumber("targetVX", chassisSpeeds.vx)
-            wpilib.SmartDashboard.putNumber("targetVY", chassisSpeeds.vy)
-            wpilib.SmartDashboard.putNumber("targetVZ", chassisSpeeds.omega)
+            chassisSpeeds.omega = -chassisSpeeds.omega # for whatever reason this has to be inverted otherwise *everything* breaks
             if fieldRelative:
                 swerveModuleStates = self.KINEMATICS.toSwerveModuleStates(kinematics.ChassisSpeeds.fromFieldRelativeSpeeds(chassisSpeeds.vx, chassisSpeeds.vy, chassisSpeeds.omega, currentPose.rotation())) # invert vx and omega
             else:
@@ -85,15 +73,9 @@ class DriveTrainSubSystem(commands2.SubsystemBase):
             self.rearLeft.setState(swerveModuleStates[2])
             self.rearRight.setState(swerveModuleStates[3])
     
-    def joystickDrive(self, inputs: list, currentPose: geometry.Pose2d):
+    def joystickDrive(self, inputs: list, currentPose: geometry.Pose2d) -> None:
         '''
-        Drives the robot in teleop using PIDs to assist in keeping the robot where the operator wants to go.
-        - Locks rotation to the last angle when over the twist threshold
-        - Individually locks translation axes to their last relative postion given joystick use of said axis
-        - Possible issues:
-            - PID's are janky, and need to be tested
-            - Foreseeable issues with extremely quick motions and possible switching of directions.
-            - To fix the latter, maybe implement some way where we don't set our target pose until the velocity of that axis has reached near-zero
+        Typical teleoperated robot control function, nothing fancy here, just some constants and ratios
         '''
         ySpeed, xSpeed, zSpeed = inputs[0], inputs[1], inputs[2] # grabbing our inputs and swapping the respective x and y by default
         if self.alliance == DriverStation.Alliance.kRed: # our field oriented controls would be inverted, so lets fix that
@@ -109,24 +91,14 @@ class DriveTrainSubSystem(commands2.SubsystemBase):
     
     def joystickDriveThetaOverride(self, inputs: list, currentPose: geometry.Pose2d, rotationOverride: geometry.Rotation2d) -> None:
         '''
-        Drives the robot in teleop using PIDs to assist in keeping the robot where the operator wants to go.
-        - Locks rotation to the last angle when over the twist threshold
-        - Individually locks translation axes to their last relative postion given joystick use of said axis
-        - Possible issues:
-            - PID's are janky, and need to be tested
-            - Foreseeable issues with extremely quick motions and possible switching of directions.
-            - To fix the latter, maybe implement some way where we don't set our target pose until the velocity of that axis has reached near-zero
+        Drives the robot oriented towards a given target based on the passed in rotation
         '''
         rotationOverridePose = geometry.Pose2d(geometry.Translation2d(), rotationOverride)
         yScalar, xScalar = inputs[0], inputs[1] # grabbing our inputs and swapping the respective x and y by default
-        if self.alliance == DriverStation.Alliance.kRed: # to swap inputs for the red alliance persepective change
-            yScalar = -yScalar
-            xScalar = -xScalar
         poseError = currentPose.relativeTo(rotationOverridePose) # how far are we off from where our axes setpoints were before?
         xSpeed = xScalar * self.kMaxSpeed
         ySpeed = yScalar * self.kMaxSpeed
         angularVelocityFF = (poseError.rotation().radians() / pi) * self.maxAngularVelocity
-        wpilib.SmartDashboard.putNumber("AngularVelocityFFOutput", angularVelocityFF)
         if (abs(poseError.rotation().radians()) > self.poseTolerance.rotation().radians()): # we are over the tolerance threshold
             zSpeed = self.rotationPID.calculate(currentPose.rotation().radians(), rotationOverride.radians()) # keep in mind this is not a scalar, this is a speed
         else:
@@ -138,7 +110,6 @@ class DriveTrainSubSystem(commands2.SubsystemBase):
             
         
     def setSwerveStates(self, xSpeed: float, ySpeed: float, zSpeed: float, currentPose: geometry.Pose2d, fieldOrient = True) -> None:
-        self.currentSpeed = hypot(xSpeed, ySpeed)
         if fieldOrient:
             swerveModuleStates = self.KINEMATICS.toSwerveModuleStates(kinematics.ChassisSpeeds.fromFieldRelativeSpeeds(kinematics.ChassisSpeeds(xSpeed, ySpeed, zSpeed), currentPose.rotation()))
         else:
@@ -150,7 +121,7 @@ class DriveTrainSubSystem(commands2.SubsystemBase):
         self.rearLeft.setState(swerveModuleStates[2])
         self.rearRight.setState(swerveModuleStates[3])
     
-    def stationary(self):
+    def stationary(self) -> None:
         ''' Don't use this, is unhealthy for the motors and drivetrain. '''
         self.frontLeft.setNeutralMode(NeutralMode.Brake)
         self.frontLeft.stop()
@@ -161,7 +132,7 @@ class DriveTrainSubSystem(commands2.SubsystemBase):
         self.rearRight.setNeutralMode(NeutralMode.Brake)
         self.rearRight.stop()
     
-    def coast(self):
+    def coast(self) -> None:
         ''' Whenever you don't want to power the wheels '''
         self.frontLeft.setNeutralMode(NeutralMode.Coast)
         self.frontLeft.stop()
@@ -172,17 +143,14 @@ class DriveTrainSubSystem(commands2.SubsystemBase):
         self.rearRight.setNeutralMode(NeutralMode.Coast)
         self.rearRight.stop()
     
-    def balance(self):
-        ''' Needs to be written '''
-    
-    def xMode(self):
+    def xMode(self) -> None:
         ''' Turns the wheels to form an 'X' making the robot immobile without overcoming friction '''  
         self.frontLeft.xMode()
         self.frontRight.xMode()
         self.rearLeft.xMode()
         self.rearRight.xMode()
         
-    def getSwerveModulePositions(self):
+    def getSwerveModulePositions(self) -> List[kinematics.SwerveModulePosition]:
         positions = (self.frontLeft.getSwerveModulePosition(), 
                self.frontRight.getSwerveModulePosition(), 
                self.rearLeft.getSwerveModulePosition(), 
@@ -196,7 +164,7 @@ class DriveTrainSubSystem(commands2.SubsystemBase):
                self.rearRight.getSwerveModuleState())
         return self.KINEMATICS.toChassisSpeeds(states[0], states[1], states[2], states[3])
         
-    def resetSwerves(self):
+    def resetSwerves(self) -> None:
         self.frontLeft.reZeroMotors()
         self.frontRight.reZeroMotors()
         self.rearLeft.reZeroMotors()

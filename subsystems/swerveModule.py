@@ -142,7 +142,7 @@ class SwerveModule:
         self.driveMotor.set(ctre.ControlMode.PercentOutput, 0)
     
     def reZeroMotors(self):
-        self.driveMotor.setSelectedSensorPosition(0, 0, 250)
+        self.driveMotor.setSelectedSensorPosition(0, 0, 50)
         self.turnMotor.setSelectedSensorPosition(self.getAbsolutePositionZeroThreeSixty() * self.countsPerRotation * self.turningGearRatio / 360, 0, 50)
                 
     def xMode(self):
