@@ -162,7 +162,12 @@ class RobotContainer:
     
     def getAutonomousCommand(self):
         autoPath = self.getPathGroup(self.autonomousChooser.getSelected())
-        startingTrajectory = pathplannerlib.PathPlanner.generatePath(self.pathConstraints, [pathplannerlib.PathPoint.fromCurrentHolonomicState(self.poseEstimator.getCurrentPose(), self.driveTrain.actualChassisSpeeds()), pathplannerlib.PathPoint.fromCurrentHolonomicState(autoPath[0].getInitialHolonomicPose(), kinematics.ChassisSpeeds(0, 0, 0))])
+        # MAJOR TODO: Fix bug, starting pathplanner position would be off if we are on red alliance, best way to fix is to transform stating holonomic state to blue alliance.
+        if wpilib.DriverStation.getAlliance() == wpilib.DriverStation.Alliance.kRed:
+            startingTargetPose = pathplannerlib.PathPlannerTrajectory.transformTrajectoryForAlliance(autoPath[0], wpilib.DriverStation.Alliance.kRed).getInitialHolonomicPose()
+            startingTrajectory = pathplannerlib.PathPlannerTrajectory.transformTrajectoryForAlliance(pathplannerlib.PathPlanner.generatePath(self.pathConstraints, [pathplannerlib.PathPoint.fromCurrentHolonomicState(self.poseEstimator.getCurrentPose(), self.driveTrain.actualChassisSpeeds()), pathplannerlib.PathPoint.fromCurrentHolonomicState(startingTargetPose, kinematics.ChassisSpeeds(0, 0, 0))]), wpilib.DriverStation.Alliance.kBlue)
+        else:
+            startingTrajectory = pathplannerlib.PathPlanner.generatePath(self.pathConstraints, [pathplannerlib.PathPoint.fromCurrentHolonomicState(self.poseEstimator.getCurrentPose(), self.driveTrain.actualChassisSpeeds()), pathplannerlib.PathPoint.fromCurrentHolonomicState(autoPath[0].getInitialHolonomicPose(), kinematics.ChassisSpeeds(0, 0, 0))])
         autoPath.insert(0, startingTrajectory)
         return self.SwerveAutoBuilder.fullAuto(autoPath)
     
@@ -177,17 +182,18 @@ class RobotContainer:
             "OpenMandible": cmd.runOnce(lambda: self.mandible.setState('Cube'), [self.mandible]),
             "CloseMandible": cmd.runOnce(lambda: self.mandible.setState("Cone"), [self.mandible]),
             "OuttakeMandible": MandibleOuttakeCommand(self.mandible),
-            "IntakeMandible": MandibleIntakeCommand(self.mandible),
-            "armFullyRetracted": cmd.runOnce(lambda: self.arm.setPosition("FullyRetracted"), [self.arm]),
-            "armSubstation": cmd.runOnce(lambda: self.arm.setPosition("Substation"), [self.arm]),
-            "armFloor": cmd.runOnce(lambda: self.arm.setPosition("Floor"), [self.arm]),
-            "armHighConePrep": cmd.runOnce(lambda: self.arm.setPosition("HighConePrep"), [self.arm]),
-            "armMidConePrep": cmd.runOnce(lambda: self.arm.setPosition("MidConePrep"), [self.arm]),
-            "armHighConePlacement": cmd.runOnce(lambda: self.arm.setPosition("HighConePlacement"), [self.arm]),
-            "armMidConePlacement": cmd.runOnce(lambda: self.arm.setPosition("MidConePlacement"), [self.arm]),
-            "armHighCube": cmd.runOnce(lambda: self.arm.setPosition("HighCube"), [self.arm]),
-            "armMidCube": cmd.runOnce(lambda: self.arm.setPosition("MidCube"), [self.arm]),
-            "armOptimized": cmd.runOnce(lambda: self.arm.setPosition("Optimized"), [self.arm])
+            "IntakeMandibleToggle": cmd.runOnce(lambda: self.mandible.intake(), [self.mandible]),
+            "StopMandible": cmd.runOnce(lambda: self.mandible.stop(), [self.mandible]),
+            "ArmFullyRetracted": cmd.runOnce(lambda: self.arm.setPosition("FullyRetracted"), [self.arm]),
+            "ArmSubstation": cmd.runOnce(lambda: self.arm.setPosition("Substation"), [self.arm]),
+            "ArmFloor": cmd.runOnce(lambda: self.arm.setPosition("Floor"), [self.arm]),
+            "ArmHighConePrep": cmd.runOnce(lambda: self.arm.setPosition("HighConePrep"), [self.arm]),
+            "ArmMidConePrep": cmd.runOnce(lambda: self.arm.setPosition("MidConePrep"), [self.arm]),
+            "ArmHighConePlacement": cmd.runOnce(lambda: self.arm.setPosition("HighConePlacement"), [self.arm]),
+            "ArmMidConePlacement": cmd.runOnce(lambda: self.arm.setPosition("MidConePlacement"), [self.arm]),
+            "ArmHighCube": cmd.runOnce(lambda: self.arm.setPosition("HighCube"), [self.arm]),
+            "ArmMidCube": cmd.runOnce(lambda: self.arm.setPosition("MidCube"), [self.arm]),
+            "ArmOptimized": cmd.runOnce(lambda: self.arm.setPosition("Optimized"), [self.arm])
         }
     
     def generateSimpleAutonomousCommands(self):
@@ -219,6 +225,7 @@ class RobotContainer:
         self.poseEstimator.isDisabled = False
     
     def autonomousInit(self):
+        self.SwerveAutoBuilder.useAllianceColor = True
         self.driveTrain.setDefaultCommand(cmd.run(lambda: None, [self.driveTrain])) # stupid ass command based POS
         self.arm.setPosition("Optimized")
         self.mandible.setState(self.gamePieceChooser.getSelected())

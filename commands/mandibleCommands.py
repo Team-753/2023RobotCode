@@ -3,7 +3,7 @@ import commands2
 import wpilib
 
 class MandibleOuttakeCommand(commands2.CommandBase):
-    ''' Command for setting the mandible to intake until it detects a game piece. '''
+    ''''''
     
     def __init__(self, mandibleSubSystem: MandibleSubSystem) -> None:
         super().__init__()

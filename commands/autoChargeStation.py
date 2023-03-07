@@ -27,12 +27,3 @@ class AutonomousChargeStation(commands2.CommandBase):
     
     def isFinished(self) -> bool:
         return super().isFinished()
-    
-    def getAngleAboutYAxis(self):
-        roll = geometry.Rotation2d(math.radians(self.navx.getRoll())) # robot tilting forward/backward
-        pitch = geometry.Rotation2d(math.radians(self.navx.getPitch())) # robot tilting laterally
-        yaw = self.poseEstimator.getCurrentPose().rotation()
-        rotationContainer = geometry.Rotation3d(roll = roll, pitch = pitch, yaw = yaw)
-        rotationDifference = geometry.Pose2d(geometry.Translation2d(), yaw).relativeTo(geometry.Pose2d()).rotation()
-        resultantRoll = rotationContainer.rotateBy(geometry.Rotation3d(geometry.Rotation2d(), geometry.Rotation2d(), rotationDifference))
-        return resultantRoll.X()

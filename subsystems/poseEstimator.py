@@ -97,7 +97,7 @@ class PoseEstimatorSubsystem(commands2.SubsystemBase):
         oldTimeStamp = self.YTimeStamp
         self.YTimeStamp = self.YTimer.get()
         deltaYTheta = (self.YRotation.degrees() - oldYRotation.degrees()) / (self.YTimeStamp - oldTimeStamp) # in degrees per second
-        SmartDashboard.putNumber("Field Orient Y Theta", self.YRotation)
+        SmartDashboard.putNumber("Field Orient Y Theta", self.YRotation.degrees())
         SmartDashboard.putNumber("Delta Y Theta", deltaYTheta)
         
         

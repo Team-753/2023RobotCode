@@ -153,8 +153,13 @@ class PlaceOnGridCommand(commands2.CommandBase):
                 offset = self.midCubeOffset
                 placementSequence = cmd.sequence(ArmConfirmPlacementCommand(self.arm, "MidCube"), MandibleOuttakeCommand(self.mandible), cmd.runOnce(lambda: self.arm.setPosition("Optimized"), [self.arm]))
             #robotAngle = self.calculateRobotAngle(self.poseEstimator.getCurrentPose())
-        piecePlacement = geometry.Pose2d(geometry.Translation2d(x = targetCoordinates[0], y = targetCoordinates[1]), geometry.Rotation2d(0.5 * math.pi + (allianceFactor * 0.5 * math.pi)))
-        robotPose = piecePlacement.transformBy(geometry.Transform2d(translation = geometry.Translation2d(x = -(offset * allianceFactor), y = 0), rotation = geometry.Rotation2d()))
+        if slot > 5: # we won't do a circle
+            piecePlacement = geometry.Pose2d(geometry.Translation2d(x = targetCoordinates[0], y = targetCoordinates[1]), geometry.Rotation2d(0.5 * math.pi + (allianceFactor * 0.5 * math.pi)))
+            robotPose = piecePlacement.transformBy(geometry.Transform2d(translation = geometry.Translation2d(x = -(offset * allianceFactor), y = 0), rotation = geometry.Rotation2d()))
+        else: # we can place relative to a circle
+            robotRotation = self.calculateRobotAngle(self.poseEstimator.getCurrentPose())
+            piecePlacement = geometry.Pose2d(geometry.Translation2d(x = targetCoordinates[0], y = targetCoordinates[1]), geometry.Rotation2d())
+            robotPose = piecePlacement.transformBy(geometry.Transform2d(translation = geometry.Translation2d(x = -math.cos(robotRotation.radians()) * offset, y = -math.sin(robotRotation.radians()) * offset), rotation = robotRotation))
         return robotPose, placementSequence
     
     def onlySetArmPosition(self, slot: int) -> None:
