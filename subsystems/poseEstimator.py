@@ -37,7 +37,7 @@ class PoseEstimatorSubsystem(commands2.SubsystemBase):
         self.cameraTransformations = []
         for camera in photonCameras:
             cameraParams = self.config["RobotDimensions"]["PhotonCameras"][camera.getCameraName()]
-            self.cameraTransformations.append(geometry.Transform3d(geometry.Translation3d(cameraParams["x"], cameraParams["y"], cameraParams["z"]), geometry.Rotation3d(cameraParams["roll"], cameraParams["pitch"], cameraParams["yaw"])))
+            self.cameraTransformations.append(geometry.Transform3d(geometry.Translation3d(cameraParams["x"], cameraParams["y"], cameraParams["z"]), geometry.Rotation3d(math.radians(cameraParams["roll"]), math.radians(cameraParams["pitch"]), math.radians(cameraParams["yaw"]))))
             
         
         self.poseEstimator = estimator.SwerveDrive4PoseEstimator(self.driveTrain.KINEMATICS, 
@@ -123,10 +123,10 @@ class PoseEstimatorSubsystem(commands2.SubsystemBase):
         return tagPose
     
     def getAngleAboutYAxis(self):
-        roll = geometry.Rotation2d(math.radians(self.navx.getRoll())) # robot tilting forward/backward
-        pitch = geometry.Rotation2d(math.radians(self.navx.getPitch())) # robot tilting laterally
-        yaw = self.getCurrentPose().rotation()
+        roll = math.radians(self.navx.getRoll()) # robot tilting forward/backward
+        pitch = math.radians(self.navx.getPitch()) # robot tilting laterally
+        yaw = self.getCurrentPose().rotation().radians()
         rotationContainer = geometry.Rotation3d(roll, pitch, yaw)
-        rotationDifference = geometry.Pose2d(geometry.Translation2d(), yaw).relativeTo(geometry.Pose2d()).rotation()
-        resultantRoll = rotationContainer.rotateBy(geometry.Rotation3d(geometry.Rotation2d(), geometry.Rotation2d(), rotationDifference))
+        rotationDifference = geometry.Pose2d(geometry.Translation2d(), geometry.Rotation2d(yaw)).relativeTo(geometry.Pose2d()).rotation()
+        resultantRoll = rotationContainer.rotateBy(geometry.Rotation3d(0, 0, rotationDifference.radians()))
         return geometry.Rotation2d(resultantRoll.X())

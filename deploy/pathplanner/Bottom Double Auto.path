@@ -1,0 +1,84 @@
+{
+  "waypoints": [
+    {
+      "anchorPoint": {
+        "x": 2.4563253623035024,
+        "y": 0.912092673143679
+      },
+      "prevControl": null,
+      "nextControl": {
+        "x": 3.4563253623035024,
+        "y": 0.912092673143679
+      },
+      "holonomicAngle": 180.0,
+      "isReversal": false,
+      "velOverride": null,
+      "isLocked": false,
+      "isStopPoint": false,
+      "stopEvent": {
+        "names": [
+          "PlaceGamePiece",
+          "ArmFloor"
+        ],
+        "executionBehavior": "sequential",
+        "waitBehavior": "none",
+        "waitTime": 0
+      }
+    },
+    {
+      "anchorPoint": {
+        "x": 6.142214267067423,
+        "y": 0.9856214104789317
+      },
+      "prevControl": {
+        "x": 5.966336774687439,
+        "y": 0.14920302930883658
+      },
+      "nextControl": {
+        "x": 5.966336774687439,
+        "y": 0.14920302930883658
+      },
+      "holonomicAngle": 0.01,
+      "isReversal": true,
+      "velOverride": null,
+      "isLocked": false,
+      "isStopPoint": true,
+      "stopEvent": {
+        "names": [
+          "AutoPiecePickup"
+        ],
+        "executionBehavior": "sequential",
+        "waitBehavior": "none",
+        "waitTime": 0
+      }
+    },
+    {
+      "anchorPoint": {
+        "x": 2.8221714221206224,
+        "y": 0.9105269981373297
+      },
+      "prevControl": {
+        "x": 3.4500070996669776,
+        "y": 1.0081207401998127
+      },
+      "nextControl": null,
+      "holonomicAngle": 180.0,
+      "isReversal": false,
+      "velOverride": null,
+      "isLocked": false,
+      "isStopPoint": false,
+      "stopEvent": {
+        "names": [
+          "PlaceGamePiece"
+        ],
+        "executionBehavior": "sequential",
+        "waitBehavior": "none",
+        "waitTime": 0
+      }
+    }
+  ],
+  "maxVelocity": null,
+  "maxAcceleration": 2.0,
+  "isReversed": null,
+  "markers": []
+}

@@ -26,6 +26,7 @@ from commands.mandibleCommands import MandibleIntakeCommand, MandibleOuttakeComm
 from commands.substationPickupCommand import SubstationPickupCommand
 from commands.placeOnGridCommand import PlaceOnGridCommand
 from commands.defaultDriveCommand import DefaultDriveCommand
+from commands.pickupGamePieceAutoCommand import PickupGamePieceAutoCommand
 
 from auto.swerveAutoBuilder import SwerveAutoBuilder
 
@@ -74,7 +75,7 @@ class RobotContainer:
         
         # this part can be extremely confusing but it is essentially just an initation for the helper class that makes swerve auto possible
         thetaControllerConstraints = self.config["autonomousSettings"]["rotationPIDConstants"]
-        self.pathConstraints = pathplannerlib.PathConstraints(maxVel = self.config["autonomousSettings"]["autoVelLimit"], maxAccel = self.config["autonomousSettings"]["autoAccLimit"])
+        self.pathConstraints = pathplannerlib.PathConstraints(maxVel = self.config["autonomousSettings"]["autoVelLimit"], maxAccel = self.config["autonomousSettings"]["autoAccelLimit"])
         self.SwerveAutoBuilder = SwerveAutoBuilder(self.poseEstimator, 
                                                    self.driveTrain, 
                                                    self.eventMap, 
@@ -103,6 +104,30 @@ class RobotContainer:
             self.autonomousChooser.addOption(pathName, pathName)
         wpilib.SmartDashboard.putData("Autonomous Chooser", self.autonomousChooser)
         
+        self.gamePieceSlotOne = wpilib.SendableChooser()
+        self.gamePieceSlotOne.setDefaultOption("Cube", "Cube")
+        self.gamePieceSlotOne.addOption("Cone", "Cone")
+        
+        self.gamePieceSlotTwo = wpilib.SendableChooser()
+        self.gamePieceSlotTwo.setDefaultOption("Cube", "Cube")
+        self.gamePieceSlotTwo.addOption("Cone", "Cone")
+        
+        self.gamePieceSlotThree = wpilib.SendableChooser()
+        self.gamePieceSlotThree.setDefaultOption("Cube", "Cube")
+        self.gamePieceSlotThree.addOption("Cone", "Cone")
+        
+        self.gamePieceSlotFour = wpilib.SendableChooser()
+        self.gamePieceSlotFour.setDefaultOption("Cube", "Cube")
+        self.gamePieceSlotFour.addOption("Cone", "Cone")
+        
+        wpilib.SmartDashboard.putData("Field Piece One", self.gamePieceSlotOne)
+        wpilib.SmartDashboard.putData("Field Piece Two", self.gamePieceSlotOne)
+        wpilib.SmartDashboard.putData("Field Piece Three", self.gamePieceSlotOne)
+        wpilib.SmartDashboard.putData("Field Piece Four", self.gamePieceSlotOne)
+        
+        self.gamePieceSlots = [self.gamePieceSlotOne, self.gamePieceSlotTwo, self.gamePieceSlotThree, self.gamePieceSlotFour]
+        
+        
     
     def configureButtonBindings(self):
         self.joystickButtonFour = button.JoystickButton(self.joystick, 4)
@@ -117,7 +142,6 @@ class RobotContainer:
                                                             self.pathConstraints, 
                                                             self.eventMap, 
                                                             self.joystick, 
-                                                            False, 
                                                             self.streamDeckSubsystem, 
                                                             self.config))
         
@@ -195,6 +219,14 @@ class RobotContainer:
             "ArmMidCube": cmd.runOnce(lambda: self.arm.setPosition("MidCube"), [self.arm]),
             "ArmOptimized": cmd.runOnce(lambda: self.arm.setPosition("Optimized"), [self.arm])
         }
+        '''"AutoPiecePickup": PickupGamePieceAutoCommand(self.driveTrain, 
+                                                          self.arm, 
+                                                          self.poseEstimator, 
+                                                          self.mandible, 
+                                                          self.SwerveAutoBuilder, 
+                                                          self.pathConstraints, 
+                                                          self.gamePieceSlots),
+            "PlaceGamePiece": cmd.run() # fix this'''
     
     def generateSimpleAutonomousCommands(self):
         ''' Generates some of the autonomous commands that use *less* logic for use in the auto event map and for manual controls '''

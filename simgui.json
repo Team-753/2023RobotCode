@@ -9,6 +9,7 @@
       "/Shuffleboard/Field/Field": "Field2d",
       "/SmartDashboard/Autonomous Chooser": "String Chooser",
       "/SmartDashboard/Field": "Field2d",
+      "/SmartDashboard/Field Piece Four": "String Chooser",
       "/SmartDashboard/Game Piece Chooser": "String Chooser",
       "/SmartDashboard/Vision Odo-0": "Command",
       "/SmartDashboard/Vision Odometry Zero": "Command"
