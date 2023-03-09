@@ -43,12 +43,12 @@
         "yaw": 0
       },
       "photoncameratwo": {
-        "x": -1.2446,
+        "x": 0.2159,
         "y": 0,
         "z": -0.5969,
         "roll": 0,
         "pitch": 0,
-        "yaw": 180
+        "yaw": 0
       }
     }
   },
@@ -61,19 +61,19 @@
     "PCM_ID": 61
   },
   "autonomousSettings": {
-    "autoVelLimit": 1,
+    "autoVelLimit": 1.5,
     "autoAccelLimit": 2,
     "xPoseToleranceMeters": 0.03,
     "yPoseToleranceMeters": 0.03,
     "thetaPoseToleranceDegrees": 0.25,
     "translationPIDConstants": {
-      "kP": 5.0,
+      "kP": 3.0,
       "kI": 0.0,
       "kD": 0.0,
       "period": 0.025
     },
     "rotationPIDConstants": {
-      "kP": 0.75,
+      "kP": 1,
       "kI": 0.05,
       "kD": 0.0,
       "period": 0.025

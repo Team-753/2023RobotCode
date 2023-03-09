@@ -58,12 +58,12 @@ class PlaceOnGridCommand(commands2.CommandBase):
             ]
         ]
     FieldWidth = 16.54175
-    highConeOffset = 1.88595
-    highCubeOffset = 2 # this
+    highConeOffset = 1.397
+    highCubeOffset = 1.7018 # this
     midConeOffset = 1.45 # this 1.4986
-    midCubeOffset = 2.15 # this
-    lowConeOffset = 1.5 # this
-    lowCubeOffset = 1.65 # and this are all total guesses, check them please
+    midCubeOffset = 1.7018 # this
+    lowConeOffset = 1.5494 # this
+    lowCubeOffset = 1.5494 # and this are all total guesses, check them please
     
     def __init__(self, SwerveAutoBuilder: SwerveAutoBuilder, Mandible: MandibleSubSystem, Arm: ArmSubSystem, PoseEstimator: PoseEstimatorSubsystem, DriveTrain: DriveTrainSubSystem, Constraints: pathplannerlib.PathConstraints, EventMap: dict, DriverJoystick: button.CommandJoystick, StreamDeck: StreamDeckSubsystem, config: dict) -> None:
         super().__init__()
@@ -102,7 +102,7 @@ class PlaceOnGridCommand(commands2.CommandBase):
         if self.joystick.getRawButton(1): # is the driver pulling the trigger (confirming game piece placement)
             self.sequence = self.getTargetGridValues(self.targetGridSlot[0], self.targetGridSlot[1])
             self.myTimeHasCome = True
-            onLeFlyTJ = self.swerveAutoBuilder.followPath(pathplannerlib.PathPlanner.generatePath(self.constraints, [pathplannerlib.PathPoint.fromCurrentHolonomicState(self.currentPose, self.driveTrain.actualChassisSpeeds()), pathplannerlib.PathPoint(self.sequence[0].translation(), geometry.Rotation2d(), self.sequence[0].rotation())]))
+            onLeFlyTJ = self.swerveAutoBuilder.followPath(pathplannerlib.PathPlanner.generatePath(self.constraints, [pathplannerlib.PathPoint.fromCurrentHolonomicState(self.currentPose, self.driveTrain.actualChassisSpeeds()), pathplannerlib.PathPoint(self.sequence[0].translation(), geometry.Rotation2d(math.pi), self.sequence[0].rotation())]))
             self.command = commands2.SequentialCommandGroup(onLeFlyTJ, self.sequence[1], cmd.runOnce(lambda: self.finished(), []))
         else: # they are just holding the side button
             targetRotation = self.calculateRobotAngle(self.currentPose)
@@ -129,14 +129,10 @@ class PlaceOnGridCommand(commands2.CommandBase):
             targetCoordinates[0] = self.FieldWidth - targetCoordinates[0]
             allianceFactor = -1
         mandibleMode = self.mandible.state
-        if slot < 3: # low-row
-            if mandibleMode == "Cone":
-                offset = self.lowConeOffset
-                placementSequence = cmd.sequence(ArmConfirmPlacementCommand(self.arm, "Floor"), cmd.runOnce(lambda: self.mandible.setState('Cube'), [self.mandible]), cmd.runOnce(lambda: self.arm.setPosition("Optimized"), [self.arm]), commands2.WaitCommand(0.25), cmd.runOnce(lambda: self.mandible.setState('Cone')))
-            else:
-                offset = self.lowCubeOffset
-                placementSequence = cmd.sequence(ArmConfirmPlacementCommand(self.arm, "Floor"), MandibleOuttakeCommand(self.mandible), cmd.runOnce(lambda: self.arm.setPosition("Optimized"), [self.arm]))
-        elif slot > 5: # high-row
+        if slot > 5: # low-row
+            offset = self.lowCubeOffset
+            placementSequence = cmd.sequence(ArmConfirmPlacementCommand(self.arm, "BottomPlacement"), MandibleOuttakeCommand(self.mandible), cmd.runOnce(lambda: self.arm.setPosition("Optimized"), [self.arm]))
+        elif slot < 3: # high-row
             # our only placement option is perpindicular to the grid and right up against it
             # first we have to calculate our required robot position
             if mandibleMode == "Cone":
@@ -153,7 +149,7 @@ class PlaceOnGridCommand(commands2.CommandBase):
                 offset = self.midCubeOffset
                 placementSequence = cmd.sequence(ArmConfirmPlacementCommand(self.arm, "MidCube"), MandibleOuttakeCommand(self.mandible), cmd.runOnce(lambda: self.arm.setPosition("Optimized"), [self.arm]))
             #robotAngle = self.calculateRobotAngle(self.poseEstimator.getCurrentPose())
-        if slot > 5: # we won't do a circle
+        if slot < 3: # we won't do a circle
             piecePlacement = geometry.Pose2d(geometry.Translation2d(x = targetCoordinates[0], y = targetCoordinates[1]), geometry.Rotation2d(0.5 * math.pi + (allianceFactor * 0.5 * math.pi)))
             robotPose = piecePlacement.transformBy(geometry.Transform2d(translation = geometry.Translation2d(x = -(offset * allianceFactor), y = 0), rotation = geometry.Rotation2d()))
         else: # we can place relative to a circle
@@ -163,9 +159,9 @@ class PlaceOnGridCommand(commands2.CommandBase):
         return robotPose, placementSequence
     
     def onlySetArmPosition(self, slot: int) -> None:
-        if slot < 3: # low-row
-            self.arm.setPosition("Floor")
-        elif slot > 5: # high-row
+        if slot > 5: # low-row
+            self.arm.setPosition("BottomPlacement")
+        elif slot < 3: # high-row
             if self.mandible.state == "Cone":
                 self.arm.setPosition("HighConePrep")
             else:

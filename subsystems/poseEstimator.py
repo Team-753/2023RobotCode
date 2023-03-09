@@ -38,7 +38,6 @@ class PoseEstimatorSubsystem(commands2.SubsystemBase):
         for camera in photonCameras:
             cameraParams = self.config["RobotDimensions"]["PhotonCameras"][camera.getCameraName()]
             self.cameraTransformations.append(geometry.Transform3d(geometry.Translation3d(cameraParams["x"], cameraParams["y"], cameraParams["z"]), geometry.Rotation3d(math.radians(cameraParams["roll"]), math.radians(cameraParams["pitch"]), math.radians(cameraParams["yaw"]))))
-            
         
         self.poseEstimator = estimator.SwerveDrive4PoseEstimator(self.driveTrain.KINEMATICS, 
                                                                  self.driveTrain.getNAVXRotation2d(), 
@@ -69,17 +68,14 @@ class PoseEstimatorSubsystem(commands2.SubsystemBase):
             if (resultTimeStamp > self.previousPipelineResultTimeStamp and pipelineResult.hasTargets()):
                 target = pipelineResult.getBestTarget()
                 fiducialId = target.getFiducialId()
-                if target.getPoseAmbiguity() <= 0.10 and fiducialId > 0 and fiducialId < 9:
+                if target.getPoseAmbiguity() <= 0.15 and fiducialId > 0 and fiducialId < 9:
                     targetPose = self.getTagPose(fiducialId) # need 3d poses of each apriltag id
                     camToTarget = target.getBestCameraToTarget()
                     camPose = targetPose.transformBy(camToTarget.inverse())
                     robotPose = camPose.transformBy(self.cameraTransformations[cameraIndex])
                     robotPose2d = robotPose.toPose2d()
                     self.previousPipelineResultTimeStamp = resultTimeStamp
-                    if self.isDisabled: # are we disabled
-                        self.poseEstimator.addVisionMeasurement(robotPose2d, resultTimeStamp)
-                    elif abs(self.getCurrentPose().relativeTo(robotPose2d).rotation().degrees()) < 2: # is the vision pose estimate within 2 degrees of our navx estimate
-                        self.poseEstimator.addVisionMeasurement(robotPose2d, resultTimeStamp)
+                    self.poseEstimator.addVisionMeasurement(robotPose2d, resultTimeStamp)
                             
         swerveModuleStates = self.driveTrain.getSwerveModulePositions()
         

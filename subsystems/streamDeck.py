@@ -11,10 +11,10 @@ class StreamDeckSubsystem(commands2.SubsystemBase):
         self.arm = ArmSubSystem
         self.streamDeck = StreamDeck
         self.selectedGridSlot = (2, 5)
-        button.JoystickButton(self.streamDeck, 13).onTrue(cmd.runOnce(lambda: self.arm.setPosition("fullyRetracted"), []))
-        button.JoystickButton(self.streamDeck, 14).onTrue(cmd.runOnce(lambda: self.arm.setPosition("optimized"), []))
-        button.JoystickButton(self.streamDeck, 15).onTrue(cmd.runOnce(lambda: self.arm.setPosition("substation"), []))
-        button.JoystickButton(self.streamDeck, 16).onTrue(cmd.runOnce(lambda: self.arm.setPosition("floor"), []))
+        button.JoystickButton(self.streamDeck, 13).onTrue(cmd.runOnce(lambda: self.arm.setPosition("FullyRetracted"), []))
+        button.JoystickButton(self.streamDeck, 14).onTrue(cmd.runOnce(lambda: self.arm.setPosition("Optimized"), []))
+        button.JoystickButton(self.streamDeck, 15).onTrue(cmd.runOnce(lambda: self.arm.setPosition("Substation"), []))
+        button.JoystickButton(self.streamDeck, 16).onTrue(cmd.runOnce(lambda: self.arm.setPosition("Floor"), []))
         
     def periodic(self) -> None:
         switches = {

@@ -43,8 +43,7 @@ class RobotContainer:
         if pathName != "Taxi.path":   
             autoList.append(pathName.removesuffix(".path"))
     maxAngularVelocity = config["autonomousSettings"]["autoVelLimit"] / math.hypot(config["RobotDimensions"]["trackWidth"] / 2, config["RobotDimensions"]["wheelBase"] / 2)
-    photonCameras = [photonvision.PhotonCamera("photoncameratwo")]
-    targetGridPosition = (2 - 1, 6 - 1)
+    photonCameras = [photonvision.PhotonCamera("photoncameraone")] # , photonvision.PhotonCamera("photoncameratwo")
     wpilib.SmartDashboard.putNumber("Target Rotation Degrees", 180)
     
     def __init__(self) -> None:

@@ -10,12 +10,13 @@ class ArmSubSystem(commands2.SubsystemBase):
         "FullyRetracted": 0.0,
         "Substation": 37.9,
         "Floor": 41.75,
-        "HighConePrep": 35.45,
+        "BottomPlacement": 40.4,
+        "HighConePrep": 35.2,
         "HighConePlacement": 37.16,
-        "MidConePrep": 37.6, # 37.6
+        "MidConePrep": 37.2, # 37.6
         "MidConePlacement": 38.5,
-        "HighCube": 0.0,
-        "MidCube": 0.0,
+        "HighCube": 37.1,
+        "MidCube": 38.54,
         "Optimized": 21.5
     }
     targetValue = 0
