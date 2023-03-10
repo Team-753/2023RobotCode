@@ -9,7 +9,7 @@ from subsystems.mandible import MandibleSubSystem
 from subsystems.arm import ArmSubSystem
 from subsystems.poseEstimator import PoseEstimatorSubsystem
 from subsystems.driveTrain import DriveTrainSubSystem
-from networktables import NetworkTable
+#from networktables import NetworkTable
 
 import pathplannerlib
 
@@ -31,7 +31,7 @@ class SubstationPickupCommand(commands2.CommandBase):
     grabTargetVerticalX = 0 # measure
     FieldWidth = 16.54175
     
-    def __init__(self, SwerveAutoBuilder: SwerveAutoBuilder, DriveTrain: DriveTrainSubSystem, Mandible: MandibleSubSystem, Arm: ArmSubSystem, PoseEstimator: PoseEstimatorSubsystem, Constraints: pathplannerlib.PathConstraints, DriverCommandJoystick: button.CommandJoystick, LLTable: NetworkTable, PIDCONSTANTS: dict, maxVel: float) -> None:
+    def __init__(self, SwerveAutoBuilder: SwerveAutoBuilder, DriveTrain: DriveTrainSubSystem, Mandible: MandibleSubSystem, Arm: ArmSubSystem, PoseEstimator: PoseEstimatorSubsystem, Constraints: pathplannerlib.PathConstraints, DriverCommandJoystick: button.CommandJoystick, LLTable, PIDCONSTANTS: dict, maxVel: float) -> None:
         super().__init__()
         self.addRequirements([Mandible, Arm, DriveTrain])
         self.swerveAutoBuilder = SwerveAutoBuilder

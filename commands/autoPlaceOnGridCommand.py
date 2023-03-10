@@ -144,14 +144,15 @@ class AutoPlaceOnGridCommand(commands2.CommandBase):
             robotRotation = geometry.Rotation2d(xDiff, yDiff).rotateBy(geometry.Rotation2d(-math.pi))
             robotPose = piecePlacement.transformBy(geometry.Transform2d(translation = geometry.Translation2d(x = -math.cos(robotRotation.radians()) * offset, y = -math.sin(robotRotation.radians()) * offset), rotation = robotRotation))
         onLeFlyTJNumeroUno = self.swerveAutoBuilder.followPath(pathplannerlib.PathPlanner.generatePath(self.constraints, [pathplannerlib.PathPoint.fromCurrentHolonomicState(currentPose, self.driveTrain.actualChassisSpeeds()), pathplannerlib.PathPoint.fromCurrentHolonomicState(robotPose, kinematics.ChassisSpeeds(0, 0, 0))]))
-        onLeFlyTJNumeroDos = self.swerveAutoBuilder.followPath(pathplannerlib.PathPlanner.generatePath(self.constraints, [pathplannerlib.PathPoint.fromCurrentHolonomicState(robotPose, kinematics.ChassisSpeeds(0, 0, 0)), pathplannerlib.PathPoint.fromCurrentHolonomicState(currentPose, kinematics.ChassisSpeeds(0, 0, 0))]))
-        self.command = commands2.SequentialCommandGroup(onLeFlyTJNumeroUno, placementSequence, onLeFlyTJNumeroDos)
+        #onLeFlyTJNumeroDos = self.swerveAutoBuilder.followPath(pathplannerlib.PathPlanner.generatePath(self.constraints, [pathplannerlib.PathPoint.fromCurrentHolonomicState(robotPose, kinematics.ChassisSpeeds(0, 0, 0)), pathplannerlib.PathPoint.fromCurrentHolonomicState(currentPose, kinematics.ChassisSpeeds(0, 0, 0))]))
+        self.command = commands2.SequentialCommandGroup(onLeFlyTJNumeroUno, placementSequence)
         self.command.schedule()
     
     def execute(self) -> None:
         return super().execute()
     
     def end(self, interrupted: bool) -> None:
+        self.driveTrain.autoDrive(kinematics.ChassisSpeeds(0, 0, 0), geometry.Pose2d())
         return super().end(interrupted)
     
     def isFinished(self) -> bool:

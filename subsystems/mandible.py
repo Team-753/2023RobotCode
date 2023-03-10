@@ -41,7 +41,7 @@ class MandibleSubSystem(commands2.SubsystemBase):
         
     def intake(self, override = False) -> bool:
         ''' NOTE: Needs to check whether or not game piece is fully in the mandible, distance sensor??? will return false until true. '''
-        if override or self.inControlOfPiece():
+        if override:
             self.leftMotor.set(VictorSPXControlMode.PercentOutput, -0.3)
             self.rightMotor.set(VictorSPXControlMode.PercentOutput, -0.3)
             return True
@@ -66,9 +66,9 @@ class MandibleSubSystem(commands2.SubsystemBase):
     def setState(self, stateToSet: str):
         ''' Sets the desired mandible state, if the state is already set: do nothing.
         stateToSet: 'Cone', 'Cube' '''
-        if stateToSet == "Cone" and stateToSet != self.state: # we want a cone
+        if stateToSet == "Cone": # we want a cone
             self.contract()
-        elif stateToSet == "Cube" and stateToSet != self.state: # we want a cube
+        elif stateToSet == "Cube": # we want a cube
             self.release()
         
     def inControlOfPiece(self) -> bool:
@@ -84,9 +84,9 @@ class MandibleSubSystem(commands2.SubsystemBase):
         
     def cubePeriodic(self) -> None:
         ''' Ensures we hold onto a cube once it is in our possession '''
-        if self.inControlOfPiece() and self.state == "Cube":
+        '''if self.inControlOfPiece() and self.state == "Cube":
             self.intake(True)
         else:
-            self.stop()
+            self.stop()'''
     def periodic(self) -> None:
         wpilib.SmartDashboard.putBoolean("Piece In Posession", self.inControlOfPiece())

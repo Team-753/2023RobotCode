@@ -52,6 +52,7 @@ class DriveTrainSubSystem(commands2.SubsystemBase):
                                                                                           y=teleopConstants["yPoseToleranceMeters"]), 
                                                                                           geometry.Rotation2d(radians(teleopConstants["thetaPoseToleranceDegrees"])))
         self.alliance = DriverStation.Alliance.kBlue # default alliance
+        self.speedLimitingFactor = 1
         
     def getNAVXRotation2d(self) -> geometry.Rotation2d:
         ''' Returns the NAVX rotation represented as a Rotation2d object'''
@@ -85,8 +86,8 @@ class DriveTrainSubSystem(commands2.SubsystemBase):
         if xSpeed == 0 and ySpeed == 0 and zSpeed == 0:
             self.stationary()
         else:
-            xSpeed *= self.kMaxSpeed
-            ySpeed *= self.kMaxSpeed
+            xSpeed *= self.kMaxSpeed * self.speedLimitingFactor
+            ySpeed *= self.kMaxSpeed * self.speedLimitingFactor
             zSpeed *= self.maxAngularVelocity
             self.setSwerveStates(xSpeed, ySpeed, zSpeed, currentPose)
     
@@ -135,6 +136,12 @@ class DriveTrainSubSystem(commands2.SubsystemBase):
         self.rearLeft.stop()
         self.rearRight.setNeutralMode(NeutralMode.Brake)
         self.rearRight.stop()
+        
+    def enableSpeedLimiter(self):
+        self.speedLimitingFactor = 0.5
+        
+    def disableSpeedLimiter(self):
+        self.speedLimitingFactor = 1
     
     def coast(self) -> None:
         ''' Whenever you don't want to power the wheels '''

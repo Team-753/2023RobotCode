@@ -61,6 +61,7 @@ class PoseEstimatorSubsystem(commands2.SubsystemBase):
         '''
         # NOTE: This algorithm is way too expensive. Anyway, TODO: Implement dual-camera pose throwaway/averaging
         # NOTE: GIANT BREAKTHROUGH MENTALLY: AFTER NAVX HAS BEEN ZEROED BY VISION, ONLY RELY ON NAVX ROTATION AND USE THAT TO FILTER TAG POSES
+        currentPose = self.getCurrentPose()
         cameraIndex = 0
         for camera in self.photonCameras:
             pipelineResult = camera.getLatestResult()
@@ -75,14 +76,16 @@ class PoseEstimatorSubsystem(commands2.SubsystemBase):
                     robotPose = camPose.transformBy(self.cameraTransformations[cameraIndex])
                     robotPose2d = robotPose.toPose2d()
                     self.previousPipelineResultTimeStamp = resultTimeStamp
-                    self.poseEstimator.addVisionMeasurement(robotPose2d, resultTimeStamp)
+                    if self.isDisabled:    
+                        self.poseEstimator.addVisionMeasurement(robotPose2d, resultTimeStamp)
+                    else:
+                        self.poseEstimator.addVisionMeasurement(geometry.Pose2d(robotPose2d.translation(), currentPose.rotation()), resultTimeStamp)
                             
         swerveModuleStates = self.driveTrain.getSwerveModulePositions()
         
         self.poseEstimator.update(
             self.driveTrain.getNAVXRotation2d(),
             swerveModuleStates)
-        currentPose = self.getCurrentPose()
         self.field.setRobotPose(currentPose)
         SmartDashboard.putNumber("X Position", currentPose.X())
         SmartDashboard.putNumber("Y Position", currentPose.Y())

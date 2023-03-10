@@ -2,7 +2,7 @@
 TODO:
 Add autonomous compatibility with the place on grid command
 '''
-from networktables import NetworkTables
+#from networktables import NetworkTables
 import commands2
 from commands2 import button, cmd
 import wpilib
@@ -15,6 +15,7 @@ from math import radians
 import math
 import pathplannerlib
 from typing import List
+import wpiutil
 
 from subsystems.driveTrain import DriveTrainSubSystem
 from subsystems.poseEstimator import PoseEstimatorSubsystem
@@ -45,8 +46,8 @@ class RobotContainer:
             autoList.append(pathName.removesuffix(".path"))
     maxAngularVelocity = config["autonomousSettings"]["autoVelLimit"] / math.hypot(config["RobotDimensions"]["trackWidth"] / 2, config["RobotDimensions"]["wheelBase"] / 2)
     photonCameras = [photonvision.PhotonCamera("photoncameraone")] # , photonvision.PhotonCamera("photoncameratwo")
-    NetworkTables.initialize()
-    LLTable = NetworkTables.getTable("limelight")
+    #NetworkTables.initialize()
+    #LLTable = NetworkTables.getTable("limelight")
     
     def __init__(self) -> None:
         # buttons
@@ -81,6 +82,7 @@ class RobotContainer:
         ''' Auto-populating our autonomous chooser with the paths we have in the deploy/pathplanner folder '''
         self.autonomousChooser = wpilib.SendableChooser()
         self.autonomousChooser.setDefaultOption("Only Place", "Only Place")
+        self.autonomousChooser.addOption("Taxi", "Taxi")
         for pathName in self.autoList:
             self.autonomousChooser.addOption(pathName, pathName)
         wpilib.SmartDashboard.putData("Autonomous Chooser", self.autonomousChooser)
@@ -184,6 +186,8 @@ class RobotContainer:
                                                             self.joystick, 
                                                             self.streamDeckSubsystem, 
                                                             self.config))
+        self.joystickButtonTwelve = button.JoystickButton(self.joystick, 12)
+
         
         #self.joystickButtonThree = button.JoystickButton(self.joystick, 3)
         #self.joystickButtonThree.whileHeld(SubstationPickupCommand(self.bruhMomentoAutoBuilder, self.driveTrain, self.mandible, self.arm, self.poseEstimator, self.pathConstraints, self.joystick, self.LLTable, self.config["driverStation"]["teleoperatedRobotConstants"], self.config["driverStation"]["teleoperatedRobotConstants"]["teleopVelLimit"]))
@@ -221,7 +225,20 @@ class RobotContainer:
     def getAutonomousCommand(self):
         pathName = self.autonomousChooser.getSelected()
         if pathName == "Only Place":
-            return self.eventMap["PlaceGamePiece"]
+            return AutoPlaceOnGridCommand(self.bruhMomentoAutoBuilder,
+                                                     self.arm,
+                                                     self.driveTrain,
+                                                     self.mandible,
+                                                     self.poseEstimator,
+                                                     self.gamePiecePlacementList,
+                                                     self.stages,
+                                                     self.pathConstraints)
+        elif pathName == "Taxi":
+            targetX = 6.5
+            if wpilib.DriverStation.getAlliance() == wpilib.DriverStation.Alliance.kRed:
+                targetX = 16.54 - targetX
+                currentPose = self.poseEstimator.getCurrentPose()
+            return self.bruhMomentoAutoBuilder.followPath(pathplannerlib.PathPlanner.generatePath(self.pathConstraints, [pathplannerlib.PathPoint.fromCurrentHolonomicState(currentPose, self.driveTrain.actualChassisSpeeds()), pathplannerlib.PathPoint.fromCurrentHolonomicState(geometry.Pose2d(geometry.Translation2d(targetX, currentPose.Y()), currentPose.rotation()), kinematics.ChassisSpeeds(0, 0, 0))]))
         autoPath = self.getPathGroup(pathName)
         # MAJOR TODO: Fix bug, starting pathplanner position would be off if we are on red alliance, best way to fix is to transform stating holonomic state to blue alliance.
         if wpilib.DriverStation.getAlliance() == wpilib.DriverStation.Alliance.kRed:
@@ -279,7 +296,7 @@ class RobotContainer:
         self.mandible.setState("Cube") # we need to always be in cube mode or else we can't fit in starting config
     
     def testPeriodic(self):
-        pass
+        self.mandible.setState("Cube")
         
     def disabledInit(self):
         self.driveTrain.coast()
