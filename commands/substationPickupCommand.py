@@ -1,12 +1,15 @@
 import commands2
 from commands2 import cmd, button
-from wpimath import geometry
+from wpimath import geometry, controller, kinematics
+import math
+import wpilib
 
 from auto.swerveAutoBuilder import SwerveAutoBuilder
 from subsystems.mandible import MandibleSubSystem
 from subsystems.arm import ArmSubSystem
 from subsystems.poseEstimator import PoseEstimatorSubsystem
 from subsystems.driveTrain import DriveTrainSubSystem
+from networktables import NetworkTable
 
 import pathplannerlib
 
@@ -24,49 +27,49 @@ class SubstationPickupCommand(commands2.CommandBase):
     '''
     
     # TEST VAR INITS, in degrees and meters respectively
-    xIOffset = -2 # field relative, how far the initial pose is from the substation apriltag
-    yIOffset = 1 # field relative, how far down or up the initial pose is from the substation apriltag
+    robotTargetVerticalX = 0 # measure on practice field
+    grabTargetVerticalX = 0 # measure
     
-    xFOffset = -1.5 # field relative, how far the final pose is from the substation apriltag
-    yFOffset = 1 # field relative, how far down or up the final pose is from the substation apriltag
-    
-    def __init__(self, SwerveAutoBuilder: SwerveAutoBuilder, Mandible: MandibleSubSystem, Arm: ArmSubSystem, PoseEstimator: PoseEstimatorSubsystem, Constraints: pathplannerlib.PathConstraints, EventMap: dict, DriverCommandJoystick: button.CommandJoystick) -> None:
+    def __init__(self, SwerveAutoBuilder: SwerveAutoBuilder, DriveTrain: DriveTrainSubSystem, Mandible: MandibleSubSystem, Arm: ArmSubSystem, PoseEstimator: PoseEstimatorSubsystem, Constraints: pathplannerlib.PathConstraints, DriverCommandJoystick: button.CommandJoystick, LLTable: NetworkTable, PIDCONSTANTS: dict) -> None:
         super().__init__()
         self.addRequirements([Mandible, Arm])
         self.swerveAutoBuilder = SwerveAutoBuilder
+        self.driveTrain = DriveTrain
         self.mandible = Mandible
         self.arm = Arm
         self.poseEstimator = PoseEstimator
-        self.eventMap = EventMap
         self.driverCommandJoystick = DriverCommandJoystick
         self.constraints = Constraints
+        self.LLTable = LLTable
+        self.PIDCONSTANTS = PIDCONSTANTS
     
     def initialize(self) -> None:
-        self.currentPose = self.poseEstimator.getCurrentPose()
-        self.blueAllianceAprilTagPose = self.poseEstimator.getTagPose(4).toPose2d() # if we are the red alliance the swerveAutoBuilder should automajically switch everything around
-        # first step is to figure out which side of the substation we are closer to, we can just do this using the Y-component to avoid alliance conflict
-        if (self.currentPose.Y() < self.blueAllianceAprilTagPose.Y()): # we are closer to the bottom side of the blue alliance substation, flip our y offset
-            self.yIOffset *= -1
-            self.yFOffset *= -1
-        self.initialTargetPose = geometry.Pose2d(geometry.Translation2d(x=self.xIOffset, y=self.yIOffset), geometry.Rotation2d(0)).transformBy(geometry.Transform2d(self.blueAllianceAprilTagPose.translation(), geometry.Rotation2d())) # finding our new offset initial pose
-        self.finalTargetPose = geometry.Pose2d(geometry.Translation2d(x=self.xFOffset, y=self.yFOffset), geometry.Rotation2d(0)).transformBy(geometry.Transform2d(self.blueAllianceAprilTagPose.translation(), geometry.Rotation2d())) # finding our new offset final pose
-        self.currentPose = self.poseEstimator.getCurrentPose()
-        initialPath = pathplannerlib.PathPlanner.generatePath(self.constraints, [pathplannerlib.PathPoint.fromCurrentHolonomicState(self.currentPose, self.poseEstimator.chassisSpeeds), pathplannerlib.PathPoint(self.initialTargetPose.translation(), geometry.Rotation2d(), self.initialTargetPose.rotation())])
-        self.followInitialPathCommand = self.swerveAutoBuilder.followPath(initialPath)
-        finalPath = pathplannerlib.PathPlanner.generatePath(self.constraints, [pathplannerlib.PathPoint(self.initialTargetPose.translation(), geometry.Rotation2d(), self.initialTargetPose.rotation()), pathplannerlib.PathPoint(self.finalTargetPose.translation(), geometry.Rotation2d(), self.finalTargetPose.rotation())])
-        self.followFinalPathCommand = self.swerveAutoBuilder.followPath(finalPath)
-        self.secondStageCommand = commands2.ParallelCommandGroup([self.followFinalPathCommand, self.eventMap["IntakeMandible"]])
-        self.confirmationButton = button.JoystickButton(self.driverCommandJoystick, 12) # find the correct number later on
-        self.confirmationButton.whenPressed(self.secondStageCommand)
-        cmd.parallel([self.followInitialPathCommand, self.eventMap["armSubstation"]])
+        self.finished = False
+        self.allianceFactor = -1
+        if wpilib.DriverStation.getAlliance() == wpilib.DriverStation.Alliance.kRed:
+            self.allianceFactor = 1
+        self.xController = controller.PIDController(self.PIDCONSTANTS["translationPIDConstants"]["kP"], self.PIDCONSTANTS["translationPIDConstants"]["kI"], self.PIDCONSTANTS["translationPIDConstants"]["kD"], self.PIDCONSTANTS["translationPIDConstants"]["period"])
+        self.yController = controller.PIDController(self.PIDCONSTANTS["translationPIDConstants"]["kP"], self.PIDCONSTANTS["translationPIDConstants"]["kI"], self.PIDCONSTANTS["translationPIDConstants"]["kD"], self.PIDCONSTANTS["translationPIDConstants"]["period"])
+        self.zController = controller.PIDController(self.PIDCONSTANTS["rotationPIDConstants"]["kP"], self.PIDCONSTANTS["rotationPIDConstants"]["kI"], self.PIDCONSTANTS["rotationPIDConstants"]["kD"], self.PIDCONSTANTS["rotationPIDConstants"]["period"])
+        self.angleOffset = 0
     
     def execute(self) -> None:
-        pass
+        currentPose = self.poseEstimator.getCurrentPose()
+        if self.driverCommandJoystick.getRawButton(1):
+            targetPose = geometry.Pose2d(geometry.Translation2d(self.grabTargetVerticalX, currentPose.Y()), geometry.Rotation2d(0.5 * math.pi + (self.allianceFactor * 0.5 * math.pi)))
+            onLeFlyTrajectory = self.swerveAutoBuilder.followPath(pathplannerlib.PathPlanner.generatePath(self.constraints, [pathplannerlib.PathPoint.fromCurrentHolonomicState(currentPose, self.driveTrain.actualChassisSpeeds()), pathplannerlib.PathPoint.fromCurrentHolonomicState(targetPose, kinematics.ChassisSpeeds(0, 0, 0))]))
+        else:
+            if self.LLTable.getEntry('tv') == 1:
+                if self.LLTable.getEntry('tclass') == 'cone':
+                    if self.mandible.state != 'Cone':
+                        self.mandible.setState('Cone')
+                else:
+                    if self.mandible.state != 'Cube':
+                        self.mandible.setState('Cube')
+                self.angleOffset = self.LLTable.getEntry('tx')
+                wpilib.SmartDashboard.putNumber("LL Angle TX", self.angleOffset)
     
     def end(self, interrupted: bool) -> None:
-        if interrupted:
-            self.mandible.coast()
-            self.arm.brake()
         return super().end(interrupted)
     
     def isFinished(self) -> bool: # driver should just let go of the button, no need for this

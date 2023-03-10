@@ -86,7 +86,7 @@
     "joystickDeadZones": {
       "xDeadZone": 0.1,
       "yDeadZone": 0.1,
-      "zDeadZone": 0.1
+      "zDeadZone": 0.075
     },
     "teleoperatedRobotConstants": {
       "translationPIDConstants": {
@@ -96,7 +96,7 @@
         "period": 0.025
       },
       "rotationPIDConstants": {
-        "kP": 0.75,
+        "kP": 1.0,
         "kI": 0.0,
         "kD": 0.0,
         "period": 0.025

@@ -38,10 +38,8 @@ class PPSwerveDriveController(commands2.CommandBase):
             
         self.timer.reset()
         self.timer.start()
-        print("initializing swerve controller command")
     
     def execute(self):
-        print("running auto")
         currentTime = self.timer.get()
         desiredState = self.transformedTrajectory.sample(currentTime)
         currentPose = self.poseEstimator.getCurrentPose()
@@ -50,7 +48,6 @@ class PPSwerveDriveController(commands2.CommandBase):
         self.driveTrain.autoDrive(targetChassisSpeeds, currentPose)
         
     def end(self, interruped: bool):
-        print("auto done")
         self.timer.stop()
         
         if (interruped or abs(self.transformedTrajectory.getEndState().velocity < 0.1)):

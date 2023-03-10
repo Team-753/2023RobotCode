@@ -11,10 +11,6 @@ class StreamDeckSubsystem(commands2.SubsystemBase):
         self.arm = ArmSubSystem
         self.streamDeck = StreamDeck
         self.selectedGridSlot = (2, 5)
-        button.JoystickButton(self.streamDeck, 13).onTrue(cmd.runOnce(lambda: self.arm.setPosition("FullyRetracted"), []))
-        button.JoystickButton(self.streamDeck, 14).onTrue(cmd.runOnce(lambda: self.arm.setPosition("Optimized"), []))
-        button.JoystickButton(self.streamDeck, 15).onTrue(cmd.runOnce(lambda: self.arm.setPosition("Substation"), []))
-        button.JoystickButton(self.streamDeck, 16).onTrue(cmd.runOnce(lambda: self.arm.setPosition("Floor"), []))
         
     def periodic(self) -> None:
         switches = {
@@ -29,7 +25,11 @@ class StreamDeckSubsystem(commands2.SubsystemBase):
             "9": self.streamDeck.getRawButtonReleased(9),
             "GridOne": self.streamDeck.getRawButtonReleased(10),
             "GridTwo": self.streamDeck.getRawButtonReleased(11),
-            "GridThree": self.streamDeck.getRawButtonReleased(12)
+            "GridThree": self.streamDeck.getRawButtonReleased(12),
+            "FullyRetracted": self.streamDeck.getRawButtonReleased(13),
+            "Optimized": self.streamDeck.getRawButtonReleased(14),
+            "Substation": self.streamDeck.getRawButtonReleased(15),
+            "Floor": self.streamDeck.getRawButtonReleased(16)
         }
         for i in range(9):
             if switches[f"{i + 1}"]:
@@ -44,18 +44,26 @@ class StreamDeckSubsystem(commands2.SubsystemBase):
         elif switches["GridThree"]:
             self.selectedGridSlot = (3, self.selectedGridSlot[1])
             wpilib.SmartDashboard.putNumber("Selected Grid", 3)
+        if switches["FullyRetracted"]:
+            self.arm.setPosition("FullyRetracted")
+        elif switches["Optimized"]:
+            self.arm.setPosition("Optimized")
+        elif switches["Substation"]:
+            self.arm.setPosition("Substation")
+        elif switches["Floor"]:
+            self.arm.setPosition("Floor")
     
     def getSelectedGridSlot(self):
         grid, position = self.selectedGridSlot
         alliance = wpilib.DriverStation.getAlliance()
         if alliance == wpilib.DriverStation.Alliance.kRed: # are we on the red alliance, if so we have to flip the grid somewhat
             grid = 4 - grid
-            if position > 6: # high grid
+            if position > 6: # low grid
                 if position == 9:
                     position = 7
                 elif position == 7:
                     position = 9
-            elif position < 4: # low row
+            elif position < 4: # high grid
                 if position == 3:
                     position = 1
                 elif position == 1:

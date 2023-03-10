@@ -1,7 +1,7 @@
 import pathplannerlib
 import commands2
 from commands2 import cmd, button
-from wpimath import geometry
+from wpimath import geometry, kinematics
 import wpilib
 import math
 from typing import List, Tuple
@@ -102,7 +102,7 @@ class PlaceOnGridCommand(commands2.CommandBase):
         if self.joystick.getRawButton(1): # is the driver pulling the trigger (confirming game piece placement)
             self.sequence = self.getTargetGridValues(self.targetGridSlot[0], self.targetGridSlot[1])
             self.myTimeHasCome = True
-            onLeFlyTJ = self.swerveAutoBuilder.followPath(pathplannerlib.PathPlanner.generatePath(self.constraints, [pathplannerlib.PathPoint.fromCurrentHolonomicState(self.currentPose, self.driveTrain.actualChassisSpeeds()), pathplannerlib.PathPoint(self.sequence[0].translation(), geometry.Rotation2d(math.pi), self.sequence[0].rotation())]))
+            onLeFlyTJ = self.swerveAutoBuilder.followPath(pathplannerlib.PathPlanner.generatePath(self.constraints, [pathplannerlib.PathPoint.fromCurrentHolonomicState(self.currentPose, self.driveTrain.actualChassisSpeeds()), pathplannerlib.PathPoint.fromCurrentHolonomicState(self.sequence[0], kinematics.ChassisSpeeds(0, 0, 0))]))
             self.command = commands2.SequentialCommandGroup(onLeFlyTJ, self.sequence[1], cmd.runOnce(lambda: self.finished(), []))
         else: # they are just holding the side button
             targetRotation = self.calculateRobotAngle(self.currentPose)
@@ -117,7 +117,7 @@ class PlaceOnGridCommand(commands2.CommandBase):
                 else:
                     adjustedValue = 0
                 adjustedInputs.append(adjustedValue)
-            self.driveTrain.joystickDriveThetaOverride(adjustedInputs, self.currentPose, targetRotation)
+            self.driveTrain.joystickDriveThetaOverride(adjustedInputs, self.currentPose, targetRotation, True)
     
     def isFinished(self) -> bool:
         return self.myTimeHasCome

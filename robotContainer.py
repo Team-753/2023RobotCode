@@ -2,7 +2,7 @@
 TODO:
 Add autonomous compatibility with the place on grid command
 '''
-
+from networktables import NetworkTables
 import commands2
 from commands2 import button, cmd
 import wpilib
@@ -27,6 +27,7 @@ from commands.substationPickupCommand import SubstationPickupCommand
 from commands.placeOnGridCommand import PlaceOnGridCommand
 from commands.defaultDriveCommand import DefaultDriveCommand
 from commands.pickupGamePieceAutoCommand import PickupGamePieceAutoCommand
+from commands.autoPlaceOnGridCommand import AutoPlaceOnGridCommand
 
 from auto.swerveAutoBuilder import SwerveAutoBuilder
 
@@ -44,7 +45,8 @@ class RobotContainer:
             autoList.append(pathName.removesuffix(".path"))
     maxAngularVelocity = config["autonomousSettings"]["autoVelLimit"] / math.hypot(config["RobotDimensions"]["trackWidth"] / 2, config["RobotDimensions"]["wheelBase"] / 2)
     photonCameras = [photonvision.PhotonCamera("photoncameraone")] # , photonvision.PhotonCamera("photoncameratwo")
-    wpilib.SmartDashboard.putNumber("Target Rotation Degrees", 180)
+    NetworkTables.initialize()
+    LLTable = NetworkTables.getTable("limelight")
     
     def __init__(self) -> None:
         # buttons
@@ -69,27 +71,7 @@ class RobotContainer:
         
         # self.LEDS = wpilib.AddressableLED() NOTE: For later
         
-        self.generateSimpleAutonomousCommands()
-        self.generateAutonomousMarkers()
-        
         # this part can be extremely confusing but it is essentially just an initation for the helper class that makes swerve auto possible
-        thetaControllerConstraints = self.config["autonomousSettings"]["rotationPIDConstants"]
-        self.pathConstraints = pathplannerlib.PathConstraints(maxVel = self.config["autonomousSettings"]["autoVelLimit"], maxAccel = self.config["autonomousSettings"]["autoAccelLimit"])
-        self.SwerveAutoBuilder = SwerveAutoBuilder(self.poseEstimator, 
-                                                   self.driveTrain, 
-                                                   self.eventMap, 
-                                                   True, 
-                                                   self.config["autonomousSettings"]["translationPIDConstants"],
-                                                   thetaControllerConstraints,
-                                                   geometry.Pose2d(geometry.Translation2d(x=self.config["autonomousSettings"]["xPoseToleranceMeters"], 
-                                                                                          y=self.config["autonomousSettings"]["yPoseToleranceMeters"]), 
-                                                                                          geometry.Rotation2d(radians(self.config["autonomousSettings"]["thetaPoseToleranceDegrees"]
-                                                                                                                      )
-                                                                                                              )
-                                                                                          )
-                                                   )
-        
-        self.configureButtonBindings()
         
         self.gamePieceChooser = wpilib.SendableChooser()
         self.gamePieceChooser.setDefaultOption("Cube", "Cube")
@@ -98,7 +80,7 @@ class RobotContainer:
         
         ''' Auto-populating our autonomous chooser with the paths we have in the deploy/pathplanner folder '''
         self.autonomousChooser = wpilib.SendableChooser()
-        self.autonomousChooser.setDefaultOption("Taxi", "Taxi")
+        self.autonomousChooser.setDefaultOption("Only Place", "Only Place")
         for pathName in self.autoList:
             self.autonomousChooser.addOption(pathName, pathName)
         wpilib.SmartDashboard.putData("Autonomous Chooser", self.autonomousChooser)
@@ -120,12 +102,71 @@ class RobotContainer:
         self.gamePieceSlotFour.addOption("Cone", "Cone")
         
         wpilib.SmartDashboard.putData("Field Piece One", self.gamePieceSlotOne)
-        wpilib.SmartDashboard.putData("Field Piece Two", self.gamePieceSlotOne)
-        wpilib.SmartDashboard.putData("Field Piece Three", self.gamePieceSlotOne)
-        wpilib.SmartDashboard.putData("Field Piece Four", self.gamePieceSlotOne)
+        wpilib.SmartDashboard.putData("Field Piece Two", self.gamePieceSlotTwo)
+        wpilib.SmartDashboard.putData("Field Piece Three", self.gamePieceSlotThree)
+        wpilib.SmartDashboard.putData("Field Piece Four", self.gamePieceSlotFour)
+        
+        self.firstGamePiecePlacement = wpilib.SendableChooser()
+        self.firstGamePiecePlacement.setDefaultOption("High Cube", 2)
+        self.firstGamePiecePlacement.addOption("Left High Cone", 1)
+        self.firstGamePiecePlacement.addOption("Right High Cone", 3)
+        self.firstGamePiecePlacement.addOption("Mid Cube", 5)
+        self.firstGamePiecePlacement.addOption("Left Mid Cone", 4)
+        self.firstGamePiecePlacement.addOption("Right Mid Cone", 6)
+        wpilib.SmartDashboard.putData("First Auto Game Piece Placement", self.firstGamePiecePlacement)
+        
+        self.secondGamePiecePlacement = wpilib.SendableChooser()
+        self.secondGamePiecePlacement.setDefaultOption("Right High Cone", 3)
+        self.secondGamePiecePlacement.addOption("Left High Cone", 1)
+        self.secondGamePiecePlacement.addOption("High Cube", 2)
+        self.secondGamePiecePlacement.addOption("Mid Cube", 5)
+        self.secondGamePiecePlacement.addOption("Left Mid Cone", 4)
+        self.secondGamePiecePlacement.addOption("Right Mid Cone", 6)
+        wpilib.SmartDashboard.putData("Second Auto Game Piece Placement", self.secondGamePiecePlacement)
+        
+        self.thirdGamePiecePlacement = wpilib.SendableChooser()
+        self.thirdGamePiecePlacement.setDefaultOption("Left High Cone", 1)
+        self.thirdGamePiecePlacement.addOption("Right High Cone", 3)
+        self.thirdGamePiecePlacement.addOption("High Cube", 2)
+        self.thirdGamePiecePlacement.addOption("Mid Cube", 5)
+        self.thirdGamePiecePlacement.addOption("Left Mid Cone", 4)
+        self.thirdGamePiecePlacement.addOption("Right Mid Cone", 6)
+        wpilib.SmartDashboard.putData("Third Auto Game Piece Placement", self.thirdGamePiecePlacement)
         
         self.gamePieceSlots = [self.gamePieceSlotOne, self.gamePieceSlotTwo, self.gamePieceSlotThree, self.gamePieceSlotFour]
+        self.gamePiecePlacementList = [self.firstGamePiecePlacement, self.secondGamePiecePlacement, self.thirdGamePiecePlacement]
+        self.stages = 0
+        thetaControllerConstraints = self.config["autonomousSettings"]["rotationPIDConstants"]
+        self.pathConstraints = pathplannerlib.PathConstraints(maxVel = self.config["autonomousSettings"]["autoVelLimit"], maxAccel = self.config["autonomousSettings"]["autoAccelLimit"])
+        self.bruhMomentoAutoBuilder = SwerveAutoBuilder(self.poseEstimator, 
+                                                   self.driveTrain, 
+                                                   {}, 
+                                                   False, 
+                                                   self.config["autonomousSettings"]["translationPIDConstants"],
+                                                   thetaControllerConstraints,
+                                                   geometry.Pose2d(geometry.Translation2d(x=self.config["autonomousSettings"]["xPoseToleranceMeters"], 
+                                                                                          y=self.config["autonomousSettings"]["yPoseToleranceMeters"]), 
+                                                                                          geometry.Rotation2d(radians(self.config["autonomousSettings"]["thetaPoseToleranceDegrees"]
+                                                                                                                      )
+                                                                                                              )
+                                                                                          )
+                                                   )
+        self.generateAutonomousMarkers()
+        self.SwerveAutoBuilder = SwerveAutoBuilder(self.poseEstimator, 
+                                                   self.driveTrain, 
+                                                   self.eventMap, 
+                                                   True, 
+                                                   self.config["autonomousSettings"]["translationPIDConstants"],
+                                                   thetaControllerConstraints,
+                                                   geometry.Pose2d(geometry.Translation2d(x=self.config["autonomousSettings"]["xPoseToleranceMeters"], 
+                                                                                          y=self.config["autonomousSettings"]["yPoseToleranceMeters"]), 
+                                                                                          geometry.Rotation2d(radians(self.config["autonomousSettings"]["thetaPoseToleranceDegrees"]
+                                                                                                                      )
+                                                                                                              )
+                                                                                          )
+                                                   )
         
+        self.configureButtonBindings()
         
     
     def configureButtonBindings(self):
@@ -133,7 +174,7 @@ class RobotContainer:
         self.joystickButtonFour.whileHeld(cmd.run(lambda: self.driveTrain.xMode(), [self.driveTrain]))
         
         self.joystickButtonTwo = button.JoystickButton(self.joystick, 2)
-        self.joystickButtonTwo.whenHeld(PlaceOnGridCommand(self.SwerveAutoBuilder, 
+        self.joystickButtonTwo.whenHeld(PlaceOnGridCommand(self.bruhMomentoAutoBuilder, 
                                                             self.mandible, 
                                                             self.arm, 
                                                             self.poseEstimator, 
@@ -184,7 +225,10 @@ class RobotContainer:
         return adjustedInputs
     
     def getAutonomousCommand(self):
-        autoPath = self.getPathGroup(self.autonomousChooser.getSelected())
+        pathName = self.autonomousChooser.getSelected()
+        if pathName == "Only Place":
+            return self.eventMap["PlaceGamePiece"]
+        autoPath = self.getPathGroup(pathName)
         # MAJOR TODO: Fix bug, starting pathplanner position would be off if we are on red alliance, best way to fix is to transform stating holonomic state to blue alliance.
         if wpilib.DriverStation.getAlliance() == wpilib.DriverStation.Alliance.kRed:
             startingTargetPose = pathplannerlib.PathPlannerTrajectory.transformTrajectoryForAlliance(autoPath[0], wpilib.DriverStation.Alliance.kRed).getInitialHolonomicPose()
@@ -216,26 +260,24 @@ class RobotContainer:
             "ArmMidConePlacement": cmd.runOnce(lambda: self.arm.setPosition("MidConePlacement"), [self.arm]),
             "ArmHighCube": cmd.runOnce(lambda: self.arm.setPosition("HighCube"), [self.arm]),
             "ArmMidCube": cmd.runOnce(lambda: self.arm.setPosition("MidCube"), [self.arm]),
-            "ArmOptimized": cmd.runOnce(lambda: self.arm.setPosition("Optimized"), [self.arm])
-        }
-        '''"AutoPiecePickup": PickupGamePieceAutoCommand(self.driveTrain, 
+            "ArmOptimized": cmd.runOnce(lambda: self.arm.setPosition("Optimized"), [self.arm]),
+            "PlaceGamePiece": AutoPlaceOnGridCommand(self.bruhMomentoAutoBuilder,
+                                                     self.arm,
+                                                     self.driveTrain,
+                                                     self.mandible,
+                                                     self.poseEstimator,
+                                                     self.gamePiecePlacementList,
+                                                     self.stages,
+                                                     self.pathConstraints),
+            "AutoPiecePickup": PickupGamePieceAutoCommand(self.driveTrain, 
                                                           self.arm, 
                                                           self.poseEstimator, 
                                                           self.mandible, 
-                                                          self.SwerveAutoBuilder, 
-                                                          self.pathConstraints, 
-                                                          self.gamePieceSlots),
-            "PlaceGamePiece": cmd.run() # fix this'''
-    
-    def generateSimpleAutonomousCommands(self):
-        ''' Generates some of the autonomous commands that use *less* logic for use in the auto event map and for manual controls '''
-        self.MandibleOuttakeCommand = commands2.SequentialCommandGroup(
-            [
-                cmd.runOnce(lambda: self.mandible.outtake(), [self.mandible]), 
-                commands2.WaitCommand(0.5), # TODO: Test this 0.5 second figure, maybe make this a config variable in the future?
-                cmd.runOnce(lambda: self.mandible.coast(), [self.mandible])
-            ]
-        )
+                                                          self.bruhMomentoAutoBuilder,
+                                                          self.pathConstraints,
+                                                          self.gamePieceSlots
+                                                          )
+        }
     
     def testInit(self):
         self.driveTrain.setDefaultCommand(DefaultDriveCommand(self.joystick, self.driveTrain, self.poseEstimator, self.config))
@@ -256,7 +298,7 @@ class RobotContainer:
         self.poseEstimator.isDisabled = False
     
     def autonomousInit(self):
-        self.SwerveAutoBuilder.useAllianceColor = True
+        self.stages = 0
         self.driveTrain.setDefaultCommand(cmd.run(lambda: None, [self.driveTrain])) # stupid ass command based POS
         self.arm.setPosition("Optimized")
         self.mandible.setState(self.gamePieceChooser.getSelected())
@@ -265,7 +307,6 @@ class RobotContainer:
         pass
         
     def teleopInit(self):
-        self.SwerveAutoBuilder.useAllianceColor = False
         self.driveTrain.alliance = wpilib.DriverStation.getAlliance()
         self.driveTrain.setDefaultCommand(DefaultDriveCommand(self.joystick, self.driveTrain, self.poseEstimator, self.config)) # this is what makes the robot drive, since there isn't a way to bind commands to axes
     

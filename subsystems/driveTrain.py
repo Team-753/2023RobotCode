@@ -45,7 +45,7 @@ class DriveTrainSubSystem(commands2.SubsystemBase):
         
         self.maxAngularVelocity = teleopConstants["teleopVelLimit"] / hypot(self.config["RobotDimensions"]["trackWidth"] / 2, self.config["RobotDimensions"]["wheelBase"] / 2) # about 11 rads per second
         rotationConstants = self.config["autonomousSettings"]["rotationPIDConstants"]
-        self.rotationPID = controller.PIDController(rotationConstants["kP"], 0.05, rotationConstants["kD"], rotationConstants["period"])
+        self.rotationPID = controller.PIDController(rotationConstants["kP"], rotationConstants["kI"], rotationConstants["kD"], rotationConstants["period"])
         self.rotationPID.enableContinuousInput(-pi, pi)
         
         self.poseTolerance = geometry.Pose2d(geometry.Translation2d(x=teleopConstants["xPoseToleranceMeters"], 
@@ -78,6 +78,7 @@ class DriveTrainSubSystem(commands2.SubsystemBase):
         Typical teleoperated robot control function, nothing fancy here, just some constants and ratios
         '''
         ySpeed, xSpeed, zSpeed = inputs[0], inputs[1], inputs[2] # grabbing our inputs and swapping the respective x and y by default
+        zSpeed *= 0.75 # speed limiter on turning
         if self.alliance == DriverStation.Alliance.kRed: # our field oriented controls would be inverted, so lets fix that
             ySpeed = -ySpeed
             xSpeed = -xSpeed
@@ -89,7 +90,7 @@ class DriveTrainSubSystem(commands2.SubsystemBase):
             zSpeed *= self.maxAngularVelocity
             self.setSwerveStates(xSpeed, ySpeed, zSpeed, currentPose)
     
-    def joystickDriveThetaOverride(self, inputs: list, currentPose: geometry.Pose2d, rotationOverride: geometry.Rotation2d) -> None:
+    def joystickDriveThetaOverride(self, inputs: list, currentPose: geometry.Pose2d, rotationOverride: geometry.Rotation2d, inverted = False) -> None:
         '''
         Drives the robot oriented towards a given target based on the passed in rotation
         '''
@@ -98,6 +99,9 @@ class DriveTrainSubSystem(commands2.SubsystemBase):
         poseError = currentPose.relativeTo(rotationOverridePose) # how far are we off from where our axes setpoints were before?
         xSpeed = xScalar * self.kMaxSpeed
         ySpeed = yScalar * self.kMaxSpeed
+        if inverted:
+            ySpeed = -ySpeed
+            xSpeed = -xSpeed
         angularVelocityFF = (poseError.rotation().radians() / pi) * self.maxAngularVelocity
         if (abs(poseError.rotation().radians()) > self.poseTolerance.rotation().radians()): # we are over the tolerance threshold
             zSpeed = self.rotationPID.calculate(currentPose.rotation().radians(), rotationOverride.radians()) # keep in mind this is not a scalar, this is a speed

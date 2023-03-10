@@ -114,7 +114,7 @@ class SwerveAutoBuilder:
     def fullAuto(self, trajectoryGroup: List[PathPlannerTrajectory]) -> commands2.CommandBase:
         commands = []
         
-        commands.append(self.resetPose(trajectoryGroup[0]))
+        #commands.append(self.resetPose(trajectoryGroup[0])) I don't like doing this; no
         
         for trajectory in trajectoryGroup:
             commands.append(self.stopEventGroup(trajectory.getStartStopEvent()))

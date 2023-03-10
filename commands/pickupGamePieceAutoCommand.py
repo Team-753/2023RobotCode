@@ -1,7 +1,8 @@
 import commands2
 import pathplannerlib
-from wpimath import geometry
+from wpimath import geometry, kinematics
 import wpilib
+import math
 
 from typing import List
 
@@ -10,11 +11,14 @@ from subsystems.arm import ArmSubSystem
 from subsystems.poseEstimator import PoseEstimatorSubsystem
 from subsystems.mandible import MandibleSubSystem
 
+from commands.armConfirmPlacementCommand import ArmConfirmPlacementCommand
+
 from auto.swerveAutoBuilder import SwerveAutoBuilder
 
 
 class PickupGamePieceAutoCommand(commands2.CommandBase):
     FieldWidth = 16.54175
+    robotOffset = 1.4 # test this por favor joe
     gamePieceXValue = 7.11835 # in meters
     gamePieceYValues = [0.919226, 2.138426, 3.357626, 4.576826]
     verticalStack = [(gamePieceYValues[0] + gamePieceYValues[1]) / 2, (gamePieceYValues[1] + gamePieceYValues[2]) / 2, (gamePieceYValues[2] + gamePieceYValues[3]) / 2]
@@ -53,12 +57,21 @@ class PickupGamePieceAutoCommand(commands2.CommandBase):
         else:
             targetGamePieceX = self.gamePieceXValue
         targetGamePieceCoordinates = (targetGamePieceX, targetGamePieceY)
+        piecePlacement = geometry.Pose2d(geometry.Translation2d(x = targetGamePieceCoordinates[0], y = targetGamePieceCoordinates[1]), geometry.Rotation2d())
+        xDiff = currentPose.X() - piecePlacement.X()
+        yDiff = currentPose.Y() - piecePlacement.Y()
+        robotRotation = geometry.Rotation2d(xDiff, yDiff).rotateBy(geometry.Rotation2d(-math.pi))
+        robotPose = piecePlacement.transformBy(geometry.Transform2d(translation = geometry.Translation2d(x = -math.cos(robotRotation.radians()) * self.robotOffset, y = -math.sin(robotRotation.radians()) * self.robotOffset), rotation = robotRotation))
+        onLeFlyTJNumeroUno = self.swerveAutoBuilder.followPath(pathplannerlib.PathPlanner.generatePath(self.constraints, [pathplannerlib.PathPoint.fromCurrentHolonomicState(currentPose, self.driveTrain.actualChassisSpeeds()), pathplannerlib.PathPoint.fromCurrentHolonomicState(robotPose, kinematics.ChassisSpeeds(0, 0, 0))]))
+        onLeFlyTJNumeroDos = self.swerveAutoBuilder.followPath(pathplannerlib.PathPlanner.generatePath(self.constraints, [pathplannerlib.PathPoint.fromCurrentHolonomicState(robotPose, kinematics.ChassisSpeeds(0, 0, 0)), pathplannerlib.PathPoint.fromCurrentHolonomicState(currentPose, kinematics.ChassisSpeeds(0, 0, 0))]))
+        self.command = commands2.SequentialCommandGroup(self.mandible.intake(), ArmConfirmPlacementCommand(self.arm, "Floor"), onLeFlyTJNumeroUno, self.arm.setPosition("Optimized"), onLeFlyTJNumeroDos)
+        self.command.schedule()
     
     def execute(self) -> None:
         return super().execute()
     
     def isFinished(self) -> bool:
-        return super().isFinished()
+        return self.command.isFinished()
     
     def end(self, interrupted: bool) -> None:
         return super().end(interrupted)
