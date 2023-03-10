@@ -24,7 +24,12 @@ class AutonomousChargeStation(commands2.CommandBase):
         self.constraints = Constraints
         
     def initialize(self) -> None:
-        self.swerveAutoBuilder.useAllianceColor = False
+        currentPose = self.poseEstimator.getCurrentPose()
+        self.alliance = wpilib.DriverStation.getAlliance()
+        self.targetX = 3.8862
+        if self.alliance == wpilib.DriverStation.Alliance.kRed:
+            self.targetX = self.FieldWidth - self.targetX
+        
     
     def execute(self) -> None:
         return super().execute()

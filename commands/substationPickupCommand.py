@@ -29,10 +29,11 @@ class SubstationPickupCommand(commands2.CommandBase):
     # TEST VAR INITS, in degrees and meters respectively
     robotTargetVerticalX = 0 # measure on practice field
     grabTargetVerticalX = 0 # measure
+    FieldWidth = 16.54175
     
-    def __init__(self, SwerveAutoBuilder: SwerveAutoBuilder, DriveTrain: DriveTrainSubSystem, Mandible: MandibleSubSystem, Arm: ArmSubSystem, PoseEstimator: PoseEstimatorSubsystem, Constraints: pathplannerlib.PathConstraints, DriverCommandJoystick: button.CommandJoystick, LLTable: NetworkTable, PIDCONSTANTS: dict) -> None:
+    def __init__(self, SwerveAutoBuilder: SwerveAutoBuilder, DriveTrain: DriveTrainSubSystem, Mandible: MandibleSubSystem, Arm: ArmSubSystem, PoseEstimator: PoseEstimatorSubsystem, Constraints: pathplannerlib.PathConstraints, DriverCommandJoystick: button.CommandJoystick, LLTable: NetworkTable, PIDCONSTANTS: dict, maxVel: float) -> None:
         super().__init__()
-        self.addRequirements([Mandible, Arm])
+        self.addRequirements([Mandible, Arm, DriveTrain])
         self.swerveAutoBuilder = SwerveAutoBuilder
         self.driveTrain = DriveTrain
         self.mandible = Mandible
@@ -42,12 +43,15 @@ class SubstationPickupCommand(commands2.CommandBase):
         self.constraints = Constraints
         self.LLTable = LLTable
         self.PIDCONSTANTS = PIDCONSTANTS
+        self.maxVel = maxVel
     
     def initialize(self) -> None:
         self.finished = False
         self.allianceFactor = -1
+        self.targetX1Val = 0
         if wpilib.DriverStation.getAlliance() == wpilib.DriverStation.Alliance.kRed:
             self.allianceFactor = 1
+            self.targetX1Val = self.FieldWidth - self.targetX1Val
         self.xController = controller.PIDController(self.PIDCONSTANTS["translationPIDConstants"]["kP"], self.PIDCONSTANTS["translationPIDConstants"]["kI"], self.PIDCONSTANTS["translationPIDConstants"]["kD"], self.PIDCONSTANTS["translationPIDConstants"]["period"])
         self.yController = controller.PIDController(self.PIDCONSTANTS["translationPIDConstants"]["kP"], self.PIDCONSTANTS["translationPIDConstants"]["kI"], self.PIDCONSTANTS["translationPIDConstants"]["kD"], self.PIDCONSTANTS["translationPIDConstants"]["period"])
         self.zController = controller.PIDController(self.PIDCONSTANTS["rotationPIDConstants"]["kP"], self.PIDCONSTANTS["rotationPIDConstants"]["kI"], self.PIDCONSTANTS["rotationPIDConstants"]["kD"], self.PIDCONSTANTS["rotationPIDConstants"]["period"])
@@ -59,7 +63,7 @@ class SubstationPickupCommand(commands2.CommandBase):
             targetPose = geometry.Pose2d(geometry.Translation2d(self.grabTargetVerticalX, currentPose.Y()), geometry.Rotation2d(0.5 * math.pi + (self.allianceFactor * 0.5 * math.pi)))
             onLeFlyTrajectory = self.swerveAutoBuilder.followPath(pathplannerlib.PathPlanner.generatePath(self.constraints, [pathplannerlib.PathPoint.fromCurrentHolonomicState(currentPose, self.driveTrain.actualChassisSpeeds()), pathplannerlib.PathPoint.fromCurrentHolonomicState(targetPose, kinematics.ChassisSpeeds(0, 0, 0))]))
         else:
-            if self.LLTable.getEntry('tv') == 1:
+            if self.LLTable.getEntry('tv') == 1: # does the limelight have a target?
                 if self.LLTable.getEntry('tclass') == 'cone':
                     if self.mandible.state != 'Cone':
                         self.mandible.setState('Cone')
@@ -68,6 +72,13 @@ class SubstationPickupCommand(commands2.CommandBase):
                         self.mandible.setState('Cube')
                 self.angleOffset = self.LLTable.getEntry('tx')
                 wpilib.SmartDashboard.putNumber("LL Angle TX", self.angleOffset)
+            else: # the limelight does not yet have a target
+                joystickX = self.driverCommandJoystick.getX() * self.maxVel / 2
+                xPIDResponse = self.xController.calculate()
+                zPIDResponse = self.zController.calculate(currentPose.rotation().radians(), 0.5 * math.pi + (self.allianceFactor * 0.5 * math.pi))
+                chassisSpeeds = kinematics.ChassisSpeeds(xPIDResponse, joystickX, zPIDResponse)
+                self.driveTrain.autoDrive(chassisSpeeds, currentPose)
+                
     
     def end(self, interrupted: bool) -> None:
         return super().end(interrupted)

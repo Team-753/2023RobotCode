@@ -185,14 +185,8 @@ class RobotContainer:
                                                             self.streamDeckSubsystem, 
                                                             self.config))
         
-        self.joystickButtonThree = button.JoystickButton(self.joystick, 3)
-        self.joystickButtonThree.whileHeld(SubstationPickupCommand(self.SwerveAutoBuilder, 
-                                                                   self.mandible, 
-                                                                   self.arm, 
-                                                                   self.poseEstimator, 
-                                                                   self.pathConstraints, 
-                                                                   self.eventMap, 
-                                                                   self.joystick))
+        #self.joystickButtonThree = button.JoystickButton(self.joystick, 3)
+        #self.joystickButtonThree.whileHeld(SubstationPickupCommand(self.bruhMomentoAutoBuilder, self.driveTrain, self.mandible, self.arm, self.poseEstimator, self.pathConstraints, self.joystick, self.LLTable, self.config["driverStation"]["teleoperatedRobotConstants"], self.config["driverStation"]["teleoperatedRobotConstants"]["teleopVelLimit"]))
         self.xboxController.A().whileTrue(MandibleIntakeCommand(self.mandible))
         self.xboxController.Y().whileTrue(cmd.run(lambda: self.mandible.outtake(), [self.mandible]))
         self.xboxController.X().onTrue(self.eventMap["CloseMandible"])
@@ -302,6 +296,7 @@ class RobotContainer:
         self.driveTrain.setDefaultCommand(cmd.run(lambda: None, [self.driveTrain])) # stupid ass command based POS
         self.arm.setPosition("Optimized")
         self.mandible.setState(self.gamePieceChooser.getSelected())
+        self.mandible.intake()
     
     def autonomousPeriodic(self):
         pass
