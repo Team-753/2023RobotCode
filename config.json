@@ -126,7 +126,7 @@
       "kD": 0.0001,
       "kF": 0,
       "iZone": 100,
-      "error": 1024,
+      "error": 256,
       "currentLimit": 40
     },
     "manualControlDeadzone": 0.1,

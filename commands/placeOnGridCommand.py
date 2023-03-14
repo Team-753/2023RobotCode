@@ -65,14 +65,21 @@ class PlaceOnGridCommand(commands2.CommandBase):
     lowConeOffset = 1.5494 # this
     lowCubeOffset = 1.5494 # and this are all total guesses, check them please
     
-    def __init__(self, SwerveAutoBuilder: SwerveAutoBuilder, Mandible: MandibleSubSystem, Arm: ArmSubSystem, PoseEstimator: PoseEstimatorSubsystem, DriveTrain: DriveTrainSubSystem, Constraints: pathplannerlib.PathConstraints, EventMap: dict, DriverJoystick: button.CommandJoystick, StreamDeck: StreamDeckSubsystem, config: dict) -> None:
+    def __init__(self, SwerveAutoBuilder: SwerveAutoBuilder, 
+                 Mandible: MandibleSubSystem, 
+                 Arm: ArmSubSystem, 
+                 PoseEstimator: PoseEstimatorSubsystem, 
+                 DriveTrain: DriveTrainSubSystem, 
+                 Constraints: pathplannerlib.PathConstraints, 
+                 DriverJoystick: button.CommandJoystick, 
+                 StreamDeck: StreamDeckSubsystem, 
+                 config: dict) -> None:
         super().__init__()
         self.addRequirements([Mandible, Arm, DriveTrain])
         self.swerveAutoBuilder = SwerveAutoBuilder
         self.mandible = Mandible
         self.arm = Arm
         self.poseEstimator = PoseEstimator
-        self.eventMap = EventMap
         self.joystick = DriverJoystick
         self.constraints = Constraints
         self.driveTrain = DriveTrain

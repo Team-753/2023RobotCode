@@ -17,7 +17,6 @@ from commands.mandibleCommands import MandibleOuttakeCommand
 
 from typing import List
 
-
 class AutoPlaceOnGridCommand(commands2.CommandBase):
     GridLayout = [
         [
@@ -74,6 +73,8 @@ class AutoPlaceOnGridCommand(commands2.CommandBase):
         self.placementSpots = PlacementSpots
         self.stage = Stage
         self.constraints = PathConstraints
+        self.addRequirements([self.driveTrain, self.mandible, self.arm])
+        self.started = False
         
     def initialize(self) -> None:
         # first step is to figure out which grid we're nearest to
@@ -146,6 +147,7 @@ class AutoPlaceOnGridCommand(commands2.CommandBase):
         onLeFlyTJNumeroUno = self.swerveAutoBuilder.followPath(pathplannerlib.PathPlanner.generatePath(self.constraints, [pathplannerlib.PathPoint.fromCurrentHolonomicState(currentPose, self.driveTrain.actualChassisSpeeds()), pathplannerlib.PathPoint.fromCurrentHolonomicState(robotPose, kinematics.ChassisSpeeds(0, 0, 0))]))
         #onLeFlyTJNumeroDos = self.swerveAutoBuilder.followPath(pathplannerlib.PathPlanner.generatePath(self.constraints, [pathplannerlib.PathPoint.fromCurrentHolonomicState(robotPose, kinematics.ChassisSpeeds(0, 0, 0)), pathplannerlib.PathPoint.fromCurrentHolonomicState(currentPose, kinematics.ChassisSpeeds(0, 0, 0))]))
         self.command = commands2.SequentialCommandGroup(onLeFlyTJNumeroUno, placementSequence)
+        self.started = True
         self.command.schedule()
     
     def execute(self) -> None:
@@ -156,4 +158,5 @@ class AutoPlaceOnGridCommand(commands2.CommandBase):
         return super().end(interrupted)
     
     def isFinished(self) -> bool:
-        return self.command.isFinished()
+        if self.started:
+            return self.command.isFinished()

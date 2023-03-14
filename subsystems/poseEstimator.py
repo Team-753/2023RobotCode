@@ -3,6 +3,7 @@ from wpimath import estimator, geometry
 import photonvision
 from subsystems.driveTrain import DriveTrainSubSystem
 import math
+import robotpy_apriltag
 import commands2
 from wpilib import SmartDashboard, shuffleboard
 from typing import List
@@ -14,13 +15,14 @@ class PoseEstimatorSubsystem(commands2.SubsystemBase):
     field = wpilib.Field2d()
     previousPipelineResultTimeStamp = 0 # useless for now...
     velocity = 0
+    useAprilTagThresholdMeters = 1.5
     heading = geometry.Rotation2d()
     mostRecentVisionPose = geometry.Pose2d()
     useVision = True
     isDisabled = True
     craziestVisionPose = geometry.Pose2d()
     
-    def __init__(self, photonCameras: List[photonvision.PhotonCamera], driveTrain: DriveTrainSubSystem, initialPose: geometry.Pose2d, config: dict) -> None:
+    def __init__(self, photonCamera: photonvision.PhotonCamera, driveTrain: DriveTrainSubSystem, initialPose: geometry.Pose2d, config: dict) -> None:
         ''' Initiates the PoseEstimator Subsystem
         
             :param photonCamera: The chosen PhotonCamera object.
@@ -33,11 +35,9 @@ class PoseEstimatorSubsystem(commands2.SubsystemBase):
         self.navx = self.driveTrain.navx
         self.config = config
         self.tags = config["Apriltags"]
-        self.photonCameras = photonCameras
-        self.cameraTransformations = []
-        for camera in photonCameras:
-            cameraParams = self.config["RobotDimensions"]["PhotonCameras"][camera.getCameraName()]
-            self.cameraTransformations.append(geometry.Transform3d(geometry.Translation3d(cameraParams["x"], cameraParams["y"], cameraParams["z"]), geometry.Rotation3d(math.radians(cameraParams["roll"]), math.radians(cameraParams["pitch"]), math.radians(cameraParams["yaw"]))))
+        self.photonCamera = photonCamera
+        cameraParams = self.config["RobotDimensions"]["PhotonCameras"][self.photonCamera.getCameraName()]
+        self.cameraTransformation = geometry.Transform3d(geometry.Translation3d(cameraParams["x"], cameraParams["y"], cameraParams["z"]), geometry.Rotation3d(math.radians(cameraParams["roll"]), math.radians(cameraParams["pitch"]), math.radians(cameraParams["yaw"])))
         
         self.poseEstimator = estimator.SwerveDrive4PoseEstimator(self.driveTrain.KINEMATICS, 
                                                                  self.driveTrain.getNAVXRotation2d(), 
@@ -62,30 +62,24 @@ class PoseEstimatorSubsystem(commands2.SubsystemBase):
         # NOTE: This algorithm is way too expensive. Anyway, TODO: Implement dual-camera pose throwaway/averaging
         # NOTE: GIANT BREAKTHROUGH MENTALLY: AFTER NAVX HAS BEEN ZEROED BY VISION, ONLY RELY ON NAVX ROTATION AND USE THAT TO FILTER TAG POSES
         currentPose = self.getCurrentPose()
-        cameraIndex = 0
-        for camera in self.photonCameras:
-            pipelineResult = camera.getLatestResult()
-            resultTimeStamp = pipelineResult.getTimestamp()
-            if (resultTimeStamp > self.previousPipelineResultTimeStamp and pipelineResult.hasTargets()):
-                target = pipelineResult.getBestTarget()
-                fiducialId = target.getFiducialId()
-                if target.getPoseAmbiguity() <= 0.15 and fiducialId > 0 and fiducialId < 9:
+        pipelineResult = self.photonCamera.getLatestResult()
+        resultTimeStamp = pipelineResult.getTimestamp()
+        if (resultTimeStamp > self.previousPipelineResultTimeStamp and pipelineResult.hasTargets()):
+            target = pipelineResult.getBestTarget()
+            fiducialId = target.getFiducialId()
+            if target.getPoseAmbiguity() <= 0.15 and fiducialId > 0 and fiducialId < 9:
+                camToTarget = target.getBestCameraToTarget()
+                if camToTarget.translation().toTranslation2d().norm() < self.useAprilTagThresholdMeters or self.isDisabled:
                     targetPose = self.getTagPose(fiducialId) # need 3d poses of each apriltag id
-                    camToTarget = target.getBestCameraToTarget()
                     camPose = targetPose.transformBy(camToTarget.inverse())
-                    robotPose = camPose.transformBy(self.cameraTransformations[cameraIndex])
+                    robotPose = camPose.transformBy(self.cameraTransformation)
                     robotPose2d = robotPose.toPose2d()
-                    self.previousPipelineResultTimeStamp = resultTimeStamp
-                    if self.isDisabled:    
-                        self.poseEstimator.addVisionMeasurement(robotPose2d, resultTimeStamp)
-                    else:
-                        self.poseEstimator.addVisionMeasurement(geometry.Pose2d(robotPose2d.translation(), currentPose.rotation()), resultTimeStamp)
-                            
-        swerveModuleStates = self.driveTrain.getSwerveModulePositions()
-        
+                    self.previousPipelineResultTimeStamp = resultTimeStamp 
+                    self.poseEstimator.addVisionMeasurement(robotPose2d, resultTimeStamp)
+                    
         self.poseEstimator.update(
             self.driveTrain.getNAVXRotation2d(),
-            swerveModuleStates)
+            self.driveTrain.getSwerveModulePositions())
         self.field.setRobotPose(currentPose)
         SmartDashboard.putNumber("X Position", currentPose.X())
         SmartDashboard.putNumber("Y Position", currentPose.Y())
