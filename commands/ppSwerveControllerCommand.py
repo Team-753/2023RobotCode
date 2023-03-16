@@ -37,8 +37,8 @@ class PPSwerveDriveController(commands2.CommandBase):
     def execute(self):
         currentTime = self.timer.get()
         desiredState = self.trajectory.sample(currentTime)
-        if self.useAllianceColor:
-            desiredState = self.flipState(desiredState)
+        '''if self.useAllianceColor:
+            desiredState = self.flipState(desiredState)'''
         currentPose = self.poseEstimator.getCurrentPose()
         
         targetChassisSpeeds = self.controller.calculate(currentPose, desiredState)
@@ -53,7 +53,7 @@ class PPSwerveDriveController(commands2.CommandBase):
     def isFinished(self):
         return self.timer.hasElapsed(self.trajectory.getTotalTime())
     
-    def flipState(self, state: PathPlannerTrajectory.PathPlannerState) -> PathPlannerTrajectory.PathPlannerState:
+    '''def flipState(self, state: PathPlannerTrajectory.PathPlannerState) -> PathPlannerTrajectory.PathPlannerState:
         newState = PathPlannerTrajectory.PathPlannerState()
         newState.acceleration = state.acceleration
         newState.angularVelocity = -state.angularVelocity
@@ -62,4 +62,4 @@ class PPSwerveDriveController(commands2.CommandBase):
         newState.pose = geometry.Pose2d(self.fieldWidthMeters - state.pose.X(), state.pose.Y(), geometry.Rotation2d(math.pi - state.pose.rotation().radians()))
         newState.time = state.time
         newState.velocity = state.velocity
-        return newState
+        return newState'''

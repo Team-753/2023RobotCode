@@ -2,7 +2,7 @@
 TODO:
 Add autonomous compatibility with the place on grid command
 '''
-#from networktables import NetworkTables
+from networktables import NetworkTables
 import commands2
 from commands2 import button, cmd
 import wpilib
@@ -29,6 +29,7 @@ from commands.placeOnGridCommand import PlaceOnGridCommand
 from commands.defaultDriveCommand import DefaultDriveCommand
 from commands.pickupGamePieceAutoCommand import PickupGamePieceAutoCommand
 from commands.autoPlaceOnGridCommand import AutoPlaceOnGridCommand
+from commands.AutoGridPlacer import AutoGridPlacer
 
 from auto.swerveAutoBuilder import SwerveAutoBuilder
 
@@ -47,8 +48,8 @@ class RobotContainer:
     maxAngularVelocity = config["autonomousSettings"]["autoVelLimit"] / math.hypot(config["RobotDimensions"]["trackWidth"] / 2, config["RobotDimensions"]["wheelBase"] / 2)
     photonCamera = photonvision.PhotonCamera("photoncameraone") # , photonvision.PhotonCamera("photoncameratwo")
     fieldWidthMeters = 16.54175
-    #NetworkTables.initialize()
-    #LLTable = NetworkTables.getTable("limelight")
+    NetworkTables.initialize()
+    LLTable = NetworkTables.getTable("limelight")
     
     def __init__(self) -> None:
         # buttons
@@ -169,17 +170,21 @@ class RobotContainer:
         self.joystickButtonFour.whileHeld(cmd.run(lambda: self.driveTrain.xMode(), [self.driveTrain]))
         
         self.joystickButtonTwo = button.JoystickButton(self.joystick, 2)
-        '''self.joystickButtonTwo.whenHeld(PlaceOnGridCommand(self.bruhMomentoAutoBuilder, 
-                                                            self.mandible, 
-                                                            self.arm, 
-                                                            self.poseEstimator, 
-                                                            self.driveTrain, 
-                                                            self.pathConstraints, 
-                                                            self.eventMap, 
-                                                            self.joystick, 
-                                                            self.streamDeckSubsystem, 
-                                                            self.config))'''
-        self.joystickButtonTwelve = button.JoystickButton(self.joystick, 12)
+        self.joystickButtonTwo.whenHeld(AutoGridPlacer(self.SwerveAutoBuilder, 
+                                                       self.mandible, 
+                                                       self.arm, 
+                                                       self.poseEstimator, 
+                                                       self.driveTrain, 
+                                                       self.pathConstraints, 
+                                                       self.joystick, 
+                                                       self.streamDeckSubsystem, 
+                                                       self.config,
+                                                       self.LLTable,
+                                                       self.gamePiecePlacementList
+                                                       ))
+        self.joystickButtonTwelve = button.JoystickButton(self.joystick, 12) # the speed limiter button
+        self.joystickButtonTwelve.whenPressed(cmd.runOnce(lambda: self.driveTrain.enableSpeedLimiter(), []))
+        self.joystickButtonTwelve.whenReleased(cmd.runOnce(lambda: self.driveTrain.disableSpeedLimiter(), []))
 
         
         #self.joystickButtonThree = button.JoystickButton(self.joystick, 3)
@@ -226,9 +231,10 @@ class RobotContainer:
         else:
             self.SwerveAutoBuilder.useAllianceColor = False
             initialState = autoPath[0].getInitialHolonomicPose()
-        correction = self.bruhMomentoAutoBuilder.followPath(pathplannerlib.PathPlanner.generatePath(self.pathConstraints, [pathplannerlib.PathPoint.fromCurrentHolonomicState(currentPose, kinematics.ChassisSpeeds(0, 0, 0)), pathplannerlib.PathPoint.fromCurrentHolonomicState(initialState, kinematics.ChassisSpeeds(0, 0, 0))]))
+        #correction = self.bruhMomentoAutoBuilder.followPath(pathplannerlib.PathPlanner.generatePath(self.pathConstraints, [pathplannerlib.PathPoint.fromCurrentHolonomicState(currentPose, kinematics.ChassisSpeeds(0, 0, 0)), pathplannerlib.PathPoint.fromCurrentHolonomicState(initialState, kinematics.ChassisSpeeds(0, 0, 0))]))
         fullAuto = self.SwerveAutoBuilder.fullAuto(autoPath)
-        return commands2.SequentialCommandGroup(correction, fullAuto)
+        #return commands2.SequentialCommandGroup(correction, fullAuto) # correction
+        return fullAuto
     
     def getPath(self, pathName: str) -> pathplannerlib.PathPlannerTrajectory:
         return pathplannerlib.PathPlanner.loadPath(pathName, self.pathConstraints, False)
@@ -292,9 +298,9 @@ class RobotContainer:
     def autonomousInit(self):
         self.stages = 0
         self.driveTrain.setDefaultCommand(cmd.run(lambda: None, [self.driveTrain])) # stupid ass command based POS
-        self.arm.setPosition("Optimized")
+        #self.arm.setPosition("Optimized")
         self.mandible.setState("Cube")
-        self.mandible.intake()
+        #self.mandible.intake()
     
     def autonomousPeriodic(self):
         pass

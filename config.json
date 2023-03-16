@@ -61,7 +61,7 @@
     "PCM_ID": 61
   },
   "autonomousSettings": {
-    "autoVelLimit": 1,
+    "autoVelLimit": 0.75,
     "autoAccelLimit": 2,
     "xPoseToleranceMeters": 0.03,
     "yPoseToleranceMeters": 0.03,
@@ -70,13 +70,13 @@
       "kP": 5.0,
       "kI": 0.0,
       "kD": 0.0,
-      "period": 0.025
+      "period": 0.05
     },
     "rotationPIDConstants": {
-      "kP": 1,
-      "kI": 0.05,
+      "kP": 0.50,
+      "kI": 0.0,
       "kD": 0.0,
-      "period": 0.025
+      "period": 0.05
     }
   },
   "driverStation": {
@@ -110,8 +110,8 @@
   },
   "MandibleConfig": {
     "DoubleSolenoid": {
-      "ForwardChannel": 1,
-      "ReverseChannel": 0
+      "ForwardChannel": 5,
+      "ReverseChannel": 4
     },
     "LeftMotorID": 10,
     "RightMotorID": 11,

@@ -180,3 +180,9 @@ class DriveTrainSubSystem(commands2.SubsystemBase):
         self.frontRight.reZeroMotors()
         self.rearLeft.reZeroMotors()
         self.rearRight.reZeroMotors()
+    
+    def enableSpeedLimiter(self) -> None:
+        self.speedLimitingFactor = 0.5
+    
+    def disableSpeedLimiter(self) -> None:
+        self.speedLimitingFactor = 1.0

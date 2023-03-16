@@ -118,7 +118,6 @@ class SwerveAutoBuilder:
         commands = []
         
         #commands.append(self.resetPose(trajectoryGroup[0])) I don't like doing this; no
-        
         for trajectory in trajectoryGroup:
             commands.append(self.stopEventGroup(trajectory.getStartStopEvent()))
             commands.append(self.followPathWithEvents(trajectory))

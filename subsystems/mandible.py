@@ -12,8 +12,8 @@ class MandibleSubSystem(commands2.SubsystemBase):
     def __init__(self, config: dict) -> None:
         super().__init__()
         self.config = config
-        self.actuator = DoubleSolenoid(self.config["RobotDefaultSettings"]["PCM_ID"], PneumaticsModuleType.REVPH, self.config["MandibleConfig"]["DoubleSolenoid"]["ForwardChannel"], self.config["MandibleConfig"]["DoubleSolenoid"]["ReverseChannel"])
-        self.compressor = wpilib.Compressor(self.config["RobotDefaultSettings"]["PCM_ID"], PneumaticsModuleType.REVPH)
+        self.actuator = DoubleSolenoid(self.config["RobotDefaultSettings"]["PCM_ID"], PneumaticsModuleType.CTREPCM, self.config["MandibleConfig"]["DoubleSolenoid"]["ForwardChannel"], self.config["MandibleConfig"]["DoubleSolenoid"]["ReverseChannel"])
+        self.compressor = wpilib.Compressor(self.config["RobotDefaultSettings"]["PCM_ID"], PneumaticsModuleType.CTREPCM)
         self.compressor.enableDigital()
         self.leftMotor = VictorSPX(self.config["MandibleConfig"]["LeftMotorID"])
         self.leftMotor.setNeutralMode(NeutralMode.Brake)

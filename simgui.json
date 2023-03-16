@@ -15,9 +15,12 @@
       "/SmartDashboard/Field Piece Three": "String Chooser",
       "/SmartDashboard/Field Piece Two": "String Chooser",
       "/SmartDashboard/First Auto Game Piece Placement": "String Chooser",
+      "/SmartDashboard/First Piece Placement": "String Chooser",
       "/SmartDashboard/Game Piece Chooser": "String Chooser",
       "/SmartDashboard/Second Auto Game Piece Placement": "String Chooser",
+      "/SmartDashboard/Second Piece Placement": "String Chooser",
       "/SmartDashboard/Third Auto Game Piece Placement": "String Chooser",
+      "/SmartDashboard/Third Piece Placement": "String Chooser",
       "/SmartDashboard/Vision Odo-0": "Command",
       "/SmartDashboard/Vision Odometry Zero": "Command"
     }

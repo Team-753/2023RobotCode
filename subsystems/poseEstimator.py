@@ -69,7 +69,9 @@ class PoseEstimatorSubsystem(commands2.SubsystemBase):
             fiducialId = target.getFiducialId()
             if target.getPoseAmbiguity() <= 0.15 and fiducialId > 0 and fiducialId < 9:
                 camToTarget = target.getBestCameraToTarget()
-                if camToTarget.translation().toTranslation2d().norm() < self.useAprilTagThresholdMeters or self.isDisabled:
+                norm = camToTarget.translation().toTranslation2d().norm()
+                wpilib.SmartDashboard.putNumber("distance to tag", camToTarget.translation().toTranslation2d().norm())
+                if norm < self.useAprilTagThresholdMeters or self.isDisabled:
                     targetPose = self.getTagPose(fiducialId) # need 3d poses of each apriltag id
                     camPose = targetPose.transformBy(camToTarget.inverse())
                     robotPose = camPose.transformBy(self.cameraTransformation)
