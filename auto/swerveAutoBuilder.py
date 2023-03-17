@@ -1,5 +1,4 @@
 from pathplannerlib import PathPlannerTrajectory
-import pathplannerlib
 
 from subsystems.poseEstimator import PoseEstimatorSubsystem
 from subsystems.driveTrain import DriveTrainSubSystem
@@ -12,10 +11,9 @@ from wpimath import controller, geometry
 import commands2
 from commands2 import cmd
 from typing import List
-import math
 
 class SwerveAutoBuilder:
-    fieldWidthMeters = 16.54175
+    
     def __init__(self, poseEstimator: PoseEstimatorSubsystem, 
                  driveTrain: DriveTrainSubSystem,
                  eventMap: dict, 
@@ -67,13 +65,12 @@ class SwerveAutoBuilder:
         self.poseEstimator.setCurrentPose(geometry.Pose2d(initialState.pose.translation(), initialState.holonomicRotation))
         
     def wrappedEventCommand(self, eventCommand: commands2.Command) -> commands2.CommandBase:
-        requirements: List[commands2.Subsystem] = eventCommand.getRequirements()
         return commands2.FunctionalCommand(
             eventCommand.initialize(),
             eventCommand.execute(),
-            eventCommand.end(False),
+            eventCommand.end(),
             eventCommand.isFinished(),
-            []#requirements
+            eventCommand.getRequirements()
         )
     
     def getStopEventCommands(self, stopEvent: PathPlannerTrajectory.StopEvent) -> commands2.CommandBase:
@@ -118,6 +115,7 @@ class SwerveAutoBuilder:
         commands = []
         
         #commands.append(self.resetPose(trajectoryGroup[0])) I don't like doing this; no
+        
         for trajectory in trajectoryGroup:
             commands.append(self.stopEventGroup(trajectory.getStartStopEvent()))
             commands.append(self.followPathWithEvents(trajectory))
@@ -129,21 +127,3 @@ class SwerveAutoBuilder:
     def PIDControllerFromConstants(self, constants: dict):
         ''' Creates and returns a PID controller based off the dictionary (hashmap) parameter'''
         return controller.PIDController(constants["kP"], constants["kI"], constants["kD"], constants["period"])
-
-    '''def flipTrajectoryAcrossYAxis(self, trajectory: PathPlannerTrajectory) -> PathPlannerTrajectory:
-        states = trajectory.getStates()
-        newStates = trajectory.getStates()
-        for state in states:
-            newStates.append(self.flipState(state))
-        return PathPlannerTrajectory() # cant create a trajectory based off states alone
-    
-    def flipState(self, state: PathPlannerTrajectory.PathPlannerState) -> PathPlannerTrajectory.PathPlannerState:
-        newState = PathPlannerTrajectory.PathPlannerState()
-        newState.acceleration = state.acceleration
-        newState.angularVelocity = -state.angularVelocity
-        newState.holonomicAngularVelocity = -state.holonomicAngularVelocity
-        newState.holonomicRotation = geometry.Rotation2d(math.pi - state.holonomicRotation.radians())
-        newState.pose = geometry.Pose2d(self.fieldWidthMeters - state.pose.X(), state.pose.Y(), geometry.Rotation2d(math.pi - state.pose.rotation().radians()))
-        newState.time = state.time
-        newState.velocity = state.velocity
-        return newState'''

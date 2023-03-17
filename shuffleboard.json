@@ -105,7 +105,7 @@
               "_showGlyph": false
             }
           },
-          "8,4": {
+          "7,4": {
             "size": [
               1,
               1
@@ -159,7 +159,7 @@
               "_showGlyph": false
             }
           },
-          "8,3": {
+          "7,2": {
             "size": [
               2,
               1
@@ -172,20 +172,7 @@
               "_showGlyph": false
             }
           },
-          "10,3": {
-            "size": [
-              1,
-              1
-            ],
-            "content": {
-              "_type": "Text View",
-              "_source0": "network_table:///SmartDashboard/Delta Y Theta",
-              "_title": "Delta Y Theta",
-              "_glyph": 148,
-              "_showGlyph": false
-            }
-          },
-          "9,4": {
+          "9,2": {
             "size": [
               1,
               1
@@ -313,6 +300,58 @@
               "_type": "Text View",
               "_source0": "network_table:///SmartDashboard/distance to tag",
               "_title": "distance to tag",
+              "_glyph": 148,
+              "_showGlyph": false
+            }
+          },
+          "7,1": {
+            "size": [
+              1,
+              1
+            ],
+            "content": {
+              "_type": "Text View",
+              "_source0": "network_table:///SmartDashboard/Selected Grid Slot",
+              "_title": "Selected Grid Slot",
+              "_glyph": 148,
+              "_showGlyph": false
+            }
+          },
+          "10,2": {
+            "size": [
+              1,
+              1
+            ],
+            "content": {
+              "_type": "Text View",
+              "_source0": "network_table:///SmartDashboard/Selected Grid",
+              "_title": "Selected Grid",
+              "_glyph": 148,
+              "_showGlyph": false
+            }
+          },
+          "8,3": {
+            "size": [
+              1,
+              1
+            ],
+            "content": {
+              "_type": "Text View",
+              "_source0": "network_table:///SmartDashboard/Delta Y Theta",
+              "_title": "Delta Y Theta",
+              "_glyph": 148,
+              "_showGlyph": false
+            }
+          },
+          "9,3": {
+            "size": [
+              1,
+              1
+            ],
+            "content": {
+              "_type": "Text View",
+              "_source0": "network_table:///SmartDashboard/target pose",
+              "_title": "target pose",
               "_glyph": 148,
               "_showGlyph": false
             }

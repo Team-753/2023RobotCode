@@ -29,7 +29,12 @@ class StreamDeckSubsystem(commands2.SubsystemBase):
             "FullyRetracted": self.streamDeck.getRawButtonReleased(13),
             "Optimized": self.streamDeck.getRawButtonReleased(14),
             "Substation": self.streamDeck.getRawButtonReleased(15),
-            "Floor": self.streamDeck.getRawButtonReleased(16)
+            "Floor": self.streamDeck.getRawButtonReleased(16),
+            "BottomSlot": self.streamDeck.getRawButtonReleased(17),
+            "MidCone": self.streamDeck.getRawButtonReleased(18),
+            "MidCube": self.streamDeck.getRawButtonReleased(19),
+            "HighCone": self.streamDeck.getRawButtonReleased(20),
+            "HighCube": self.streamDeck.getRawButtonReleased(21),
         }
         for i in range(9):
             if switches[f"{i + 1}"]:

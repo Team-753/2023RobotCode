@@ -5,7 +5,7 @@ import wpilib
 
 from commands2 import cmd, button
 from wpimath import geometry, kinematics, controller
-from typing import List
+from typing import List, Tuple
 
 from auto.swerveAutoBuilder import SwerveAutoBuilder
 from subsystems.mandible import MandibleSubSystem
@@ -43,37 +43,163 @@ class AutoGridPlacer:
         self.streamDeck = StreamDeck
         self.config = config
         self.placementSpots = PlacementSpots
-        self.stageController = StageController
         self.llTable = LimelightTable
+        self.stageController = StageController(self.arm, self.mandible, self.driveTrain, self.swerveAutoBuilder, self.poseEstimator)
     
     def reset(self) -> None:
         self.placementSequenceCounter = 0
 
     def getCommandSequence(self, isAutonomous = False) -> commands2.Command:
         if isAutonomous:
-            pass
+            selectedSlot = self.placementSpots[self.placementSequenceCounter].getSelected()
+            self.placementSequenceCounter += 1
+            self.stageController.setTarget(selectedSlot, self.poseEstimator.getCurrentPose())
+            if selectedSlot[1] == 1 or selectedSlot[1] == 4 or selectedSlot[1] == 7: # it is a cube, we don't need all the extra stuff
+                return commands2.SequentialCommandGroup(self.stageController.calculateArmPosition(), self.stageController.calculateInitialPPCommand(), self.stageController.calculateFinalSequence())
+            else:
+                return commands2.SequentialCommandGroup(self.stageController.calculateArmPosition(), self.stageController.calculateInitialPPCommand(), LimeLightSanityCheckTwo(self.llTable, self.driveTrain, self.poseEstimator), self.stageController.calculateFinalPPCommand(), self.stageController.calculateFinalSequence(), self.stageController.calculateAutoPPCommand())
         else:
-            return commands2.SequentialCommandGroup(self.stageController.calculateInitialPPCommand(), LimeLightSanityCheckTwo(self.llTable, self.driveTrain, self.poseEstimator), self.stageController.calculateFinalPPCommand(), DriverConfirmCommand(), self.stageController.calculateFinalArmPosition())
+            selectedSlot = self.streamDeck.getSelectedGridSlot()
+            self.stageController.setTarget(selectedSlot)
+            print("running command again")
+            if selectedSlot[1] == 1 or selectedSlot[1] == 4 or selectedSlot[1] == 7: # it is a cube, we don't need all the extra stuff
+                return commands2.SequentialCommandGroup(self.stageController.calculateArmPosition(), self.stageController.calculateInitialPPCommand(), commands2.PrintCommand("**************************************************************************************\n**********************************************************************************************\n**********************************"), commands2.WaitCommand(1), cmd.runOnce(lambda: self.driveTrain.stationary(), [self.driveTrain]), commands2.WaitCommand(1), self.stageController.calculateFinalSequence())
+            else:
+                return commands2.SequentialCommandGroup(self.stageController.calculateArmPosition(), self.stageController.calculateInitialPPCommand(), LimeLightSanityCheckTwo(self.llTable, self.driveTrain, self.poseEstimator), self.stageController.calculateFinalPPCommand(), DriverConfirmCommand(), self.stageController.calculateFinalSequence())
 
 class StageController:
-    def __init__(self) -> None:
-        pass
+    GridLayout = [
+        [
+            [0.4191, 4.987417], 
+            [0.4191, 4.424426], 
+            [0.4191, 3.861435], 
+            [0.8509, 4.987417], 
+            [0.8509, 4.424426], 
+            [0.8509, 3.861435], 
+            [1.27635, 4.987417], 
+            [1.27635, 4.424426], 
+            [1.27635, 3.861435]
+            ], 
+        [
+            [0.4191, 3.311017], 
+            [0.4191, 2.748026], 
+            [0.4191, 2.185035], 
+            [0.8509, 3.311017], 
+            [0.8509, 2.748026], 
+            [0.8509, 2.185035], 
+            [1.27635, 3.311017], 
+            [1.27635, 2.748026], 
+            [1.27635, 2.185035]
+            ], 
+        [
+            [0.4191, 1.634617], 
+            [0.4191, 1.071626], 
+            [0.4191, 0.508635], 
+            [0.8509, 1.634617], 
+            [0.8509, 1.071626], 
+            [0.8509, 0.508635], 
+            [1.27635, 1.634617], 
+            [1.27635, 1.071626], 
+            [1.27635, 0.508635]
+            ]
+        ]
+    FieldWidth = 16.54175
+    FieldHeight = 8.0137
+    highConeOffset = 1.397
+    highCubeOffset = 1.7018
+    midConeOffset = 1.45
+    midCubeOffset = 1.7018
+    lowConeOffset = 1.5494
+    lowCubeOffset = 1.5494
+    preOffset = 0.15 # 15cm
+    targetSlot = (1, 4)
+    autoPose = geometry.Pose2d()
+    onTheFlyPathConstraints = pathplannerlib.PathConstraints(maxVel = 0.5, maxAccel = 1)
+
+    def __init__(self, Arm: ArmSubSystem, Mandible: MandibleSubSystem, DriveTrain: DriveTrainSubSystem, SwerveAutoBuilder: SwerveAutoBuilder, PoseEstimator: PoseEstimatorSubsystem) -> None:
+        self.arm = Arm
+        self.mandible = Mandible
+        self.swerveAutoBuilder = SwerveAutoBuilder
+        self.poseEstimator = PoseEstimator
+        self.driveTrain = DriveTrain
+    
+    def setTarget(self, target: tuple, AutoPose = geometry.Rotation2d()) -> None:
+        self.targetSlot = target
+        self.autoPose = AutoPose
     
     def calculateArmPosition(self) -> commands2.Command:
-        pass
-    
-    def calculateFinalArmPosition(self) -> commands2.Command:
-        pass
+        slot = self.targetSlot[1]
+        if slot < 3: # we are placing high
+            if slot == 1: # we are placing high cube
+                return cmd.runOnce(lambda: self.arm.setPosition('HighCube'), [])
+            else:
+                return cmd.runOnce(lambda: self.arm.setPosition('HighConePrep'), [])
+        elif slot > 5: # we are placing low
+            return cmd.runOnce(lambda: self.arm.setPosition('BottomPlacement'), [])
+        else: # we are placing mid
+            if slot == 4: # we are placing mid cube
+                return cmd.runOnce(lambda: self.arm.setPosition('MidCube'), [])
+            else: # we are placing mid cone
+                return cmd.runOnce(lambda: self.arm.setPosition('MidConePrep'), [])
+            
+    def calculateFinalSequence(self) -> commands2.Command:
+        slot = self.targetSlot[1]
+        if slot < 3: # we are placing high
+            if slot == 1: # we are placing high cube
+                return commands2.SequentialCommandGroup(ArmConfirmPlacementCommand(self.arm, 'HighCube'), MandibleOuttakeCommand(self.mandible), cmd.runOnce(lambda: self.arm.setPosition('Optimized'), []))
+            else:
+                return commands2.SequentialCommandGroup(ArmConfirmPlacementCommand(self.arm, 'HighConePlacement'), cmd.runOnce(lambda: self.mandible.setState('Cube'), []), cmd.runOnce(lambda: self.arm.setPosition('Optimized'), []), commands2.WaitCommand(0.25), self.mandible.setState('Cone'))
+        elif slot > 5: # we are placing low
+            return commands2.SequentialCommandGroup(ArmConfirmPlacementCommand(self.arm, 'BottomPlacement'), MandibleOuttakeCommand(self.mandible), cmd.runOnce(lambda: self.arm.setPosition('Optimized'), []))
+        else: # we are placing mid
+            if slot == 4: # we are placing mid cube
+                return commands2.SequentialCommandGroup(ArmConfirmPlacementCommand(self.arm, 'MidCube'), MandibleOuttakeCommand(self.mandible), cmd.runOnce(lambda: self.arm.setPosition('Optimized'), []))
+            else: # we are placing mid cone
+                return commands2.SequentialCommandGroup(ArmConfirmPlacementCommand(self.arm, 'MidConePlacement'), cmd.runOnce(lambda: self.mandible.setState('Cube'), []), cmd.runOnce(lambda: self.arm.setPosition('Optimized'), []), commands2.WaitCommand(0.25), self.mandible.setState('Cone'))
     
     def calculateInitialPPCommand(self) -> commands2.Command:
-        pass
+        print("**************************************************************************************\n**********************************************************************************************\n**********************************")
+        slotData = self.GridLayout[self.targetSlot[0]][self.targetSlot[1]]
+        x = slotData[0]
+        y = slotData[1]
+        slot = self.targetSlot[1]
+        if slot < 3: # we are placing high
+            if slot == 1: # we are placing high cube
+                offset = self.highCubeOffset - self.preOffset
+            else:
+                offset = self.highConeOffset
+        elif slot > 5: # we are placing low
+            offset = self.lowCubeOffset - self.preOffset
+        else: # we are placing mid
+            if slot == 4: # we are placing mid cube
+                offset = self.midCubeOffset - self.preOffset
+            else: # we are placing mid cone
+                offset = self.midConeOffset
+        targetPose = geometry.Pose2d(geometry.Translation2d(x = x + offset + self.preOffset, y = y), geometry.Rotation2d(math.pi))
+        #print("**************************************************************************************\n**********************************************************************************************\n**********************************")
+        wpilib.SmartDashboard.putString("target pose", f"X: {targetPose.X()}, Y: {targetPose.Y()}, Z: {targetPose.rotation().degrees()}")
+        if wpilib.DriverStation.getAlliance() == wpilib.DriverStation.Alliance.kRed:
+            targetPose = self.flipPoseToRedAlliance(targetPose)
+        return self.swerveAutoBuilder.followPath(pathplannerlib.PathPlanner.generatePath(self.onTheFlyPathConstraints, [pathplannerlib.PathPoint.fromCurrentHolonomicState(self.poseEstimator.getCurrentPose(), self.driveTrain.actualChassisSpeeds()), pathplannerlib.PathPoint.fromCurrentHolonomicState(targetPose, kinematics.ChassisSpeeds(0, 0, 0))]))
     
     def calculateFinalPPCommand(self) -> commands2.Command:
-        pass
+        currentPose = self.poseEstimator.getCurrentPose() # so where we are now should be aligned on the cone thingy
+        targetPose = geometry.Pose2d(currentPose.X() - self.preOffset, currentPose.Y(), geometry.Rotation2d(math.pi))
+        if wpilib.DriverStation.getAlliance() == wpilib.DriverStation.Alliance.kRed:
+            targetPose = self.flipPoseToRedAlliance(targetPose)
+        return self.swerveAutoBuilder.followPath(pathplannerlib.PathPlanner.generatePath(self.onTheFlyPathConstraints, [pathplannerlib.PathPoint.fromCurrentHolonomicState(currentPose, self.driveTrain.actualChassisSpeeds()), pathplannerlib.PathPoint(targetPose.translation(), targetPose.rotation(), targetPose.rotation())]))
     
-
+    def calculateAutoPPCommand(self) -> commands2.Command:
+        currentPose = self.poseEstimator.getCurrentPose()
+        return self.swerveAutoBuilder.followPath(pathplannerlib.PathPlanner.generatePath(self.onTheFlyPathConstraints, [pathplannerlib.PathPoint.fromCurrentHolonomicState(currentPose, self.driveTrain.actualChassisSpeeds()), pathplannerlib.PathPoint.fromCurrentHolonomicState(self.autoPose, kinematics.ChassisSpeeds(0, 0, 0))]))
+    
+    def flipPoseToRedAlliance(self, poseToFlip: geometry.Pose2d):
+        return geometry.Pose2d(poseToFlip.X(), self.FieldHeight - poseToFlip.Y(), poseToFlip.rotation())
+    
 class LimeLightSanityCheckTwo(commands2.CommandBase):
     tolerance = 1 # +/- 1 degrees
+    staticFrictionFFTurn = 0.2
+    staticFrictionFFDrive = 0.2
     
     def __init__(self, LLTable: NetworkTable, DriveTrain: DriveTrainSubSystem, PoseEstimator: PoseEstimatorSubsystem) -> None:
         super().__init__()
@@ -107,12 +233,16 @@ class LimeLightSanityCheckTwo(commands2.CommandBase):
                 self.finished = True
             else:
                 currentPose = self.poseEstimator.getCurrentPose()
-                if self.isRedAlliance:
-                    rotationFeedback = self.angleController.calculate(currentPose.rotation().radians(), 0)
-                    self.driveTrain.autoDrive(kinematics.ChassisSpeeds(0, -feedback, rotationFeedback), self.poseEstimator.getCurrentPose())
+                rotationFeedback = self.angleController.calculate(currentPose.rotation().radians(), math.pi)
+                if rotationFeedback < 0:
+                    rotFF = -self.staticFrictionFFTurn
                 else:
-                    rotationFeedback = self.angleController.calculate(currentPose.rotation().radians(), math.pi)
-                    self.driveTrain.autoDrive(kinematics.ChassisSpeeds(0, feedback, rotationFeedback), self.poseEstimator.getCurrentPose())
+                    rotFF = self.staticFrictionFFTurn
+                if feedback < 0:
+                    driveFF = -self.staticFrictionFFDrive
+                else:
+                    driveFF = self.staticFrictionFFDrive
+                self.driveTrain.autoDrive(kinematics.ChassisSpeeds(0, feedback + driveFF, rotationFeedback + rotFF), currentPose)
         else:
             self.timeoutCounter.start()
             if self.timeoutCounter.hasElapsed(2):
@@ -123,7 +253,7 @@ class LimeLightSanityCheckTwo(commands2.CommandBase):
         self.driveTrain.stationary()
     
     def isFinished(self) -> bool:
-        return super().isFinished()
+        return self.finished
 
 class DriverConfirmCommand(commands2.CommandBase):
     

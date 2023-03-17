@@ -25,11 +25,11 @@ from subsystems.streamDeck import StreamDeckSubsystem
 
 from commands.mandibleCommands import MandibleIntakeCommand, MandibleOuttakeCommand
 from commands.substationPickupCommand import SubstationPickupCommand
-from commands.placeOnGridCommand import PlaceOnGridCommand
 from commands.defaultDriveCommand import DefaultDriveCommand
 from commands.pickupGamePieceAutoCommand import PickupGamePieceAutoCommand
-from commands.autoPlaceOnGridCommand import AutoPlaceOnGridCommand
 from commands.AutoGridPlacer import AutoGridPlacer
+from commands.autoChargeStation import AutonomousChargeStation
+from commands.placeOnGridCommand import PlaceOnGridCommand
 
 from auto.swerveAutoBuilder import SwerveAutoBuilder
 
@@ -79,7 +79,7 @@ class RobotContainer:
         ''' Auto-populating our autonomous chooser with the paths we have in the deploy/pathplanner folder '''
         self.autonomousChooser = wpilib.SendableChooser()
         self.autonomousChooser.setDefaultOption("Only Place", "Only Place")
-        self.autonomousChooser.addOption("Taxi", "Taxi")
+        self.autonomousChooser.addOption("Only Charge", "Only Charge")
         for pathName in self.autoList:
             self.autonomousChooser.addOption(pathName, pathName)
         wpilib.SmartDashboard.putData("Autonomous Chooser", self.autonomousChooser)
@@ -162,26 +162,39 @@ class RobotContainer:
                                                                                           )
                                                    )
         
+        self.autoGridPlacer = AutoGridPlacer(
+                    self.bruhMomentoAutoBuilder, 
+                    self.mandible, 
+                    self.arm, 
+                    self.poseEstimator, 
+                    self.driveTrain, 
+                    self.pathConstraints, 
+                    self.joystick, 
+                    self.streamDeckSubsystem, 
+                    self.config,
+                    self.LLTable,
+                    self.gamePiecePlacementList
+                    )
+        
         self.configureButtonBindings()
         
     
     def configureButtonBindings(self):
         self.joystickButtonFour = button.JoystickButton(self.joystick, 4)
-        self.joystickButtonFour.whileHeld(cmd.run(lambda: self.driveTrain.xMode(), [self.driveTrain]))
+        self.joystickButtonFour.whileHeld(cmd.runOnce(lambda: self.driveTrain.xMode(), [self.driveTrain]))
         
         self.joystickButtonTwo = button.JoystickButton(self.joystick, 2)
-        self.joystickButtonTwo.whenHeld(AutoGridPlacer(self.SwerveAutoBuilder, 
-                                                       self.mandible, 
-                                                       self.arm, 
-                                                       self.poseEstimator, 
-                                                       self.driveTrain, 
-                                                       self.pathConstraints, 
-                                                       self.joystick, 
-                                                       self.streamDeckSubsystem, 
-                                                       self.config,
-                                                       self.LLTable,
-                                                       self.gamePiecePlacementList
-                                                       ))
+        self.joystickButtonTwo.whileTrue(self.autoGridPlacer.getCommandSequence())
+        '''self.joystickButtonTwo.whenHeld(PlaceOnGridCommand(self.bruhMomentoAutoBuilder, 
+                                                            self.mandible, 
+                                                            self.arm, 
+                                                            self.poseEstimator, 
+                                                            self.driveTrain, 
+                                                            self.pathConstraints, 
+                                                            self.joystick, 
+                                                            self.streamDeckSubsystem, 
+                                                            self.config))'''
+        
         self.joystickButtonTwelve = button.JoystickButton(self.joystick, 12) # the speed limiter button
         self.joystickButtonTwelve.whenPressed(cmd.runOnce(lambda: self.driveTrain.enableSpeedLimiter(), []))
         self.joystickButtonTwelve.whenReleased(cmd.runOnce(lambda: self.driveTrain.disableSpeedLimiter(), []))
@@ -221,20 +234,23 @@ class RobotContainer:
         return adjustedInputs
     
     def getAutonomousCommand(self):
-        currentPose = self.poseEstimator.getCurrentPose()
+        #currentPose = self.poseEstimator.getCurrentPose()
         pathName = self.autonomousChooser.getSelected()
-        autoPath = self.getPathGroup(pathName)
-        if wpilib.DriverStation.Alliance.kRed:
-            self.SwerveAutoBuilder.useAllianceColor = True
-            tempState = autoPath[0].getInitialHolonomicPose()
-            initialState = geometry.Pose2d(self.fieldWidthMeters - tempState.X(), tempState.Y(), geometry.Rotation2d(math.pi - tempState.rotation().radians()))
+        if pathName == "Only Charge":
+            return commands2.SequentialCommandGroup(AutonomousChargeStation(self.driveTrain, self.arm, self.poseEstimator), commands2.WaitCommand(0.75), AutonomousChargeStation(self.driveTrain, self.arm, self.poseEstimator))
         else:
-            self.SwerveAutoBuilder.useAllianceColor = False
-            initialState = autoPath[0].getInitialHolonomicPose()
-        #correction = self.bruhMomentoAutoBuilder.followPath(pathplannerlib.PathPlanner.generatePath(self.pathConstraints, [pathplannerlib.PathPoint.fromCurrentHolonomicState(currentPose, kinematics.ChassisSpeeds(0, 0, 0)), pathplannerlib.PathPoint.fromCurrentHolonomicState(initialState, kinematics.ChassisSpeeds(0, 0, 0))]))
-        fullAuto = self.SwerveAutoBuilder.fullAuto(autoPath)
-        #return commands2.SequentialCommandGroup(correction, fullAuto) # correction
-        return fullAuto
+            autoPath = self.getPathGroup(pathName)
+            if wpilib.DriverStation.Alliance.kRed:
+                self.SwerveAutoBuilder.useAllianceColor = True
+                tempState = autoPath[0].getInitialHolonomicPose()
+                initialState = geometry.Pose2d(self.fieldWidthMeters - tempState.X(), tempState.Y(), geometry.Rotation2d(math.pi - tempState.rotation().radians()))
+            else:
+                self.SwerveAutoBuilder.useAllianceColor = False
+                initialState = autoPath[0].getInitialHolonomicPose()
+            #correction = self.bruhMomentoAutoBuilder.followPath(pathplannerlib.PathPlanner.generatePath(self.pathConstraints, [pathplannerlib.PathPoint.fromCurrentHolonomicState(currentPose, kinematics.ChassisSpeeds(0, 0, 0)), pathplannerlib.PathPoint.fromCurrentHolonomicState(initialState, kinematics.ChassisSpeeds(0, 0, 0))]))
+            fullAuto = self.SwerveAutoBuilder.fullAuto(autoPath)
+            #return commands2.SequentialCommandGroup(correction, fullAuto) # correction
+            return fullAuto
     
     def getPath(self, pathName: str) -> pathplannerlib.PathPlannerTrajectory:
         return pathplannerlib.PathPlanner.loadPath(pathName, self.pathConstraints, False)
@@ -259,14 +275,7 @@ class RobotContainer:
             "ArmHighCube": cmd.runOnce(lambda: self.arm.setPosition("HighCube"), [self.arm]),
             "ArmMidCube": cmd.runOnce(lambda: self.arm.setPosition("MidCube"), [self.arm]),
             "ArmOptimized": cmd.runOnce(lambda: self.arm.setPosition("Optimized"), [self.arm]),
-            "PlaceGamePiece": AutoPlaceOnGridCommand(self.bruhMomentoAutoBuilder,
-                                                     self.arm,
-                                                     self.driveTrain,
-                                                     self.mandible,
-                                                     self.poseEstimator,
-                                                     self.gamePiecePlacementList,
-                                                     self.stages,
-                                                     self.pathConstraints),
+            "PlaceGamePiece": commands2.Command(),
             "AutoPiecePickup": PickupGamePieceAutoCommand(self.driveTrain, 
                                                           self.arm, 
                                                           self.poseEstimator, 

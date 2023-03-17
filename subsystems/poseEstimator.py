@@ -17,10 +17,9 @@ class PoseEstimatorSubsystem(commands2.SubsystemBase):
     velocity = 0
     useAprilTagThresholdMeters = 1.5
     heading = geometry.Rotation2d()
-    mostRecentVisionPose = geometry.Pose2d()
     useVision = True
     isDisabled = True
-    craziestVisionPose = geometry.Pose2d()
+    deltaYTheta = 0
     
     def __init__(self, photonCamera: photonvision.PhotonCamera, driveTrain: DriveTrainSubSystem, initialPose: geometry.Pose2d, config: dict) -> None:
         ''' Initiates the PoseEstimator Subsystem
@@ -48,7 +47,7 @@ class PoseEstimatorSubsystem(commands2.SubsystemBase):
         #self.tab = shuffleboard.Shuffleboard.getTab("Field")
         wpilib.SmartDashboard.putData("Field", self.field)
         #self.tab.add("Field", self.field).withPosition(5, 0).withSize(6, 4)
-        self.YRotation = geometry.Rotation2d()
+        self.YRotation = 0
         self.YTimeStamp = 0
         self.YTimer = wpilib.Timer()
         self.YTimer.start()
@@ -88,12 +87,12 @@ class PoseEstimatorSubsystem(commands2.SubsystemBase):
         SmartDashboard.putNumber("Rotation", currentPose.rotation().degrees())
         
         oldYRotation = self.YRotation
-        self.YRotation = self.getAngleAboutYAxis()
+        self.YRotation = self.navx.getRoll()
         oldTimeStamp = self.YTimeStamp
         self.YTimeStamp = self.YTimer.get()
-        deltaYTheta = (self.YRotation.degrees() - oldYRotation.degrees()) / (self.YTimeStamp - oldTimeStamp) # in degrees per second
-        SmartDashboard.putNumber("Field Orient Y Theta", self.YRotation.degrees())
-        SmartDashboard.putNumber("Delta Y Theta", deltaYTheta)
+        self.deltaYTheta = (self.YRotation - oldYRotation) / (self.YTimeStamp - oldTimeStamp) # in degrees per second
+        SmartDashboard.putNumber("Field Orient Y Theta", self.YRotation)
+        SmartDashboard.putNumber("Delta Y Theta", self.deltaYTheta)
         
         
     def getFormattedPose(self):

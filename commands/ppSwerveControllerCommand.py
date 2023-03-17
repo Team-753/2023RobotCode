@@ -31,14 +31,17 @@ class PPSwerveDriveController(commands2.CommandBase):
         '''
     
     def initialize(self) -> None:
+        if (self.useAllianceColor):
+            self.transformedTrajectory = PathPlannerTrajectory.transformTrajectoryForAlliance(self.trajectory, DriverStation.getAlliance())
+        else:
+            self.transformedTrajectory = self.trajectory
+            
         self.timer.reset()
         self.timer.start()
     
     def execute(self):
         currentTime = self.timer.get()
-        desiredState = self.trajectory.sample(currentTime)
-        '''if self.useAllianceColor:
-            desiredState = self.flipState(desiredState)'''
+        desiredState = self.transformedTrajectory.sample(currentTime)
         currentPose = self.poseEstimator.getCurrentPose()
         
         targetChassisSpeeds = self.controller.calculate(currentPose, desiredState)
@@ -47,19 +50,8 @@ class PPSwerveDriveController(commands2.CommandBase):
     def end(self, interruped: bool):
         self.timer.stop()
         
-        if (interruped or abs(self.trajectory.getEndState().velocity < 0.1)):
+        if (interruped or abs(self.transformedTrajectory.getEndState().velocity < 0.1)):
             self.driveTrain.autoDrive(kinematics.ChassisSpeeds(0, 0, 0), geometry.Pose2d())
             
     def isFinished(self):
-        return self.timer.hasElapsed(self.trajectory.getTotalTime())
-    
-    '''def flipState(self, state: PathPlannerTrajectory.PathPlannerState) -> PathPlannerTrajectory.PathPlannerState:
-        newState = PathPlannerTrajectory.PathPlannerState()
-        newState.acceleration = state.acceleration
-        newState.angularVelocity = -state.angularVelocity
-        newState.holonomicAngularVelocity = -state.holonomicAngularVelocity
-        newState.holonomicRotation = geometry.Rotation2d(math.pi - state.holonomicRotation.radians())
-        newState.pose = geometry.Pose2d(self.fieldWidthMeters - state.pose.X(), state.pose.Y(), geometry.Rotation2d(math.pi - state.pose.rotation().radians()))
-        newState.time = state.time
-        newState.velocity = state.velocity
-        return newState'''
+        return self.timer.hasElapsed(self.transformedTrajectory.getTotalTime())
