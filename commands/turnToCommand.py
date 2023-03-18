@@ -1,54 +1,42 @@
 import commands2
-from wpimath import geometry, controller, kinematics
+from wpimath import controller, kinematics
 import math
 
 from subsystems.driveTrain import DriveTrainSubSystem
-from subsystems.arm import ArmSubSystem
 from subsystems.poseEstimator import PoseEstimatorSubsystem
 
-class AutonomousChargeStation(commands2.CommandBase):
-    thresholdDegPerSec = -30
-    speedMS = 1.25
+class TurnToCommand(commands2.CommandBase):
     tolerance = 1 # +/- one degree
     staticFrictionFFTurn = 0.2
     
-    def __init__(self, DriveTrain: DriveTrainSubSystem, Arm: ArmSubSystem, PoseEstimator: PoseEstimatorSubsystem, inverted = False) -> None:
+    def __init__(self, DriveTrain: DriveTrainSubSystem, PoseEstimator: PoseEstimatorSubsystem, targetAngleDegrees: float) -> None:
         super().__init__()
         self.driveTrain = DriveTrain
-        self.arm = Arm
         self.poseEstimator = PoseEstimator
         self.addRequirements(self.driveTrain)
         self.angleController = controller.PIDController(1, 0, 0, 0.05)
         self.angleController.enableContinuousInput(-math.pi, math.pi)
         self.angleController.setTolerance(self.tolerance)
-        self.inverted = inverted
+        self.targetAngle = targetAngleDegrees
         
     def initialize(self) -> None:
         self.done = False
         self.angleController.reset()
     
     def execute(self) -> None:
-        if self.inverted:
-            modifier = -1
-        else:
-            modifier = 1
-        deltaTilt = self.poseEstimator.deltaTilt * modifier
-        if deltaTilt < self.thresholdDegPerSec:
+        if self.angleController.atSetpoint():
             self.done = True
         else:
             currentPose = self.poseEstimator.getCurrentPose()
-            if self.inverted:
-                rotationFeedback = self.angleController.calculate(currentPose.rotation().radians(), math.pi / 4)
-            else:
-                rotationFeedback = self.angleController.calculate(currentPose.rotation().radians(), 3 * math.pi / 4)
+            rotationFeedback = self.angleController.calculate(currentPose.rotation().radians(), math.radians(self.targetAngle))
             if rotationFeedback < 0:
                 rotFF = -self.staticFrictionFFTurn
             else:
                 rotFF = self.staticFrictionFFTurn
-            self.driveTrain.autoDrive(kinematics.ChassisSpeeds(modifier * -self.speedMS, 0, rotationFeedback + rotFF), currentPose)
+            self.driveTrain.autoDrive(kinematics.ChassisSpeeds(0, 0, rotationFeedback + rotFF), currentPose)
     
     def end(self, interrupted: bool) -> None:
-        self.driveTrain.xMode()
+        self.driveTrain.stationary()
     
     def isFinished(self) -> bool:
         return self.done
