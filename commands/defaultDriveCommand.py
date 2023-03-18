@@ -1,5 +1,6 @@
 import commands2
 from commands2 import button
+from math import hypot
 from subsystems.driveTrain import DriveTrainSubSystem
 from subsystems.poseEstimator import PoseEstimatorSubsystem
 from wpimath import filter
@@ -15,10 +16,12 @@ class DefaultDriveCommand(commands2.CommandBase):
         self.poseEstimator = PoseEstimatorSubSystem
         self.config = config
         self.rateLimiters = RateLimiters
+        self.kMaxSpeed = self.config["RobotDefaultSettings"]["wheelVelocityLimit"]
+        self.maxAngularVelocity = self.config["driverStation"]["teleoperatedRobotConstants"]["teleopVelLimit"] / hypot(self.config["RobotDimensions"]["trackWidth"] / 2, self.config["RobotDimensions"]["wheelBase"] / 2) # about 11 rads per second
         
     def execute(self) -> None:
         inputs = self.getJoystickInput()
-        self.driveTrain.joystickDrive([self.rateLimiters[0].calculate(inputs[0]), self.rateLimiters[1].calculate(inputs[1]), self.rateLimiters[2].calculate(inputs[2])], self.poseEstimator.getCurrentPose())
+        self.driveTrain.joystickDrive(self.rateLimiters[1].calculate(inputs[1] * self.kMaxSpeed), [self.rateLimiters[0].calculate(inputs[0] * self.kMaxSpeed), self.rateLimiters[2].calculate(inputs[2] * self.maxAngularVelocity)], self.poseEstimator.getCurrentPose())
     
     def getJoystickInput(self):
         inputs = (self.joystick.getX(), self.joystick.getY(), self.joystick.getZ())

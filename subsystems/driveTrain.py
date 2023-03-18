@@ -77,13 +77,13 @@ class DriveTrainSubSystem(commands2.SubsystemBase):
         '''
         Typical teleoperated robot control function, nothing fancy here, just some constants and ratios
         '''
-        ySpeed, xSpeed, zSpeed = inputs[0], inputs[1], inputs[2] # grabbing our inputs and swapping the respective x and y by default
+        xSpeed, ySpeed, zSpeed = inputs[0], inputs[1], inputs[2]
         if xSpeed == 0 and ySpeed == 0 and zSpeed == 0:
             self.stationary()
         else:
-            xSpeed *= self.kMaxSpeed * self.speedLimitingFactor
-            ySpeed *= self.kMaxSpeed * self.speedLimitingFactor
-            zSpeed *= self.maxAngularVelocity
+            xSpeed *= self.speedLimitingFactor
+            ySpeed *= self.speedLimitingFactor
+            zSpeed *= self.speedLimitingFactor
             self.setSwerveStates(xSpeed, ySpeed, zSpeed, currentPose)
     
     def joystickDriveThetaOverride(self, inputs: list, currentPose: geometry.Pose2d, rotationOverride: geometry.Rotation2d, inverted = False) -> None:

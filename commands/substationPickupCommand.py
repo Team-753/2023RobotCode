@@ -24,6 +24,7 @@ class SubstationPickupCommand(commands2.CommandBase):
         self.angleController = controller.PIDController(1, 0, 0, 0.05)
         self.angleController.enableContinuousInput(-math.pi, math.pi)
         self.strafeController = controller.PIDController(5, 0, 0, 0.05)
+        self.kMaxSpeed = self.config["RobotDefaultSettings"]["wheelVelocityLimit"]
         
     def initialize(self) -> None:
         self.angleController.reset()
@@ -43,7 +44,7 @@ class SubstationPickupCommand(commands2.CommandBase):
             strafeFF = -self.staticFrictionFFTranslate
         else:
             strafeFF = self.staticFrictionFFTranslate
-        self.driveTrain.autoDrive(kinematics.ChassisSpeeds(self.rateLimiters[1].calculate(joystickScalar), strafeFeedback + strafeFF, rotationFeedback + rotFF), currentPose)
+        self.driveTrain.autoDrive(kinematics.ChassisSpeeds(self.rateLimiters[1].calculate(joystickScalar * self.kMaxSpeed), strafeFeedback + strafeFF, rotationFeedback + rotFF), currentPose)
     
     def getJoystickInput(self):
         inputs = (self.joystick.getX(), self.joystick.getY(), self.joystick.getZ())
