@@ -51,7 +51,6 @@ class DriveTrainSubSystem(commands2.SubsystemBase):
         self.poseTolerance = geometry.Pose2d(geometry.Translation2d(x=teleopConstants["xPoseToleranceMeters"], 
                                                                                           y=teleopConstants["yPoseToleranceMeters"]), 
                                                                                           geometry.Rotation2d(radians(teleopConstants["thetaPoseToleranceDegrees"])))
-        self.alliance = DriverStation.Alliance.kBlue # default alliance
         self.speedLimitingFactor = 1
         
     def getNAVXRotation2d(self) -> geometry.Rotation2d:
@@ -79,10 +78,6 @@ class DriveTrainSubSystem(commands2.SubsystemBase):
         Typical teleoperated robot control function, nothing fancy here, just some constants and ratios
         '''
         ySpeed, xSpeed, zSpeed = inputs[0], inputs[1], inputs[2] # grabbing our inputs and swapping the respective x and y by default
-        zSpeed *= 0.75 # speed limiter on turning
-        if self.alliance == DriverStation.Alliance.kRed: # our field oriented controls would be inverted, so lets fix that
-            ySpeed = -ySpeed
-            xSpeed = -xSpeed
         if xSpeed == 0 and ySpeed == 0 and zSpeed == 0:
             self.stationary()
         else:
@@ -136,12 +131,6 @@ class DriveTrainSubSystem(commands2.SubsystemBase):
         self.rearLeft.stop()
         self.rearRight.setNeutralMode(NeutralMode.Brake)
         self.rearRight.stop()
-        
-    def enableSpeedLimiter(self):
-        self.speedLimitingFactor = 0.5
-        
-    def disableSpeedLimiter(self):
-        self.speedLimitingFactor = 1
     
     def coast(self) -> None:
         ''' Whenever you don't want to power the wheels '''

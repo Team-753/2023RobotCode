@@ -88,6 +88,11 @@
       "yDeadZone": 0.1,
       "zDeadZone": 0.075
     },
+    "rateLimiters": {
+      "xAccel": 4,
+      "yAccel": 4,
+      "zAccel": 6.28
+    },
     "teleoperatedRobotConstants": {
       "translationPIDConstants": {
         "kP": 5.0,

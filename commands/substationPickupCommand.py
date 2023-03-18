@@ -1,87 +1,60 @@
 import commands2
-from commands2 import cmd, button
-from wpimath import geometry, controller, kinematics
+from commands2 import button
+from wpimath import kinematics, controller, filter
 import math
-import wpilib
+from typing import List
 
-from auto.swerveAutoBuilder import SwerveAutoBuilder
-from subsystems.mandible import MandibleSubSystem
-from subsystems.arm import ArmSubSystem
-from subsystems.poseEstimator import PoseEstimatorSubsystem
 from subsystems.driveTrain import DriveTrainSubSystem
-#from networktables import NetworkTable
-
-import pathplannerlib
+from subsystems.poseEstimator import PoseEstimatorSubsystem
 
 class SubstationPickupCommand(commands2.CommandBase):
-    '''
-    Command for near-autonomously picking up game pieces from the substation.
-    \nHere is the general chain of events:
-    - Button pressed by one of the drivers, activating the macro. The driver with the joystick should go handsfree at this point.
-    - command starts
-    - Robot starts moving arm into position right away, if it is not already in position
-    - Robot moves into and holds a position to where the arm is close to yet grabbing the game piece (whatever game piece it may be)
-    - Command waits for auxiliary/driver input confirmation that the game piece is in position and lined up over the camera.
-    - Once confirmation input is received, robot drives forward to the exact right point, grabbing the game piece, the robot will stop intaking the mandible once it detects a game piece, as per the mandible intake command
-    - Controls are released back to the driver, TODO for this: Add a feature where once the game piece is picked up, the robot will automatically start following a trajectory back towards the grids
-    '''
+    ''' Keeps the robot at a static angle facing the substation whilst also locking the robot Y-value in place only giving the operator control of the forward/backward motion'''
+    staticFrictionFFTurn = 0.2
+    staticFrictionFFTranslate = 0.2
+    targetAngle = 0 # facing away from the driverstation regardless of alliance
     
-    # TEST VAR INITS, in degrees and meters respectively
-    robotTargetVerticalX = 0 # measure on practice field
-    grabTargetVerticalX = 0 # measure
-    FieldWidth = 16.54175
-    
-    def __init__(self, SwerveAutoBuilder: SwerveAutoBuilder, DriveTrain: DriveTrainSubSystem, Mandible: MandibleSubSystem, Arm: ArmSubSystem, PoseEstimator: PoseEstimatorSubsystem, Constraints: pathplannerlib.PathConstraints, DriverCommandJoystick: button.CommandJoystick, LLTable, PIDCONSTANTS: dict, maxVel: float) -> None:
+    def __init__(self, DriveTrain: DriveTrainSubSystem, PoseEstimator: PoseEstimatorSubsystem, Joystick: button.CommandJoystick, RateLimiters: List[filter.SlewRateLimiter], Config: dict) -> None:
         super().__init__()
-        self.addRequirements([Mandible, Arm, DriveTrain])
-        self.swerveAutoBuilder = SwerveAutoBuilder
+        self.addRequirements(DriveTrain)
         self.driveTrain = DriveTrain
-        self.mandible = Mandible
-        self.arm = Arm
         self.poseEstimator = PoseEstimator
-        self.driverCommandJoystick = DriverCommandJoystick
-        self.constraints = Constraints
-        self.LLTable = LLTable
-        self.PIDCONSTANTS = PIDCONSTANTS
-        self.maxVel = maxVel
-    
+        self.joystick = Joystick
+        self.rateLimiters = RateLimiters
+        self.config = Config
+        self.angleController = controller.PIDController(1, 0, 0, 0.05)
+        self.angleController.enableContinuousInput(-math.pi, math.pi)
+        self.strafeController = controller.PIDController(5, 0, 0, 0.05)
+        
     def initialize(self) -> None:
-        self.finished = False
-        self.allianceFactor = -1
-        self.targetX1Val = 0
-        if wpilib.DriverStation.getAlliance() == wpilib.DriverStation.Alliance.kRed:
-            self.allianceFactor = 1
-            self.targetX1Val = self.FieldWidth - self.targetX1Val
-        self.xController = controller.PIDController(self.PIDCONSTANTS["translationPIDConstants"]["kP"], self.PIDCONSTANTS["translationPIDConstants"]["kI"], self.PIDCONSTANTS["translationPIDConstants"]["kD"], self.PIDCONSTANTS["translationPIDConstants"]["period"])
-        self.yController = controller.PIDController(self.PIDCONSTANTS["translationPIDConstants"]["kP"], self.PIDCONSTANTS["translationPIDConstants"]["kI"], self.PIDCONSTANTS["translationPIDConstants"]["kD"], self.PIDCONSTANTS["translationPIDConstants"]["period"])
-        self.zController = controller.PIDController(self.PIDCONSTANTS["rotationPIDConstants"]["kP"], self.PIDCONSTANTS["rotationPIDConstants"]["kI"], self.PIDCONSTANTS["rotationPIDConstants"]["kD"], self.PIDCONSTANTS["rotationPIDConstants"]["period"])
-        self.angleOffset = 0
+        self.angleController.reset()
+        self.strafeController.reset()
+        self.targetYVal = self.poseEstimator.getCurrentPose().Y()
     
     def execute(self) -> None:
+        joystickScalar = self.getJoystickInput()[1]
         currentPose = self.poseEstimator.getCurrentPose()
-        if self.driverCommandJoystick.getRawButton(1):
-            targetPose = geometry.Pose2d(geometry.Translation2d(self.grabTargetVerticalX, currentPose.Y()), geometry.Rotation2d(0.5 * math.pi + (self.allianceFactor * 0.5 * math.pi)))
-            onLeFlyTrajectory = self.swerveAutoBuilder.followPath(pathplannerlib.PathPlanner.generatePath(self.constraints, [pathplannerlib.PathPoint.fromCurrentHolonomicState(currentPose, self.driveTrain.actualChassisSpeeds()), pathplannerlib.PathPoint.fromCurrentHolonomicState(targetPose, kinematics.ChassisSpeeds(0, 0, 0))]))
+        rotationFeedback = self.angleController.calculate(currentPose.rotation().radians(), math.radians(self.targetAngle))
+        if rotationFeedback < 0:
+            rotFF = -self.staticFrictionFFTurn
         else:
-            if self.LLTable.getEntry('tv') == 1: # does the limelight have a target?
-                if self.LLTable.getEntry('tclass') == 'cone':
-                    if self.mandible.state != 'Cone':
-                        self.mandible.setState('Cone')
-                else:
-                    if self.mandible.state != 'Cube':
-                        self.mandible.setState('Cube')
-                self.angleOffset = self.LLTable.getEntry('tx')
-                wpilib.SmartDashboard.putNumber("LL Angle TX", self.angleOffset)
-            else: # the limelight does not yet have a target
-                joystickX = self.driverCommandJoystick.getX() * self.maxVel / 2
-                xPIDResponse = self.xController.calculate()
-                zPIDResponse = self.zController.calculate(currentPose.rotation().radians(), 0.5 * math.pi + (self.allianceFactor * 0.5 * math.pi))
-                chassisSpeeds = kinematics.ChassisSpeeds(xPIDResponse, joystickX, zPIDResponse)
-                self.driveTrain.autoDrive(chassisSpeeds, currentPose)
-                
+            rotFF = self.staticFrictionFFTurn
+        strafeFeedback = self.strafeController.calculate(currentPose.Y(), self.targetYVal)
+        if strafeFeedback < 0:
+            strafeFF = -self.staticFrictionFFTranslate
+        else:
+            strafeFF = self.staticFrictionFFTranslate
+        self.driveTrain.autoDrive(kinematics.ChassisSpeeds(self.rateLimiters[1].calculate(joystickScalar), strafeFeedback + strafeFF, rotationFeedback + rotFF), currentPose)
     
-    def end(self, interrupted: bool) -> None:
-        return super().end(interrupted)
-    
-    def isFinished(self) -> bool: # driver should just let go of the button, no need for this
-        return super().isFinished() # TODO: Possibly have robot start driving itself towards the middle of the field after it detects a successful game piece pickup
+    def getJoystickInput(self):
+        inputs = (self.joystick.getX(), self.joystick.getY(), self.joystick.getZ())
+        adjustedInputs = []
+        for idx, input in enumerate(inputs):
+            threshold = self.config["driverStation"]["joystickDeadZones"][(list(self.config["driverStation"]["joystickDeadZones"])[idx])]
+            if abs(input) > threshold: 
+                adjustedValue = (abs(input) - threshold) / (1 - threshold)
+                if input < 0 and adjustedValue != 0:
+                    adjustedValue = -adjustedValue
+            else:
+                adjustedValue = 0
+            adjustedInputs.append(adjustedValue)
+        return adjustedInputs

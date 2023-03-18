@@ -7,15 +7,13 @@ import commands2
 from commands2 import button, cmd
 import wpilib
 import photonvision
-from wpimath import controller
 import os
 import json
-from wpimath import geometry, trajectory, kinematics
+from wpimath import geometry, filter
 from math import radians
 import math
 import pathplannerlib
 from typing import List
-import wpiutil
 
 from subsystems.driveTrain import DriveTrainSubSystem
 from subsystems.poseEstimator import PoseEstimatorSubsystem
@@ -52,6 +50,9 @@ class RobotContainer:
     LLTable = NetworkTables.getTable("limelight")
     
     def __init__(self) -> None:
+        limits = self.config["driverStation"]["rateLimiters"]
+        self.rateLimiters = [filter.SlewRateLimiter(limits["xAccel"], -limits["xAccel"]), filter.SlewRateLimiter(limits["yAccel"], -limits["yAccel"]), filter.SlewRateLimiter(limits["zAccel"], -limits["zAccel"])]
+        
         # buttons
         self.joystick = button.CommandJoystick(0)
         self.xboxController = button.CommandXboxController(1)
@@ -287,7 +288,7 @@ class RobotContainer:
         }
     
     def testInit(self):
-        self.driveTrain.setDefaultCommand(DefaultDriveCommand(self.joystick, self.driveTrain, self.poseEstimator, self.config))
+        self.driveTrain.setDefaultCommand(DefaultDriveCommand(self.joystick, self.driveTrain, self.poseEstimator, self.config, self.rateLimiters))
         self.arm.setPosition("FullyRetracted")
         self.mandible.setState("Cube") # we need to always be in cube mode or else we can't fit in starting config
     
@@ -315,8 +316,7 @@ class RobotContainer:
         pass
         
     def teleopInit(self):
-        self.driveTrain.alliance = wpilib.DriverStation.getAlliance()
-        self.driveTrain.setDefaultCommand(DefaultDriveCommand(self.joystick, self.driveTrain, self.poseEstimator, self.config)) # this is what makes the robot drive, since there isn't a way to bind commands to axes
+        self.driveTrain.setDefaultCommand(DefaultDriveCommand(self.joystick, self.driveTrain, self.poseEstimator, self.config, self.rateLimiters)) # this is what makes the robot drive, since there isn't a way to bind commands to axes
     
     def teleopPeriodic(self):
         pass
