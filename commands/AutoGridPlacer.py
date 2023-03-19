@@ -22,6 +22,9 @@ from networktables import NetworkTable
 
 class AutoGridPlacer:
     placementSequenceCounter = 0
+    firstGridYCutoff = 1.905
+    secondGridYCutoff = 3.5814
+    FieldHeight = 8.0137
     
     def __init__(self, SwerveAutoBuilder: SwerveAutoBuilder, 
                  Mandible: MandibleSubSystem, 
@@ -49,13 +52,31 @@ class AutoGridPlacer:
     
     def reset(self) -> None:
         self.placementSequenceCounter = 0
+    
+    def flipYValToRedAlliance(self, value: float):
+        return self.FieldHeight - value
 
     def getCommandSequence(self, isAutonomous = False) -> commands2.Command:
         if isAutonomous:
-            selectedSlot = self.placementSpots[self.placementSequenceCounter].getSelected()
+            currentY = self.poseEstimator.getCurrentPose().Y()
+            if wpilib.DriverStation.getAlliance() != wpilib.DriverStation.Alliance.kBlue:
+                if currentY <= self.flipYValToRedAlliance(self.secondGridYCutoff):
+                    gridVal = 2
+                elif currentY >= self.flipYValToRedAlliance(self.secondGridYCutoff) and currentY <= self.flipYValToRedAlliance(self.firstGridYCutoff):
+                    gridVal = 1
+                else:
+                    gridVal = 0
+            else:
+                if currentY <= self.firstGridYCutoff:
+                    gridVal = 2
+                elif currentY >= self.firstGridYCutoff and currentY <= self.secondGridYCutoff:
+                    gridVal = 1
+                else:
+                    gridVal = 0
+            selectedSlot = (gridVal, self.placementSpots[self.placementSequenceCounter].getSelected())
             self.placementSequenceCounter += 1
             self.stageController.setTarget(selectedSlot, self.poseEstimator.getCurrentPose())
-            if selectedSlot[1] == 1 or selectedSlot[1] == 4 or selectedSlot[1] == 7: # it is a cube, we don't need all the extra stuff
+            if selectedSlot == 1 or selectedSlot == 4 or selectedSlot == 7: # it is a cube, we don't need all the extra stuff
                 return commands2.SequentialCommandGroup(self.stageController.calculateArmPosition(), self.stageController.calculateInitialPPCommand(), self.stageController.calculateFinalSequence())
             else:
                 return commands2.SequentialCommandGroup(self.stageController.calculateArmPosition(), self.stageController.calculateInitialPPCommand(), LimeLightSanityCheck(self.llTable, self.driveTrain, self.poseEstimator), self.stageController.calculateFinalPPCommand(), self.stageController.calculateFinalSequence(), self.stageController.calculateAutoPPCommand())

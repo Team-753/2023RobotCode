@@ -25,10 +25,6 @@ class MandibleSubSystem(commands2.SubsystemBase):
         #self.distanceSensor.setRangeOfInterest(p1, p1, p3, p4) NOTE: may need this
         # TODO: Invert one of these motors once we get the mandible together
     
-    
-    def doSomething(self, todo: str):
-        pass
-    
     def contract(self):
         ''' Pretty self-explanatory '''
         self.state = "Cone"
@@ -88,5 +84,6 @@ class MandibleSubSystem(commands2.SubsystemBase):
             self.intake(True)
         else:
             self.stop()'''
+            
     def periodic(self) -> None:
         wpilib.SmartDashboard.putBoolean("Piece In Posession", self.inControlOfPiece())

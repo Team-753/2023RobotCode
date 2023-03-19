@@ -17,7 +17,8 @@ class ArmSubSystem(commands2.SubsystemBase):
         "MidConePlacement": 38.5,
         "HighCube": 37.1,
         "MidCube": 38.54,
-        "Optimized": 21.5
+        "Optimized": 21.5,
+        "FloorPickupPrep": 40.0
     }
     targetValue = 0
     maxHeightInches = 42.5

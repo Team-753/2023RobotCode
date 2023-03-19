@@ -24,10 +24,10 @@ from subsystems.streamDeck import StreamDeckSubsystem
 from commands.mandibleCommands import MandibleIntakeCommand, MandibleOuttakeCommand
 from commands.substationPickupCommand import SubstationPickupCommand
 from commands.defaultDriveCommand import DefaultDriveCommand
-from commands.pickupGamePieceAutoCommand import PickupGamePieceAutoCommand
 from commands.AutoGridPlacer import AutoGridPlacer
 from commands.autoChargeStation import AutonomousChargeStation
-from commands.placeOnGridCommand import PlaceOnGridCommand
+from commands.AutoGamePieceGroundPickup import AutoGamePiecePickupController
+from commands.turnToCommand import TurnToCommand
 
 from auto.swerveAutoBuilder import SwerveAutoBuilder
 
@@ -85,27 +85,6 @@ class RobotContainer:
             self.autonomousChooser.addOption(pathName, pathName)
         wpilib.SmartDashboard.putData("Autonomous Chooser", self.autonomousChooser)
         
-        self.gamePieceSlotOne = wpilib.SendableChooser()
-        self.gamePieceSlotOne.setDefaultOption("Cube", "Cube")
-        self.gamePieceSlotOne.addOption("Cone", "Cone")
-        
-        self.gamePieceSlotTwo = wpilib.SendableChooser()
-        self.gamePieceSlotTwo.setDefaultOption("Cube", "Cube")
-        self.gamePieceSlotTwo.addOption("Cone", "Cone")
-        
-        self.gamePieceSlotThree = wpilib.SendableChooser()
-        self.gamePieceSlotThree.setDefaultOption("Cube", "Cube")
-        self.gamePieceSlotThree.addOption("Cone", "Cone")
-        
-        self.gamePieceSlotFour = wpilib.SendableChooser()
-        self.gamePieceSlotFour.setDefaultOption("Cube", "Cube")
-        self.gamePieceSlotFour.addOption("Cone", "Cone")
-        
-        wpilib.SmartDashboard.putData("Field Piece One", self.gamePieceSlotOne)
-        wpilib.SmartDashboard.putData("Field Piece Two", self.gamePieceSlotTwo)
-        wpilib.SmartDashboard.putData("Field Piece Three", self.gamePieceSlotThree)
-        wpilib.SmartDashboard.putData("Field Piece Four", self.gamePieceSlotFour)
-        
         self.firstGamePiecePlacement = wpilib.SendableChooser()
         self.firstGamePiecePlacement.setDefaultOption("High Cube", 2)
         self.firstGamePiecePlacement.addOption("Mid Cube", 5)
@@ -130,7 +109,6 @@ class RobotContainer:
         self.thirdGamePiecePlacement.addOption("Right Mid Cone", 6)
         wpilib.SmartDashboard.putData("Third Piece Placement", self.thirdGamePiecePlacement)
         
-        self.gamePieceSlots = [self.gamePieceSlotOne, self.gamePieceSlotTwo, self.gamePieceSlotThree, self.gamePieceSlotFour]
         self.gamePiecePlacementList = [self.firstGamePiecePlacement, self.secondGamePiecePlacement, self.thirdGamePiecePlacement]
         self.stages = 0
         thetaControllerConstraints = self.config["autonomousSettings"]["rotationPIDConstants"]
@@ -148,6 +126,26 @@ class RobotContainer:
                                                                                                               )
                                                                                           )
                                                    )
+        self.AutoGamePiecePickerUpper = AutoGamePiecePickupController(self.driveTrain, 
+                                                                      self.arm, 
+                                                                      self.poseEstimator, 
+                                                                      self.mandible, 
+                                                                      self.bruhMomentoAutoBuilder, 
+                                                                      self.pathConstraints, 
+                                                                      self.LLTable)
+        self.autoGridPlacer = AutoGridPlacer(
+            self.bruhMomentoAutoBuilder, 
+            self.mandible, 
+            self.arm, 
+            self.poseEstimator, 
+            self.driveTrain, 
+            self.pathConstraints, 
+            self.joystick, 
+            self.streamDeckSubsystem, 
+            self.config,
+            self.LLTable,
+            self.gamePiecePlacementList
+            )
         self.generateAutonomousMarkers()
         self.SwerveAutoBuilder = SwerveAutoBuilder(self.poseEstimator, 
                                                    self.driveTrain, 
@@ -163,20 +161,6 @@ class RobotContainer:
                                                                                           )
                                                    )
         
-        self.autoGridPlacer = AutoGridPlacer(
-                    self.bruhMomentoAutoBuilder, 
-                    self.mandible, 
-                    self.arm, 
-                    self.poseEstimator, 
-                    self.driveTrain, 
-                    self.pathConstraints, 
-                    self.joystick, 
-                    self.streamDeckSubsystem, 
-                    self.config,
-                    self.LLTable,
-                    self.gamePiecePlacementList
-                    )
-        
         self.configureButtonBindings()
         
     
@@ -186,23 +170,14 @@ class RobotContainer:
         
         self.joystickButtonTwo = button.JoystickButton(self.joystick, 2)
         self.joystickButtonTwo.whileTrue(self.autoGridPlacer.getCommandSequence())
-        '''self.joystickButtonTwo.whenHeld(PlaceOnGridCommand(self.bruhMomentoAutoBuilder, 
-                                                            self.mandible, 
-                                                            self.arm, 
-                                                            self.poseEstimator, 
-                                                            self.driveTrain, 
-                                                            self.pathConstraints, 
-                                                            self.joystick, 
-                                                            self.streamDeckSubsystem, 
-                                                            self.config))'''
         
         self.joystickButtonTwelve = button.JoystickButton(self.joystick, 12) # the speed limiter button
         self.joystickButtonTwelve.whenPressed(cmd.runOnce(lambda: self.driveTrain.enableSpeedLimiter(), []))
         self.joystickButtonTwelve.whenReleased(cmd.runOnce(lambda: self.driveTrain.disableSpeedLimiter(), []))
 
         
-        #self.joystickButtonThree = button.JoystickButton(self.joystick, 3)
-        #self.joystickButtonThree.whileHeld(SubstationPickupCommand(self.bruhMomentoAutoBuilder, self.driveTrain, self.mandible, self.arm, self.poseEstimator, self.pathConstraints, self.joystick, self.LLTable, self.config["driverStation"]["teleoperatedRobotConstants"], self.config["driverStation"]["teleoperatedRobotConstants"]["teleopVelLimit"]))
+        self.joystickButtonThree = button.JoystickButton(self.joystick, 3)
+        self.joystickButtonThree.whileTrue(SubstationPickupCommand(self.driveTrain, self.poseEstimator, self.joystick, self.rateLimiters, self.config))
         self.xboxController.A().whileTrue(MandibleIntakeCommand(self.mandible))
         self.xboxController.Y().whileTrue(cmd.run(lambda: self.mandible.outtake(), [self.mandible]))
         self.xboxController.X().onTrue(self.eventMap["CloseMandible"])
@@ -238,7 +213,13 @@ class RobotContainer:
         #currentPose = self.poseEstimator.getCurrentPose()
         pathName = self.autonomousChooser.getSelected()
         if pathName == "Only Charge":
-            return commands2.SequentialCommandGroup(AutonomousChargeStation(self.driveTrain, self.arm, self.poseEstimator), commands2.WaitCommand(0.75), AutonomousChargeStation(self.driveTrain, self.arm, self.poseEstimator))
+            return commands2.SequentialCommandGroup(self.autoGridPlacer.getCommandSequence(True), 
+                                                    TurnToCommand(self.driveTrain, self.poseEstimator, geometry.Rotation2d(math.pi / 4)), 
+                                                    AutonomousChargeStation(self.driveTrain, self.arm, self.poseEstimator), 
+                                                    commands2.WaitCommand(0.75), 
+                                                    AutonomousChargeStation(self.driveTrain, self.arm, self.poseEstimator))
+        elif pathName == "Only Place":
+            return self.autoGridPlacer.getCommandSequence(True)
         else:
             autoPath = self.getPathGroup(pathName)
             if wpilib.DriverStation.Alliance.kRed:
@@ -276,15 +257,8 @@ class RobotContainer:
             "ArmHighCube": cmd.runOnce(lambda: self.arm.setPosition("HighCube"), [self.arm]),
             "ArmMidCube": cmd.runOnce(lambda: self.arm.setPosition("MidCube"), [self.arm]),
             "ArmOptimized": cmd.runOnce(lambda: self.arm.setPosition("Optimized"), [self.arm]),
-            "PlaceGamePiece": commands2.Command(),
-            "AutoPiecePickup": PickupGamePieceAutoCommand(self.driveTrain, 
-                                                          self.arm, 
-                                                          self.poseEstimator, 
-                                                          self.mandible, 
-                                                          self.bruhMomentoAutoBuilder,
-                                                          self.pathConstraints,
-                                                          self.gamePieceSlots
-                                                          )
+            "PlaceGamePiece": self.autoGridPlacer.getCommandSequence(True),
+            "PickupPiece": self.AutoGamePiecePickerUpper.getCommandSequence()
         }
     
     def testInit(self):

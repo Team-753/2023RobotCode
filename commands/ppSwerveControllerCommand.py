@@ -51,7 +51,7 @@ class PPSwerveDriveController(commands2.CommandBase):
         self.timer.stop()
         
         if (interruped or abs(self.transformedTrajectory.getEndState().velocity) < 0.1):
-            self.driveTrain.autoDrive(kinematics.ChassisSpeeds(0, 0, 0), geometry.Pose2d())
+            self.driveTrain.stationary()
             
     def isFinished(self):
         return self.timer.hasElapsed(self.transformedTrajectory.getTotalTime())
