@@ -20,7 +20,7 @@ from commands.mandibleCommands import MandibleOuttakeCommand
 from networktables import NetworkTable
 
 
-class AutoGridPlacer:
+class AutoGridPlacer(commands2.CommandBase):
     placementSequenceCounter = 0
     firstGridYCutoff = 1.905
     secondGridYCutoff = 3.5814
@@ -36,7 +36,9 @@ class AutoGridPlacer:
                  StreamDeck: StreamDeckSubsystem, 
                  config: dict, 
                  LimelightTable: NetworkTable,
-                 PlacementSpots: List[wpilib.SendableChooser]) -> None:
+                 PlacementSpots: List[wpilib.SendableChooser],
+                 isAuto: bool) -> None:
+        super().__init__()
         self.swerveAutoBuilder = SwerveAutoBuilder
         self.mandible = Mandible
         self.arm = Arm
@@ -48,15 +50,13 @@ class AutoGridPlacer:
         self.config = config
         self.placementSpots = PlacementSpots
         self.llTable = LimelightTable
-        self.stageController = StageController(self.arm, self.mandible, self.driveTrain, self.swerveAutoBuilder, self.poseEstimator)
-    
-    def reset(self) -> None:
-        self.placementSequenceCounter = 0
+        self.isAuto = isAuto
     
     def flipYValToRedAlliance(self, value: float):
         return self.FieldHeight - value
 
     def getCommandSequence(self, isAutonomous = False) -> commands2.Command:
+        self.stageController = StageController(self.arm, self.mandible, self.driveTrain, self.swerveAutoBuilder, self.poseEstimator)
         if isAutonomous:
             currentY = self.poseEstimator.getCurrentPose().Y()
             if wpilib.DriverStation.getAlliance() != wpilib.DriverStation.Alliance.kBlue:
@@ -83,11 +83,27 @@ class AutoGridPlacer:
         else:
             selectedSlot = self.streamDeck.getSelectedGridSlot()
             self.stageController.setTarget(selectedSlot)
+            print(f"selected slot: {selectedSlot[1]}")
             if selectedSlot[1] == 1 or selectedSlot[1] == 4 or selectedSlot[1] == 7: # it is a cube, we don't need all the extra stuff
-                return commands2.SequentialCommandGroup(commands2.PrintCommand("starting sequence"), self.stageController.calculateInitialPPCommand(), commands2.PrintCommand("initial path following done"), cmd.runOnce(lambda: self.driveTrain.stationary(), [self.driveTrain]), commands2.PrintCommand("commencing final sequence"), self.stageController.calculateFinalSequence())
+                return commands2.SequentialCommandGroup(commands2.PrintCommand("starting cube sequence"), self.stageController.calculateInitialPPCommand(), commands2.PrintCommand("initial path following done"), cmd.runOnce(lambda: self.driveTrain.stationary(), [self.driveTrain]), commands2.PrintCommand("commencing final sequence"), self.stageController.calculateFinalSequence())
             else:
-                return commands2.SequentialCommandGroup(self.stageController.calculateArmPosition(), self.stageController.calculateInitialPPCommand(), LimeLightSanityCheck(self.llTable, self.driveTrain, self.poseEstimator), self.stageController.calculateFinalPPCommand(), DriverConfirmCommand(self.joystick, self.driveTrain), self.stageController.calculateFinalSequence())
+                return commands2.SequentialCommandGroup(commands2.PrintCommand("starting cone sequence"), LimeLightSanityCheck(self.llTable, self.driveTrain, self.poseEstimator), self.stageController.calculateFinalPPCommand(), DriverConfirmCommand(self.joystick, self.driveTrain), self.stageController.calculateFinalSequence()) # , self.stageController.calculateArmPosition(), self.stageController.calculateInitialPPCommand(), 
+    def isFinished(self) -> bool:
+        return True
 
+    def end(self, interrupted: bool) -> None:
+        commands2.ScheduleCommand(self.getCommandSequence(self.isAuto)).withInterrupt(self.joystick.getRawButtonReleased(2))
+
+class HelperClass:
+    
+    def __init__(self) -> None:
+        self.command = commands2.Command()
+    
+    def setCommand(self, Command: commands2.Command):
+        self.command = Command
+    
+    def getCommand(self) -> commands2.Command:
+        return self.command
 class StageController:
     GridLayout = [
         [
@@ -179,9 +195,12 @@ class StageController:
                 return commands2.SequentialCommandGroup(ArmConfirmPlacementCommand(self.arm, 'MidConePlacement'), cmd.runOnce(lambda: self.mandible.setState('Cube'), []), cmd.runOnce(lambda: self.arm.setPosition('Optimized'), []), commands2.WaitCommand(0.25), cmd.runOnce(lambda: self.mandible.setState('Cone')))
     
     def calculateInitialPPCommand(self) -> commands2.Command:
-        slotData = self.GridLayout[self.targetSlot[0]][self.targetSlot[1]]
+        slot = self.targetSlot[1]
+        slotData = self.GridLayout[self.targetSlot[0]][slot]
         x = slotData[0]
+        print(f"Game Piece X Value: {x}")
         y = slotData[1]
+        print(f"Game Piece Y Value {y}")
         slot = self.targetSlot[1]
         if slot < 3: # we are placing high
             if slot == 1: # we are placing high cube
@@ -200,13 +219,14 @@ class StageController:
         wpilib.SmartDashboard.putString("target pose", f"X: {targetPose.X()}, Y: {targetPose.Y()}, Z: {targetPose.rotation().degrees()}")
         if wpilib.DriverStation.getAlliance() == wpilib.DriverStation.Alliance.kRed:
             targetPose = self.flipPoseToRedAlliance(targetPose)
-        return self.swerveAutoBuilder.followPath(pathplannerlib.PathPlanner.generatePath(self.onTheFlyPathConstraints, [pathplannerlib.PathPoint.fromCurrentHolonomicState(self.poseEstimator.getCurrentPose(), self.driveTrain.actualChassisSpeeds()), pathplannerlib.PathPoint.fromCurrentHolonomicState(targetPose, kinematics.ChassisSpeeds(0, 0, 0))]))
+        return self.swerveAutoBuilder.followPath(pathplannerlib.PathPlanner.generatePath(self.onTheFlyPathConstraints, [pathplannerlib.PathPoint.fromCurrentHolonomicState(self.poseEstimator.getCurrentPose(), kinematics.ChassisSpeeds(0, 0, 0)), pathplannerlib.PathPoint.fromCurrentHolonomicState(targetPose, kinematics.ChassisSpeeds(0, 0, 0))]))
     
     def calculateFinalPPCommand(self) -> commands2.Command:
         currentPose = self.poseEstimator.getCurrentPose() # so where we are now should be aligned on the cone thingy
         targetPose = geometry.Pose2d(currentPose.X() - self.preOffset, currentPose.Y(), geometry.Rotation2d(math.pi))
         if wpilib.DriverStation.getAlliance() == wpilib.DriverStation.Alliance.kRed:
             targetPose = self.flipPoseToRedAlliance(targetPose)
+        wpilib.SmartDashboard.putString("target final pose", f"X: {targetPose.X()}, Y: {targetPose.Y()}, Z: {targetPose.rotation().degrees()}")
         return self.swerveAutoBuilder.followPath(pathplannerlib.PathPlanner.generatePath(self.onTheFlyPathConstraints, [pathplannerlib.PathPoint.fromCurrentHolonomicState(currentPose, self.driveTrain.actualChassisSpeeds()), pathplannerlib.PathPoint(targetPose.translation(), targetPose.rotation(), targetPose.rotation())]))
     
     def calculateAutoPPCommand(self) -> commands2.Command:

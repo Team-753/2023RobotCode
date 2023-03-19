@@ -94,7 +94,7 @@ class PoseEstimatorSubsystem(commands2.SubsystemBase):
         pitch = math.radians(self.navx.getPitch()) # robot tilting forward/backward
         roll = math.radians(self.navx.getRoll()) # robot tilting side to side
         yaw = self.getCurrentPose().rotation().radians() # yaw is independent of pitch and roll axes, navx automatically accounts for that, we can use this value to rotate to charge station reference
-        tilt = roll * math.sin(yaw) + pitch * math.cos(yaw)
+        tilt = roll * math.cos(yaw) + pitch * math.sin(yaw)
         return math.degrees(tilt)
         
     def getFormattedPose(self):

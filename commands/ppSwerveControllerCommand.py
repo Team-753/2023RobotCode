@@ -5,7 +5,7 @@ import commands2
 from pathplannerlib import PathPlannerTrajectory, controllers
 from subsystems.poseEstimator import PoseEstimatorSubsystem
 from subsystems.driveTrain import DriveTrainSubSystem
-from wpilib import DriverStation, Timer
+from wpilib import DriverStation, Timer, SmartDashboard
 from wpimath import controller
 
 class PPSwerveDriveController(commands2.CommandBase):
@@ -31,19 +31,23 @@ class PPSwerveDriveController(commands2.CommandBase):
         '''
     
     def initialize(self) -> None:
-        if (self.useAllianceColor):
+        '''if self.useAllianceColor:
             self.transformedTrajectory = PathPlannerTrajectory.transformTrajectoryForAlliance(self.trajectory, DriverStation.getAlliance())
         else:
-            self.transformedTrajectory = self.trajectory
+            self.transformedTrajectory = self.trajectory'''
+        self.transformedTrajectory = self.trajectory
             
         self.timer.reset()
         self.timer.start()
     
     def execute(self):
         currentTime = self.timer.get()
+        #print(f"Runnng: {currentTime} -> {self.transformedTrajectory.getTotalTime()}")
         desiredState = self.transformedTrajectory.sample(currentTime)
         currentPose = self.poseEstimator.getCurrentPose()
-        
+        #targetPose = desiredState.pose
+        #SmartDashboard.putString("desired pose", f"X: {targetPose.X()}, Y: {targetPose.Y()}, Z: {targetPose.rotation().degrees()}")
+        #print(f"X: {targetPose.X()}, Y: {targetPose.Y()}, Z: {targetPose.rotation().degrees()}")
         targetChassisSpeeds = self.controller.calculate(currentPose, desiredState)
         self.driveTrain.autoDrive(targetChassisSpeeds, currentPose)
         

@@ -89,9 +89,9 @@
       "zDeadZone": 0.075
     },
     "rateLimiters": {
-      "xAccel": 4,
-      "yAccel": 4,
-      "zAccel": 6.28
+      "xAccel": 8,
+      "yAccel": 8,
+      "zAccel": 25.12
     },
     "teleoperatedRobotConstants": {
       "translationPIDConstants": {

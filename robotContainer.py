@@ -133,19 +133,6 @@ class RobotContainer:
                                                                       self.bruhMomentoAutoBuilder, 
                                                                       self.pathConstraints, 
                                                                       self.LLTable)
-        self.autoGridPlacer = AutoGridPlacer(
-            self.bruhMomentoAutoBuilder, 
-            self.mandible, 
-            self.arm, 
-            self.poseEstimator, 
-            self.driveTrain, 
-            self.pathConstraints, 
-            self.joystick, 
-            self.streamDeckSubsystem, 
-            self.config,
-            self.LLTable,
-            self.gamePiecePlacementList
-            )
         self.generateAutonomousMarkers()
         self.SwerveAutoBuilder = SwerveAutoBuilder(self.poseEstimator, 
                                                    self.driveTrain, 
@@ -169,7 +156,20 @@ class RobotContainer:
         self.joystickButtonFour.whileHeld(cmd.runOnce(lambda: self.driveTrain.xMode(), [self.driveTrain]))
         
         self.joystickButtonTwo = button.JoystickButton(self.joystick, 2)
-        self.joystickButtonTwo.whileTrue(self.autoGridPlacer.getCommandSequence())
+        self.joystickButtonTwo.whileTrue(AutoGridPlacer(
+            self.bruhMomentoAutoBuilder, 
+            self.mandible, 
+            self.arm, 
+            self.poseEstimator, 
+            self.driveTrain, 
+            self.pathConstraints, 
+            self.joystick, 
+            self.streamDeckSubsystem, 
+            self.config,
+            self.LLTable,
+            self.gamePiecePlacementList,
+            False
+            ).getCommandSequence())
         
         self.joystickButtonTwelve = button.JoystickButton(self.joystick, 12) # the speed limiter button
         self.joystickButtonTwelve.whenPressed(cmd.runOnce(lambda: self.driveTrain.enableSpeedLimiter(), []))
@@ -257,7 +257,20 @@ class RobotContainer:
             "ArmHighCube": cmd.runOnce(lambda: self.arm.setPosition("HighCube"), [self.arm]),
             "ArmMidCube": cmd.runOnce(lambda: self.arm.setPosition("MidCube"), [self.arm]),
             "ArmOptimized": cmd.runOnce(lambda: self.arm.setPosition("Optimized"), [self.arm]),
-            "PlaceGamePiece": self.autoGridPlacer.getCommandSequence(True),
+            "PlaceGamePiece": AutoGridPlacer(
+            self.bruhMomentoAutoBuilder, 
+            self.mandible, 
+            self.arm, 
+            self.poseEstimator, 
+            self.driveTrain, 
+            self.pathConstraints, 
+            self.joystick, 
+            self.streamDeckSubsystem, 
+            self.config,
+            self.LLTable,
+            self.gamePiecePlacementList,
+            True
+            ).getCommandSequence(),
             "PickupPiece": self.AutoGamePiecePickerUpper.getCommandSequence()
         }
     
