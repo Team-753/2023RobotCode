@@ -51,13 +51,14 @@ class AutoGridPlacer(commands2.CommandBase):
         self.placementSpots = PlacementSpots
         self.llTable = LimelightTable
         self.isAuto = isAuto
+        self.done = False
     
     def flipYValToRedAlliance(self, value: float):
         return self.FieldHeight - value
 
-    def getCommandSequence(self, isAutonomous = False) -> commands2.Command:
+    def initialize(self) -> None:
         self.stageController = StageController(self.arm, self.mandible, self.driveTrain, self.swerveAutoBuilder, self.poseEstimator)
-        if isAutonomous:
+        if self.isAuto:
             currentY = self.poseEstimator.getCurrentPose().Y()
             if wpilib.DriverStation.getAlliance() != wpilib.DriverStation.Alliance.kBlue:
                 if currentY <= self.flipYValToRedAlliance(self.secondGridYCutoff):
@@ -77,33 +78,21 @@ class AutoGridPlacer(commands2.CommandBase):
             self.placementSequenceCounter += 1
             self.stageController.setTarget(selectedSlot, self.poseEstimator.getCurrentPose())
             if selectedSlot == 1 or selectedSlot == 4 or selectedSlot == 7: # it is a cube, we don't need all the extra stuff
-                return commands2.SequentialCommandGroup(self.stageController.calculateArmPosition(), self.stageController.calculateInitialPPCommand(), self.stageController.calculateFinalSequence())
+                self.command = commands2.SequentialCommandGroup(self.stageController.calculateArmPosition(), self.stageController.calculateInitialPPCommand(), self.stageController.calculateFinalSequence())
             else:
-                return commands2.SequentialCommandGroup(self.stageController.calculateArmPosition(), self.stageController.calculateInitialPPCommand(), LimeLightSanityCheck(self.llTable, self.driveTrain, self.poseEstimator), self.stageController.calculateFinalPPCommand(), self.stageController.calculateFinalSequence(), self.stageController.calculateAutoPPCommand())
+                self.command = commands2.SequentialCommandGroup(self.stageController.calculateArmPosition(), self.stageController.calculateInitialPPCommand(), LimeLightSanityCheck(self.llTable, self.driveTrain, self.poseEstimator), self.stageController.calculateFinalPPCommand(), self.stageController.calculateFinalSequence(), self.stageController.calculateAutoPPCommand())
         else:
             selectedSlot = self.streamDeck.getSelectedGridSlot()
             self.stageController.setTarget(selectedSlot)
             print(f"selected slot: {selectedSlot[1]}")
             if selectedSlot[1] == 1 or selectedSlot[1] == 4 or selectedSlot[1] == 7: # it is a cube, we don't need all the extra stuff
-                return commands2.SequentialCommandGroup(commands2.PrintCommand("starting cube sequence"), self.stageController.calculateInitialPPCommand(), commands2.PrintCommand("initial path following done"), cmd.runOnce(lambda: self.driveTrain.stationary(), [self.driveTrain]), commands2.PrintCommand("commencing final sequence"), self.stageController.calculateFinalSequence())
+                self.command = commands2.SequentialCommandGroup(commands2.PrintCommand("starting cube sequence"), self.stageController.calculateInitialPPCommand(), commands2.PrintCommand("initial path following done"), cmd.runOnce(lambda: self.driveTrain.stationary(), [self.driveTrain]), commands2.PrintCommand("commencing final sequence"), self.stageController.calculateFinalSequence())
             else:
-                return commands2.SequentialCommandGroup(commands2.PrintCommand("starting cone sequence"), LimeLightSanityCheck(self.llTable, self.driveTrain, self.poseEstimator), self.stageController.calculateFinalPPCommand(), DriverConfirmCommand(self.joystick, self.driveTrain), self.stageController.calculateFinalSequence()) # , self.stageController.calculateArmPosition(), self.stageController.calculateInitialPPCommand(), 
-    def isFinished(self) -> bool:
-        return True
+                self.command = commands2.SequentialCommandGroup(commands2.PrintCommand("starting cone sequence"), LimeLightSanityCheck(self.llTable, self.driveTrain, self.poseEstimator), self.stageController.calculateFinalPPCommand(), DriverConfirmCommand(self.joystick, self.driveTrain), self.stageController.calculateFinalSequence()) # , self.stageController.calculateArmPosition(), self.stageController.calculateInitialPPCommand(), 
+        self.command.until(self.joystick.getRawButtonReleased(2))
+        self.raceWith(self.command)
+        self.command.schedule()
 
-    def end(self, interrupted: bool) -> None:
-        commands2.ScheduleCommand(self.getCommandSequence(self.isAuto)).withInterrupt(self.joystick.getRawButtonReleased(2))
-
-class HelperClass:
-    
-    def __init__(self) -> None:
-        self.command = commands2.Command()
-    
-    def setCommand(self, Command: commands2.Command):
-        self.command = Command
-    
-    def getCommand(self) -> commands2.Command:
-        return self.command
 class StageController:
     GridLayout = [
         [

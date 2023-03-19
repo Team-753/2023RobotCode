@@ -50,9 +50,6 @@ class RobotContainer:
     LLTable = NetworkTables.getTable("limelight")
     
     def __init__(self) -> None:
-        limits = self.config["driverStation"]["rateLimiters"]
-        self.rateLimiters = [filter.SlewRateLimiter(limits["xAccel"], -limits["xAccel"]), filter.SlewRateLimiter(limits["yAccel"], -limits["yAccel"]), filter.SlewRateLimiter(limits["zAccel"], -limits["zAccel"])]
-        
         # buttons
         self.joystick = button.CommandJoystick(0)
         self.xboxController = button.CommandXboxController(1)
@@ -169,7 +166,7 @@ class RobotContainer:
             self.LLTable,
             self.gamePiecePlacementList,
             False
-            ).getCommandSequence())
+            ))
         
         self.joystickButtonTwelve = button.JoystickButton(self.joystick, 12) # the speed limiter button
         self.joystickButtonTwelve.whenPressed(cmd.runOnce(lambda: self.driveTrain.enableSpeedLimiter(), []))
@@ -177,7 +174,7 @@ class RobotContainer:
 
         
         self.joystickButtonThree = button.JoystickButton(self.joystick, 3)
-        self.joystickButtonThree.whileTrue(SubstationPickupCommand(self.driveTrain, self.poseEstimator, self.joystick, self.rateLimiters, self.config))
+        self.joystickButtonThree.whileTrue(SubstationPickupCommand(self.driveTrain, self.poseEstimator, self.joystick, self.config))
         self.xboxController.A().whileTrue(MandibleIntakeCommand(self.mandible))
         self.xboxController.Y().whileTrue(cmd.run(lambda: self.mandible.outtake(), [self.mandible]))
         self.xboxController.X().onTrue(self.eventMap["CloseMandible"])
@@ -270,12 +267,12 @@ class RobotContainer:
             self.LLTable,
             self.gamePiecePlacementList,
             True
-            ).getCommandSequence(),
+            ),
             "PickupPiece": self.AutoGamePiecePickerUpper.getCommandSequence()
         }
     
     def testInit(self):
-        self.driveTrain.setDefaultCommand(DefaultDriveCommand(self.joystick, self.driveTrain, self.poseEstimator, self.config, self.rateLimiters))
+        self.driveTrain.setDefaultCommand(DefaultDriveCommand(self.joystick, self.driveTrain, self.poseEstimator, self.config))
         self.arm.setPosition("FullyRetracted")
         self.mandible.setState("Cube") # we need to always be in cube mode or else we can't fit in starting config
     
@@ -307,7 +304,7 @@ class RobotContainer:
         pass
         
     def teleopInit(self):
-        self.driveTrain.setDefaultCommand(DefaultDriveCommand(self.joystick, self.driveTrain, self.poseEstimator, self.config, self.rateLimiters)) # this is what makes the robot drive, since there isn't a way to bind commands to axes
+        self.driveTrain.setDefaultCommand(DefaultDriveCommand(self.joystick, self.driveTrain, self.poseEstimator, self.config)) # this is what makes the robot drive, since there isn't a way to bind commands to axes
     
     def teleopPeriodic(self):
         pass

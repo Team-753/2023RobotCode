@@ -8,20 +8,19 @@ from typing import List
 
 class DefaultDriveCommand(commands2.CommandBase):
     
-    def __init__(self, Joystick: button.CommandJoystick, DriveTrainSubSystem: DriveTrainSubSystem, PoseEstimatorSubSystem: PoseEstimatorSubsystem, config: dict, RateLimiters: List[filter.SlewRateLimiter]) -> None:
+    def __init__(self, Joystick: button.CommandJoystick, DriveTrainSubSystem: DriveTrainSubSystem, PoseEstimatorSubSystem: PoseEstimatorSubsystem, config: dict) -> None:
         super().__init__()
         self.addRequirements(DriveTrainSubSystem) # no need to require the pose estimator subsystem
         self.joystick = Joystick
         self.driveTrain = DriveTrainSubSystem
         self.poseEstimator = PoseEstimatorSubSystem
         self.config = config
-        self.rateLimiters = RateLimiters
         self.kMaxSpeed = self.config["RobotDefaultSettings"]["wheelVelocityLimit"]
         self.maxAngularVelocity = self.config["driverStation"]["teleoperatedRobotConstants"]["teleopVelLimit"] / hypot(self.config["RobotDimensions"]["trackWidth"] / 2, self.config["RobotDimensions"]["wheelBase"] / 2) # about 11 rads per second
         
     def execute(self) -> None:
         inputs = self.getJoystickInput()
-        self.driveTrain.joystickDrive([self.rateLimiters[1].calculate(inputs[1] * self.kMaxSpeed), self.rateLimiters[0].calculate(inputs[0] * self.kMaxSpeed), self.rateLimiters[2].calculate(inputs[2] * self.maxAngularVelocity)], self.poseEstimator.getCurrentPose())
+        self.driveTrain.joystickDrive([inputs[1] * self.kMaxSpeed, inputs[0] * self.kMaxSpeed, inputs[2] * self.maxAngularVelocity], self.poseEstimator.getCurrentPose())
     
     def getJoystickInput(self):
         inputs = (self.joystick.getX(), self.joystick.getY(), self.joystick.getZ())

@@ -15,13 +15,12 @@ class SubstationPickupCommand(commands2.CommandBase):
     angleTolerance = 1 # degrees
     translationTolerance = 0.01 # centimeters
     
-    def __init__(self, DriveTrain: DriveTrainSubSystem, PoseEstimator: PoseEstimatorSubsystem, Joystick: button.CommandJoystick, RateLimiters: List[filter.SlewRateLimiter], Config: dict) -> None:
+    def __init__(self, DriveTrain: DriveTrainSubSystem, PoseEstimator: PoseEstimatorSubsystem, Joystick: button.CommandJoystick, Config: dict) -> None:
         super().__init__()
         self.addRequirements(DriveTrain)
         self.driveTrain = DriveTrain
         self.poseEstimator = PoseEstimator
         self.joystick = Joystick
-        self.rateLimiters = RateLimiters
         self.config = Config
         self.angleController = controller.PIDController(1.5, 0, 0, 0.05)
         self.angleController.enableContinuousInput(-math.pi, math.pi)
@@ -56,7 +55,7 @@ class SubstationPickupCommand(commands2.CommandBase):
             strafeFF = self.staticFrictionFFTranslate
         else:
             strafeFF = 0
-        self.driveTrain.autoDrive(kinematics.ChassisSpeeds(self.rateLimiters[1].calculate(joystickScalar * self.kMaxSpeed), strafeFeedback + strafeFF, rotationFeedback + rotFF), currentPose)
+        self.driveTrain.autoDrive(kinematics.ChassisSpeeds(joystickScalar * self.kMaxSpeed, strafeFeedback + strafeFF, rotationFeedback + rotFF), currentPose)
     
     def getJoystickInput(self):
         inputs = (self.joystick.getX(), self.joystick.getY(), self.joystick.getZ())
