@@ -2,6 +2,7 @@ import commands2
 import math
 import pathplannerlib
 import wpilib
+import photonvision
 
 from commands2 import cmd, button
 from wpimath import geometry, kinematics, controller
@@ -57,14 +58,14 @@ class AutoGridPlacer:
             if selectedSlot[1] == 1 or selectedSlot[1] == 4 or selectedSlot[1] == 7: # it is a cube, we don't need all the extra stuff
                 return commands2.SequentialCommandGroup(self.stageController.calculateArmPosition(), self.stageController.calculateInitialPPCommand(), self.stageController.calculateFinalSequence())
             else:
-                return commands2.SequentialCommandGroup(self.stageController.calculateArmPosition(), self.stageController.calculateInitialPPCommand(), LimeLightSanityCheckTwo(self.llTable, self.driveTrain, self.poseEstimator), self.stageController.calculateFinalPPCommand(), self.stageController.calculateFinalSequence(), self.stageController.calculateAutoPPCommand())
+                return commands2.SequentialCommandGroup(self.stageController.calculateArmPosition(), self.stageController.calculateInitialPPCommand(), LimeLightSanityCheck(self.llTable, self.driveTrain, self.poseEstimator), self.stageController.calculateFinalPPCommand(), self.stageController.calculateFinalSequence(), self.stageController.calculateAutoPPCommand())
         else:
             selectedSlot = self.streamDeck.getSelectedGridSlot()
             self.stageController.setTarget(selectedSlot)
             if selectedSlot[1] == 1 or selectedSlot[1] == 4 or selectedSlot[1] == 7: # it is a cube, we don't need all the extra stuff
                 return commands2.SequentialCommandGroup(commands2.PrintCommand("starting sequence"), self.stageController.calculateInitialPPCommand(), commands2.PrintCommand("initial path following done"), cmd.runOnce(lambda: self.driveTrain.stationary(), [self.driveTrain]), commands2.PrintCommand("commencing final sequence"), self.stageController.calculateFinalSequence())
             else:
-                return commands2.SequentialCommandGroup(self.stageController.calculateArmPosition(), self.stageController.calculateInitialPPCommand(), LimeLightSanityCheckTwo(self.llTable, self.driveTrain, self.poseEstimator), self.stageController.calculateFinalPPCommand(), DriverConfirmCommand(self.joystick, self.driveTrain), self.stageController.calculateFinalSequence())
+                return commands2.SequentialCommandGroup(self.stageController.calculateArmPosition(), self.stageController.calculateInitialPPCommand(), LimeLightSanityCheck(self.llTable, self.driveTrain, self.poseEstimator), self.stageController.calculateFinalPPCommand(), DriverConfirmCommand(self.joystick, self.driveTrain), self.stageController.calculateFinalSequence())
 
 class StageController:
     GridLayout = [
@@ -194,7 +195,7 @@ class StageController:
     def flipPoseToRedAlliance(self, poseToFlip: geometry.Pose2d):
         return geometry.Pose2d(poseToFlip.X(), self.FieldHeight - poseToFlip.Y(), poseToFlip.rotation())
     
-class LimeLightSanityCheckTwo(commands2.CommandBase):
+class LimeLightSanityCheck(commands2.CommandBase):
     tolerance = 1 # +/- 1 degrees
     staticFrictionFFTurn = 0.2
     staticFrictionFFDrive = 0.2
@@ -274,3 +275,64 @@ class DriverConfirmCommand(commands2.CommandBase):
     
     def end(self, interrupted: bool) -> None:
         self.driveTrain.stationary()
+
+class PhotonCameraSanityCheck(commands2.CommandBase):
+    tolerance = 1 # +/- 1 degrees
+    staticFrictionFFTurn = 0.2
+    staticFrictionFFDrive = 0.2
+    
+    def __init__(self, Camera: photonvision.PhotonCamera, DriveTrain: DriveTrainSubSystem, PoseEstimator: PoseEstimatorSubsystem) -> None:
+        super().__init__()
+        self.camera = Camera
+        self.driveTrain = DriveTrain
+        self.poseEstimator = PoseEstimator
+        self.txController = controller.PIDController(0.1, 0, 0, 0.05)
+        self.txController.setTolerance(self.tolerance)
+        self.angleController = controller.PIDController(1, 0, 0, 0.05)
+        self.angleController.enableContinuousInput(-math.pi, math.pi)
+        self.angleController.setTolerance(self.tolerance)
+        self.timeoutCounter = wpilib.Timer()
+        
+    def initialize(self) -> None:
+        self.camera.setLEDMode(photonvision.LEDMode.kOn)
+        self.finished = False
+        if wpilib.DriverStation.getAlliance() == wpilib.DriverStation.Alliance.kRed:
+            self.isRedAlliance = True
+        else:
+            self.isRedAlliance = False
+        self.txController.reset()
+        self.angleController.reset()
+        self.timeoutCounter.reset()
+        
+    def execute(self) -> None:
+        result = self.camera.getLatestResult()
+        if result.hasTargets(): # does the photoncamera have any valid targets?
+            self.timeoutCounter.stop()
+            currentPose = self.poseEstimator.getCurrentPose()
+            target = result.getBestTarget()
+            tx = -target.getYaw() # how far off we are from the target in degrees
+            feedback = self.txController.calculate(tx, 0)
+            rotationFeedback = self.angleController.calculate(currentPose.rotation().radians(), math.pi)
+            if self.txController.atSetpoint() and self.angleController.atSetpoint():
+                self.finished = True
+            else:
+                if rotationFeedback < 0:
+                    rotFF = -self.staticFrictionFFTurn
+                else:
+                    rotFF = self.staticFrictionFFTurn
+                if feedback < 0:
+                    driveFF = -self.staticFrictionFFDrive
+                else:
+                    driveFF = self.staticFrictionFFDrive
+                self.driveTrain.autoDrive(kinematics.ChassisSpeeds(0, feedback + driveFF, rotationFeedback + rotFF), currentPose)
+        else:
+            self.timeoutCounter.start()
+            if self.timeoutCounter.hasElapsed(2):
+                self.finished = True
+    
+    def end(self, interrupted: bool) -> None:
+        self.camera.setLEDMode(photonvision.LEDMode.kOff) # sets it back to our apriltag pipeline
+        self.driveTrain.stationary()
+    
+    def isFinished(self) -> bool:
+        return self.finished
