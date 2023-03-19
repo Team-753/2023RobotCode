@@ -300,7 +300,11 @@ class RobotContainer:
         self.poseEstimator.isDisabled = True
     
     def disabledPeriodic(self):
-        pass
+        currentAlliance = wpilib.DriverStation.getAlliance()
+        if currentAlliance != self.poseEstimator.alliance:
+            self.poseEstimator.setAlliance(currentAlliance)
+        if currentAlliance != self.driveTrain.alliance:
+            self.driveTrain.alliance = currentAlliance
     
     def disabledExit(self):
         self.poseEstimator.isDisabled = False

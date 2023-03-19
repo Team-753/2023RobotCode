@@ -52,6 +52,7 @@ class DriveTrainSubSystem(commands2.SubsystemBase):
                                                                                           y=teleopConstants["yPoseToleranceMeters"]), 
                                                                                           geometry.Rotation2d(radians(teleopConstants["thetaPoseToleranceDegrees"])))
         self.speedLimitingFactor = 1
+        self.alliance = wpilib.DriverStation.Alliance.kBlue
         
     def getNAVXRotation2d(self) -> geometry.Rotation2d:
         ''' Returns the NAVX rotation represented as a Rotation2d object'''
@@ -78,6 +79,9 @@ class DriveTrainSubSystem(commands2.SubsystemBase):
         Typical teleoperated robot control function, nothing fancy here, just some constants and ratios
         '''
         xSpeed, ySpeed, zSpeed = inputs[0], inputs[1], inputs[2]
+        if self.alliance != wpilib.DriverStation.Alliance.kBlue:
+            xSpeed = -xSpeed
+            ySpeed = -ySpeed
         if xSpeed == 0 and ySpeed == 0 and zSpeed == 0:
             self.stationary()
         else:

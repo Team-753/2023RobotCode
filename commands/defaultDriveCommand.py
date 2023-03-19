@@ -21,7 +21,7 @@ class DefaultDriveCommand(commands2.CommandBase):
         
     def execute(self) -> None:
         inputs = self.getJoystickInput()
-        self.driveTrain.joystickDrive(self.rateLimiters[1].calculate(inputs[1] * self.kMaxSpeed), [self.rateLimiters[0].calculate(inputs[0] * self.kMaxSpeed), self.rateLimiters[2].calculate(inputs[2] * self.maxAngularVelocity)], self.poseEstimator.getCurrentPose())
+        self.driveTrain.joystickDrive([self.rateLimiters[1].calculate(inputs[1] * self.kMaxSpeed), self.rateLimiters[0].calculate(inputs[0] * self.kMaxSpeed), self.rateLimiters[2].calculate(inputs[2] * self.maxAngularVelocity)], self.poseEstimator.getCurrentPose())
     
     def getJoystickInput(self):
         inputs = (self.joystick.getX(), self.joystick.getY(), self.joystick.getZ())

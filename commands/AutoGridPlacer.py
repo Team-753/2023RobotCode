@@ -61,11 +61,10 @@ class AutoGridPlacer:
         else:
             selectedSlot = self.streamDeck.getSelectedGridSlot()
             self.stageController.setTarget(selectedSlot)
-            print("running command again")
             if selectedSlot[1] == 1 or selectedSlot[1] == 4 or selectedSlot[1] == 7: # it is a cube, we don't need all the extra stuff
-                return commands2.SequentialCommandGroup(self.stageController.calculateArmPosition(), self.stageController.calculateInitialPPCommand(), commands2.PrintCommand("**************************************************************************************\n**********************************************************************************************\n**********************************"), commands2.WaitCommand(1), cmd.runOnce(lambda: self.driveTrain.stationary(), [self.driveTrain]), commands2.WaitCommand(1), self.stageController.calculateFinalSequence())
+                return commands2.SequentialCommandGroup(commands2.PrintCommand("starting sequence"), self.stageController.calculateInitialPPCommand(), commands2.PrintCommand("initial path following done"), cmd.runOnce(lambda: self.driveTrain.stationary(), [self.driveTrain]), commands2.PrintCommand("commencing final sequence"), self.stageController.calculateFinalSequence())
             else:
-                return commands2.SequentialCommandGroup(self.stageController.calculateArmPosition(), self.stageController.calculateInitialPPCommand(), LimeLightSanityCheckTwo(self.llTable, self.driveTrain, self.poseEstimator), self.stageController.calculateFinalPPCommand(), DriverConfirmCommand(), self.stageController.calculateFinalSequence())
+                return commands2.SequentialCommandGroup(self.stageController.calculateArmPosition(), self.stageController.calculateInitialPPCommand(), LimeLightSanityCheckTwo(self.llTable, self.driveTrain, self.poseEstimator), self.stageController.calculateFinalPPCommand(), DriverConfirmCommand(self.joystick, self.driveTrain), self.stageController.calculateFinalSequence())
 
 class StageController:
     GridLayout = [
@@ -148,17 +147,16 @@ class StageController:
             if slot == 1: # we are placing high cube
                 return commands2.SequentialCommandGroup(ArmConfirmPlacementCommand(self.arm, 'HighCube'), MandibleOuttakeCommand(self.mandible), cmd.runOnce(lambda: self.arm.setPosition('Optimized'), []))
             else:
-                return commands2.SequentialCommandGroup(ArmConfirmPlacementCommand(self.arm, 'HighConePlacement'), cmd.runOnce(lambda: self.mandible.setState('Cube'), []), cmd.runOnce(lambda: self.arm.setPosition('Optimized'), []), commands2.WaitCommand(0.25), self.mandible.setState('Cone'))
+                return commands2.SequentialCommandGroup(ArmConfirmPlacementCommand(self.arm, 'HighConePlacement'), cmd.runOnce(lambda: self.mandible.setState('Cube'), []), cmd.runOnce(lambda: self.arm.setPosition('Optimized'), []), commands2.WaitCommand(0.25), cmd.runOnce(lambda: self.mandible.setState('Cone')))
         elif slot > 5: # we are placing low
             return commands2.SequentialCommandGroup(ArmConfirmPlacementCommand(self.arm, 'BottomPlacement'), MandibleOuttakeCommand(self.mandible), cmd.runOnce(lambda: self.arm.setPosition('Optimized'), []))
         else: # we are placing mid
             if slot == 4: # we are placing mid cube
                 return commands2.SequentialCommandGroup(ArmConfirmPlacementCommand(self.arm, 'MidCube'), MandibleOuttakeCommand(self.mandible), cmd.runOnce(lambda: self.arm.setPosition('Optimized'), []))
             else: # we are placing mid cone
-                return commands2.SequentialCommandGroup(ArmConfirmPlacementCommand(self.arm, 'MidConePlacement'), cmd.runOnce(lambda: self.mandible.setState('Cube'), []), cmd.runOnce(lambda: self.arm.setPosition('Optimized'), []), commands2.WaitCommand(0.25), self.mandible.setState('Cone'))
+                return commands2.SequentialCommandGroup(ArmConfirmPlacementCommand(self.arm, 'MidConePlacement'), cmd.runOnce(lambda: self.mandible.setState('Cube'), []), cmd.runOnce(lambda: self.arm.setPosition('Optimized'), []), commands2.WaitCommand(0.25), cmd.runOnce(lambda: self.mandible.setState('Cone')))
     
     def calculateInitialPPCommand(self) -> commands2.Command:
-        print("**************************************************************************************\n**********************************************************************************************\n**********************************")
         slotData = self.GridLayout[self.targetSlot[0]][self.targetSlot[1]]
         x = slotData[0]
         y = slotData[1]

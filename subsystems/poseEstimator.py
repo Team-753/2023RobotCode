@@ -14,10 +14,11 @@ class PoseEstimatorSubsystem(commands2.SubsystemBase):
     visionMeasurementStdDevs = 0.5, 0.5, math.radians(30)
     field = wpilib.Field2d()
     previousPipelineResultTimeStamp = 0 # useless for now...
-    velocity = 0
     useAprilTagThresholdMeters = 1.5
-    deltaTilt = 0    
-    
+    deltaTilt = 0
+    apriltagFieldLayout = robotpy_apriltag.loadAprilTagLayoutField(robotpy_apriltag.AprilTagField.k2023ChargedUp)
+    apriltagFieldLayout.setOrigin(robotpy_apriltag.AprilTagFieldLayout.OriginPosition.kBlueAllianceWallRightSide)
+    alliance = wpilib.DriverStation.Alliance.kBlue
     def __init__(self, photonCamera: photonvision.PhotonCamera, driveTrain: DriveTrainSubSystem, initialPose: geometry.Pose2d, config: dict) -> None:
         ''' Initiates the PoseEstimator Subsystem
         
@@ -56,7 +57,6 @@ class PoseEstimatorSubsystem(commands2.SubsystemBase):
         For this next section of code we are referencing both of our cameras to find the best apriltag to esimate our position off of, if one is available
         '''
         # NOTE: This algorithm is way too expensive. Anyway, TODO: Implement dual-camera pose throwaway/averaging
-        # NOTE: GIANT BREAKTHROUGH MENTALLY: AFTER NAVX HAS BEEN ZEROED BY VISION, ONLY RELY ON NAVX ROTATION AND USE THAT TO FILTER TAG POSES
         currentPose = self.getCurrentPose()
         pipelineResult = self.photonCamera.getLatestResult()
         resultTimeStamp = pipelineResult.getTimestamp()
@@ -87,9 +87,15 @@ class PoseEstimatorSubsystem(commands2.SubsystemBase):
         oldTimeStamp = self.tiltTimeStamp
         self.tiltTimeStamp = self.YTimer.get()
         self.deltaTilt = (self.tilt - oldTilt) / (self.tiltTimeStamp - oldTimeStamp) # in degrees per second
-        SmartDashboard.putNumber("Field Orient Y Theta", self.tilt)
-        SmartDashboard.putNumber("Delta Y Theta", self.deltaTilt)
-        
+        SmartDashboard.putNumber("Delta Tilt", self.deltaTilt)
+        wpilib.SmartDashboard.putNumber("Field Relative Tilt", self.tilt)
+    
+    def getTilt(self):
+        pitch = math.radians(self.navx.getPitch()) # robot tilting forward/backward
+        roll = math.radians(self.navx.getRoll()) # robot tilting side to side
+        yaw = self.getCurrentPose().rotation().radians() # yaw is independent of pitch and roll axes, navx automatically accounts for that, we can use this value to rotate to charge station reference
+        tilt = roll * math.sin(yaw) + pitch * math.cos(yaw)
+        return math.degrees(tilt)
         
     def getFormattedPose(self):
         pose = self.getCurrentPose()
@@ -107,51 +113,11 @@ class PoseEstimatorSubsystem(commands2.SubsystemBase):
         
     def getTagPose(self, id: int) -> geometry.Pose3d:
         ''' Returns the 3D pose of the requested apriltag '''
-        tag = self.tags[f"{id}"]
-        tagRotation = geometry.Rotation3d(0, 0, tag["theta"])
-        tagPose = geometry.Pose3d(tag["x"], tag["y"], tag["z"], tagRotation)
-        return tagPose
+        return self.apriltagFieldLayout.getTagPose(id)
     
-    '''def getAngleAboutYAxis(self):
-        roll = math.radians(self.navx.getRoll()) # robot tilting forward/backward
-        pitch = math.radians(self.navx.getPitch()) # robot tilting laterally
-        yaw = self.getCurrentPose().rotation().radians()
-        rotationContainer = geometry.Rotation3d(roll, pitch, yaw)
-        rotationDifference = geometry.Pose2d(geometry.Translation2d(), geometry.Rotation2d(yaw)).relativeTo(geometry.Pose2d()).rotation()
-        resultantRoll = rotationContainer.rotateBy(geometry.Rotation3d(0, 0, rotationDifference.radians()))
-        return geometry.Rotation2d(resultantRoll.X())'''
-
-    def getTilt(self):
-        pitch = math.radians(self.navx.getPitch())
-        roll = math.radians(self.navx.getRoll())
-        yaw = self.getCurrentPose().rotation().radians()
-
-        # Convert the Euler angles to quaternions
-        q_pitch = [math.cos(pitch/2), math.sin(pitch/2), 0, 0]
-        q_roll = [math.cos(roll/2), 0, math.sin(roll/2), 0]
-        q_yaw = [math.cos(yaw/2), 0, 0, math.sin(yaw/2)]
-
-        # Define the charge station's orientation in the robot frame
-        station_orientation = [1, 0, 0]  # along the x-axis
-
-        # Rotate the station orientation vector first about the yaw axis,
-        # then about the pitch axis, and finally about the roll axis
-        station_orientation = self._quaternion_multiply(self._quaternion_conjugate(q_yaw), station_orientation)
-        station_orientation = self._quaternion_multiply(self._quaternion_conjugate(q_pitch), station_orientation)
-        station_orientation = self._quaternion_multiply(self._quaternion_conjugate(q_roll), station_orientation)
-
-        # Compute the tilt angle of the charge station
-        tilt_station = math.atan2(station_orientation[2], station_orientation[0])
-        return math.degrees(tilt_station)
-    
-    def _quaternion_multiply(q1, q2):
-        w1, x1, y1, z1 = q1
-        w2, x2, y2, z2 = q2
-        return [w1*w2 - x1*x2 - y1*y2 - z1*z2,
-                w1*x2 + x1*w2 + y1*z2 - z1*y2,
-                w1*y2 - x1*z2 + y1*w2 + z1*x2,
-                w1*z2 + x1*y2 - y1*x2 + z1*w2]
-
-    def _quaternion_conjugate(q):
-        w, x, y, z = q
-        return [w, -x, -y, -z]
+    def setAlliance(self, alliance: wpilib.DriverStation.Alliance):
+        self.alliance = alliance
+        if alliance == wpilib.DriverStation.Alliance.kBlue:
+            self.apriltagFieldLayout.setOrigin(robotpy_apriltag.AprilTagFieldLayout.OriginPosition.kBlueAllianceWallRightSide)
+        else:
+            self.apriltagFieldLayout.setOrigin(robotpy_apriltag.AprilTagFieldLayout.OriginPosition.kRedAllianceWallRightSide)
