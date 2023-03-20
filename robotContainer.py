@@ -28,6 +28,9 @@ from commands.AutoGridPlacer import AutoGridPlacer
 from commands.autoChargeStation import AutonomousChargeStation
 from commands.AutoGamePieceGroundPickup import AutoGamePiecePickupController
 from commands.turnToCommand import TurnToCommand
+from commands.SimpleGridAutoAlignerCommand import AutoAlignCommand
+from commands.armConfirmPlacementCommand import ArmConfirmPlacementCommand
+from commands.PiecePickupCommands import TurnToPieceCommand, LimeLightSanityCheck, DriveAndPickupPiece
 
 from auto.swerveAutoBuilder import SwerveAutoBuilder
 
@@ -153,20 +156,7 @@ class RobotContainer:
         self.joystickButtonFour.whileHeld(cmd.runOnce(lambda: self.driveTrain.xMode(), [self.driveTrain]))
         
         self.joystickButtonTwo = button.JoystickButton(self.joystick, 2)
-        self.joystickButtonTwo.whileTrue(AutoGridPlacer(
-            self.bruhMomentoAutoBuilder, 
-            self.mandible, 
-            self.arm, 
-            self.poseEstimator, 
-            self.driveTrain, 
-            self.pathConstraints, 
-            self.joystick, 
-            self.streamDeckSubsystem, 
-            self.config,
-            self.LLTable,
-            self.gamePiecePlacementList,
-            False
-            ))
+        self.joystickButtonTwo.whileTrue(AutoAlignCommand(self.LLTable, self.driveTrain, self.poseEstimator, self.joystick))
         
         self.joystickButtonTwelve = button.JoystickButton(self.joystick, 12) # the speed limiter button
         self.joystickButtonTwelve.whenPressed(cmd.runOnce(lambda: self.driveTrain.enableSpeedLimiter(), []))
@@ -268,7 +258,11 @@ class RobotContainer:
             self.gamePiecePlacementList,
             True
             ),
-            "PickupPiece": self.AutoGamePiecePickerUpper.getCommandSequence()
+            "PickupPiece": commands2.SequentialCommandGroup(cmd.runOnce(lambda: self.arm.setPosition("FloorPickupPrep"), []),
+                                                            TurnToPieceCommand(self.driveTrain, self.poseEstimator),
+                                                            LimeLightSanityCheck(self.LLTable, self.driveTrain, self.poseEstimator, self.mandible),
+                                                            ArmConfirmPlacementCommand(self.arm, 'Floor'),
+                                                            DriveAndPickupPiece(self.driveTrain, self.poseEstimator, self.mandible, self.arm))
         }
     
     def testInit(self):
