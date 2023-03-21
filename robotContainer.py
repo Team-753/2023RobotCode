@@ -50,7 +50,9 @@ class RobotContainer:
     photonCamera = photonvision.PhotonCamera("photoncameraone") # , photonvision.PhotonCamera("photoncameratwo")
     fieldWidthMeters = 16.54175
     NetworkTables.initialize()
-    LLTable = NetworkTables.getTable("limelight")
+    photonCameraTwo = photonvision.PhotonCamera("photoncameratwo")
+    photonCameraTwo.setLEDMode(photonvision.LEDMode.kOff)
+    LLTable = NetworkTables.getTable('limelight')
     
     def __init__(self) -> None:
         # buttons
@@ -60,7 +62,7 @@ class RobotContainer:
         
         # subsystems
         self.driveTrain = DriveTrainSubSystem(self.config)
-        self.poseEstimator = PoseEstimatorSubsystem(self.photonCamera, self.driveTrain, geometry.Pose2d(), self.config) # NOTE: THE BLANK POSE2D IS TEMPORARY
+        self.poseEstimator = PoseEstimatorSubsystem(self.photonCamera, self.driveTrain, geometry.Pose2d(geometry.Translation2d(0, 0), geometry.Rotation2d(math.pi)), self.config) # NOTE: THE BLANK POSE2D IS TEMPORARY
         self.mandible = MandibleSubSystem(self.config)
         self.arm = ArmSubSystem(self.config)
         self.streamDeckSubsystem = StreamDeckSubsystem(self.arm, self.auxiliaryStreamDeckJoystick)
@@ -68,7 +70,7 @@ class RobotContainer:
         
         
         #subsystem configuration
-        self.arm.setDefaultCommand(cmd.run(lambda: self.arm.manualControlIncrementor(self.getStickInput(self.xboxController.getLeftY(), self.config["ArmConfig"]["manualControlDeadzone"])), [self.arm])) # same issue here, no way to bind commands to axes so this is the solution
+        self.arm.setDefaultCommand(cmd.run(lambda: self.arm.manualControlIncrementor(self.getStickInput(self.xboxController.getLeftY(), self.config["ArmConfig"]["manualControlDeadzone"]) * 0.10), [self.arm])) # same issue here, no way to bind commands to axes so this is the solution
         self.mandible.setDefaultCommand(cmd.run(lambda: self.mandible.cubePeriodic(), [self.mandible])) # this may not run in certain modes
         
         # additional configuration
@@ -156,15 +158,15 @@ class RobotContainer:
         self.joystickButtonFour.whileHeld(cmd.runOnce(lambda: self.driveTrain.xMode(), [self.driveTrain]))
         
         self.joystickButtonTwo = button.JoystickButton(self.joystick, 2)
-        self.joystickButtonTwo.whileTrue(AutoAlignCommand(self.LLTable, self.driveTrain, self.poseEstimator, self.joystick))
+        self.joystickButtonTwo.whileTrue(AutoAlignCommand(self.photonCameraTwo, self.driveTrain, self.poseEstimator, self.joystick, self.config))
         
         self.joystickButtonTwelve = button.JoystickButton(self.joystick, 12) # the speed limiter button
         self.joystickButtonTwelve.whenPressed(cmd.runOnce(lambda: self.driveTrain.enableSpeedLimiter(), []))
         self.joystickButtonTwelve.whenReleased(cmd.runOnce(lambda: self.driveTrain.disableSpeedLimiter(), []))
 
         
-        self.joystickButtonThree = button.JoystickButton(self.joystick, 3)
-        self.joystickButtonThree.whileTrue(SubstationPickupCommand(self.driveTrain, self.poseEstimator, self.joystick, self.config))
+        self.joystickButtonOne = button.JoystickButton(self.joystick, 1)
+        self.joystickButtonOne.whileTrue(SubstationPickupCommand(self.driveTrain, self.poseEstimator, self.joystick, self.config))
         self.xboxController.A().whileTrue(MandibleIntakeCommand(self.mandible))
         self.xboxController.Y().whileTrue(cmd.run(lambda: self.mandible.outtake(), [self.mandible]))
         self.xboxController.X().onTrue(self.eventMap["CloseMandible"])

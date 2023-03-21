@@ -3,6 +3,7 @@ from subsystems.driveTrain import DriveTrainSubSystem
 from subsystems.poseEstimator import PoseEstimatorSubsystem
 from wpimath import controller, kinematics
 from commands2 import button
+import photonvision
 
 import math
 import commands2
@@ -10,27 +11,31 @@ import commands2
 class AutoAlignCommand(commands2.CommandBase):
     tolerance = 1 # +/- 1 degrees
     staticFrictionFFTurn = 0.2
-    staticFrictionFFDrive = 0.2
+    staticFrictionFFDrive = 0.025
     
-    def __init__(self, LLTable: NetworkTable, DriveTrain: DriveTrainSubSystem, PoseEstimator: PoseEstimatorSubsystem, Joystick: button.CommandJoystick) -> None:
+    def __init__(self, PhotonCamera: photonvision.PhotonCamera, DriveTrain: DriveTrainSubSystem, PoseEstimator: PoseEstimatorSubsystem, Joystick: button.CommandJoystick, Config: dict) -> None:
         super().__init__()
-        self.llTable = LLTable
+        self.camera = PhotonCamera
         self.driveTrain = DriveTrain
         self.poseEstimator = PoseEstimator
-        self.txController = controller.PIDController(0.1, 0, 0, 0.05)
+        self.txController = controller.PIDController(0.05, 0, 0, 0.05)
         self.txController.setTolerance(self.tolerance)
         self.angleController = controller.PIDController(1, 0, 0, 0.05)
         self.angleController.enableContinuousInput(-math.pi, math.pi)
         self.angleController.setTolerance(self.tolerance)
         self.joystick = Joystick
+        self.config = Config
         self.addRequirements(self.driveTrain)
         
     def initialize(self) -> None:
-        self.llTable.putNumber('pipeline', 1) # pipeline index one will be our reflective tape pipeline
+       self.camera.setLEDMode(photonvision.LEDMode.kOn)
+       
         
     def execute(self) -> None:
-        if self.llTable.getNumber('tv', 0) == 1: # does the limelight have any valid targets?
-            tx = self.llTable.getNumber('tx', 0) # how far off we are from the target in degrees
+        result = self.camera.getLatestResult()
+        if result.hasTargets(): # does the limelight have any valid targets?
+            target = result.getBestTarget() # how far off we are from the target in degrees
+            tx = target.getYaw()
             feedback = self.txController.calculate(tx, 0)
             currentPose = self.poseEstimator.getCurrentPose()
             rotationFeedback = self.angleController.calculate(currentPose.rotation().radians(), math.pi)
@@ -51,7 +56,7 @@ class AutoAlignCommand(commands2.CommandBase):
             self.driveTrain.coast()
     
     def end(self, interrupted: bool) -> None:
-        self.llTable.putNumber('pipeline', 0) # sets it back to our apriltag pipeline
+        self.camera.setLEDMode(photonvision.LEDMode.kOff) # sets it back to our apriltag pipeline
         self.driveTrain.coast()
         
     def getJoystickInput(self):

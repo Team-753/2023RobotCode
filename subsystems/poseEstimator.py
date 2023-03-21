@@ -58,22 +58,23 @@ class PoseEstimatorSubsystem(commands2.SubsystemBase):
         '''
         # NOTE: This algorithm is way too expensive. Anyway, TODO: Implement dual-camera pose throwaway/averaging
         currentPose = self.getCurrentPose()
-        pipelineResult = self.photonCamera.getLatestResult()
-        resultTimeStamp = pipelineResult.getTimestamp()
-        if (resultTimeStamp > self.previousPipelineResultTimeStamp and pipelineResult.hasTargets()):
-            target = pipelineResult.getBestTarget()
-            fiducialId = target.getFiducialId()
-            if target.getPoseAmbiguity() <= 0.15 and fiducialId > 0 and fiducialId < 9:
-                camToTarget = target.getBestCameraToTarget()
-                norm = camToTarget.translation().toTranslation2d().norm()
-                wpilib.SmartDashboard.putNumber("distance to tag", camToTarget.translation().toTranslation2d().norm())
-                if norm < self.useAprilTagThresholdMeters or self.isDisabled:
-                    targetPose = self.getTagPose(fiducialId) # need 3d poses of each apriltag id
-                    camPose = targetPose.transformBy(camToTarget.inverse())
-                    robotPose = camPose.transformBy(self.cameraTransformation)
-                    robotPose2d = robotPose.toPose2d()
-                    self.previousPipelineResultTimeStamp = resultTimeStamp 
-                    self.poseEstimator.addVisionMeasurement(robotPose2d, resultTimeStamp)
+        '''if self.isDisabled:
+            pipelineResult = self.photonCamera.getLatestResult()
+            resultTimeStamp = pipelineResult.getTimestamp()
+            if (resultTimeStamp > self.previousPipelineResultTimeStamp and pipelineResult.hasTargets()):
+                target = pipelineResult.getBestTarget()
+                fiducialId = target.getFiducialId()
+                if target.getPoseAmbiguity() <= 0.15 and fiducialId > 0 and fiducialId < 9:
+                    camToTarget = target.getBestCameraToTarget()
+                    norm = camToTarget.translation().toTranslation2d().norm()
+                    wpilib.SmartDashboard.putNumber("distance to tag", camToTarget.translation().toTranslation2d().norm())
+                    if self.isDisabled: # norm < self.useAprilTagThresholdMeters or 
+                        targetPose = self.getTagPose(fiducialId) # need 3d poses of each apriltag id
+                        camPose = targetPose.transformBy(camToTarget.inverse())
+                        robotPose = camPose.transformBy(self.cameraTransformation)
+                        robotPose2d = robotPose.toPose2d()
+                        self.previousPipelineResultTimeStamp = resultTimeStamp 
+                        self.poseEstimator.addVisionMeasurement(robotPose2d, resultTimeStamp)'''
                     
         self.poseEstimator.update(
             self.driveTrain.getNAVXRotation2d(),

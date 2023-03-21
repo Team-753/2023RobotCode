@@ -57,6 +57,16 @@ class StreamDeckSubsystem(commands2.SubsystemBase):
             self.arm.setPosition("Substation")
         elif switches["Floor"]:
             self.arm.setPosition("Floor")
+        elif switches["BottomSlot"]:
+            self.arm.setPosition("BottomSlot")
+        elif switches["MidCone"]:
+            self.arm.setPosition("MidConePrep")
+        elif switches["MidCube"]:
+            self.arm.setPosition("MidCube")
+        elif switches["HighCone"]:
+            self.arm.setPosition("HighConePrep")
+        elif switches["HighCube"]:
+            self.arm.setPosition("HighCube")
     
     def getSelectedGridSlot(self):
         grid, position = self.selectedGridSlot

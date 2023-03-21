@@ -86,7 +86,7 @@
     "joystickDeadZones": {
       "xDeadZone": 0.1,
       "yDeadZone": 0.1,
-      "zDeadZone": 0.075
+      "zDeadZone": 0.2
     },
     "rateLimiters": {
       "xAccel": 8,

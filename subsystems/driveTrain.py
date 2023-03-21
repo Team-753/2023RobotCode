@@ -79,9 +79,6 @@ class DriveTrainSubSystem(commands2.SubsystemBase):
         Typical teleoperated robot control function, nothing fancy here, just some constants and ratios
         '''
         xSpeed, ySpeed, zSpeed = inputs[0], inputs[1], inputs[2]
-        if self.alliance != wpilib.DriverStation.Alliance.kBlue:
-            xSpeed = -xSpeed
-            ySpeed = -ySpeed
         if xSpeed == 0 and ySpeed == 0 and zSpeed == 0:
             self.stationary()
         else:
