@@ -9,7 +9,7 @@ import wpilib
 import photonvision
 import os
 import json
-from wpimath import geometry, filter
+from wpimath import geometry
 from math import radians
 import math
 import pathplannerlib
@@ -51,8 +51,10 @@ class RobotContainer:
     fieldWidthMeters = 16.54175
     NetworkTables.initialize()
     photonCameraTwo = photonvision.PhotonCamera("photoncameratwo")
-    photonCameraTwo.setLEDMode(photonvision.LEDMode.kOff)
     LLTable = NetworkTables.getTable('limelight')
+    photonTable = NetworkTables.getTable('photonvision')
+    photonTable.putNumber('ledMode', 0)
+    armSpeedFactor = 0.10
     
     def __init__(self) -> None:
         # buttons
@@ -163,6 +165,9 @@ class RobotContainer:
         self.joystickButtonTwelve = button.JoystickButton(self.joystick, 12) # the speed limiter button
         self.joystickButtonTwelve.whenPressed(cmd.runOnce(lambda: self.driveTrain.enableSpeedLimiter(), []))
         self.joystickButtonTwelve.whenReleased(cmd.runOnce(lambda: self.driveTrain.disableSpeedLimiter(), []))
+        
+        self.joystickButtonEleven = button.JoystickButton(self.joystick, 11)
+        self.joystickButtonEleven.whenPressed(cmd.runOnce(lambda: self.poseEstimator.resetFieldPosition(), []))
 
         
         self.joystickButtonOne = button.JoystickButton(self.joystick, 1)
@@ -180,6 +185,8 @@ class RobotContainer:
                 adjustedValue = -adjustedValue
         else:
             adjustedValue = 0
+        if not self.xboxController.getRightBumper():
+            adjustedValue *= self.armSpeedFactor
         return adjustedValue    
     
     def evaluateDeadzones(self, inputs):
@@ -208,7 +215,7 @@ class RobotContainer:
                                                     commands2.WaitCommand(0.75), 
                                                     AutonomousChargeStation(self.driveTrain, self.arm, self.poseEstimator))
         elif pathName == "Only Place":
-            return self.autoGridPlacer.getCommandSequence(True)
+            return self.eventMap.get("Only Place")
         else:
             autoPath = self.getPathGroup(pathName)
             if wpilib.DriverStation.Alliance.kRed:
@@ -264,7 +271,11 @@ class RobotContainer:
                                                             TurnToPieceCommand(self.driveTrain, self.poseEstimator),
                                                             LimeLightSanityCheck(self.LLTable, self.driveTrain, self.poseEstimator, self.mandible),
                                                             ArmConfirmPlacementCommand(self.arm, 'Floor'),
-                                                            DriveAndPickupPiece(self.driveTrain, self.poseEstimator, self.mandible, self.arm))
+                                                            DriveAndPickupPiece(self.driveTrain, self.poseEstimator, self.mandible, self.arm)),
+            "Only Place": commands2.SequentialCommandGroup(cmd.runOnce(lambda: self.mandible.intake(), []),
+                                                           ArmConfirmPlacementCommand(self.arm, "HighCube"),
+                                                           MandibleOuttakeCommand(self.mandible),
+                                                           cmd.runOnce(lambda: self.arm.setPosition("Optimized")))
         }
     
     def testInit(self):
@@ -292,9 +303,6 @@ class RobotContainer:
     def autonomousInit(self):
         self.stages = 0
         self.driveTrain.setDefaultCommand(cmd.run(lambda: None, [self.driveTrain])) # stupid ass command based POS
-        #self.arm.setPosition("Optimized")
-        self.mandible.setState("Cube")
-        #self.mandible.intake()
     
     def autonomousPeriodic(self):
         pass

@@ -13,7 +13,7 @@ class AutoAlignCommand(commands2.CommandBase):
     staticFrictionFFTurn = 0.2
     staticFrictionFFDrive = 0.025
     
-    def __init__(self, PhotonCamera: photonvision.PhotonCamera, DriveTrain: DriveTrainSubSystem, PoseEstimator: PoseEstimatorSubsystem, Joystick: button.CommandJoystick, Config: dict) -> None:
+    def __init__(self, PhotonCamera: photonvision.PhotonCamera, DriveTrain: DriveTrainSubSystem, PoseEstimator: PoseEstimatorSubsystem, Joystick: button.CommandJoystick, Config: dict, photonTable: NetworkTable) -> None:
         super().__init__()
         self.camera = PhotonCamera
         self.driveTrain = DriveTrain
@@ -25,10 +25,12 @@ class AutoAlignCommand(commands2.CommandBase):
         self.angleController.setTolerance(self.tolerance)
         self.joystick = Joystick
         self.config = Config
+        self.photonTable = photonTable
         self.addRequirements(self.driveTrain)
         
     def initialize(self) -> None:
-       self.camera.setLEDMode(photonvision.LEDMode.kOn)
+       #self.camera.setLEDMode(photonvision.LEDMode.kOn)
+       self.photonTable.putNumber('ledMode', -1)
        
         
     def execute(self) -> None:
@@ -56,7 +58,8 @@ class AutoAlignCommand(commands2.CommandBase):
             self.driveTrain.coast()
     
     def end(self, interrupted: bool) -> None:
-        self.camera.setLEDMode(photonvision.LEDMode.kOff) # sets it back to our apriltag pipeline
+        #self.camera.setLEDMode(photonvision.LEDMode.kOff) # sets it back to our apriltag pipeline
+        self.photonTable.putNumber('ledMode', 0)
         self.driveTrain.coast()
         
     def getJoystickInput(self):
