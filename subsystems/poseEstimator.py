@@ -58,7 +58,7 @@ class PoseEstimatorSubsystem(commands2.SubsystemBase):
         '''
         # NOTE: This algorithm is way too expensive. Anyway, TODO: Implement dual-camera pose throwaway/averaging
         currentPose = self.getCurrentPose()
-        '''if self.isDisabled:
+        if self.isDisabled:
             pipelineResult = self.photonCamera.getLatestResult()
             resultTimeStamp = pipelineResult.getTimestamp()
             if (resultTimeStamp > self.previousPipelineResultTimeStamp and pipelineResult.hasTargets()):
@@ -74,7 +74,7 @@ class PoseEstimatorSubsystem(commands2.SubsystemBase):
                         robotPose = camPose.transformBy(self.cameraTransformation)
                         robotPose2d = robotPose.toPose2d()
                         self.previousPipelineResultTimeStamp = resultTimeStamp 
-                        self.poseEstimator.addVisionMeasurement(robotPose2d, resultTimeStamp)'''
+                        self.poseEstimator.addVisionMeasurement(robotPose2d, resultTimeStamp)
                     
         self.poseEstimator.update(
             self.driveTrain.getNAVXRotation2d(),
@@ -95,7 +95,7 @@ class PoseEstimatorSubsystem(commands2.SubsystemBase):
         pitch = math.radians(self.navx.getPitch()) # robot tilting forward/backward
         roll = math.radians(self.navx.getRoll()) # robot tilting side to side
         yaw = self.getCurrentPose().rotation().radians() # yaw is independent of pitch and roll axes, navx automatically accounts for that, we can use this value to rotate to charge station reference
-        tilt = roll * math.cos(yaw) + pitch * math.sin(yaw)
+        tilt = abs(roll * math.cos(yaw)) + abs(pitch * math.sin(yaw))
         return math.degrees(tilt)
         
     def getFormattedPose(self):

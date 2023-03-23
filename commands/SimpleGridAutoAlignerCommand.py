@@ -11,7 +11,7 @@ import commands2
 class AutoAlignCommand(commands2.CommandBase):
     tolerance = 1 # +/- 1 degrees
     staticFrictionFFTurn = 0.2
-    staticFrictionFFDrive = 0.025
+    staticFrictionFFDrive = 0.075
     
     def __init__(self, PhotonCamera: photonvision.PhotonCamera, DriveTrain: DriveTrainSubSystem, PoseEstimator: PoseEstimatorSubsystem, Joystick: button.CommandJoystick, Config: dict, photonTable: NetworkTable) -> None:
         super().__init__()

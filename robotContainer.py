@@ -54,7 +54,7 @@ class RobotContainer:
     LLTable = NetworkTables.getTable('limelight')
     photonTable = NetworkTables.getTable('photonvision')
     photonTable.putNumber('ledMode', 0)
-    armSpeedFactor = 0.10
+    armSpeedFactor = 0.40
     
     def __init__(self) -> None:
         # buttons
@@ -160,7 +160,7 @@ class RobotContainer:
         self.joystickButtonFour.whileHeld(cmd.runOnce(lambda: self.driveTrain.xMode(), [self.driveTrain]))
         
         self.joystickButtonTwo = button.JoystickButton(self.joystick, 2)
-        self.joystickButtonTwo.whileTrue(AutoAlignCommand(self.photonCameraTwo, self.driveTrain, self.poseEstimator, self.joystick, self.config))
+        self.joystickButtonTwo.whileTrue(AutoAlignCommand(self.photonCameraTwo, self.driveTrain, self.poseEstimator, self.joystick, self.config, self.photonTable))
         
         self.joystickButtonTwelve = button.JoystickButton(self.joystick, 12) # the speed limiter button
         self.joystickButtonTwelve.whenPressed(cmd.runOnce(lambda: self.driveTrain.enableSpeedLimiter(), []))
@@ -170,8 +170,8 @@ class RobotContainer:
         self.joystickButtonEleven.whenPressed(cmd.runOnce(lambda: self.poseEstimator.resetFieldPosition(), []))
 
         
-        self.joystickButtonOne = button.JoystickButton(self.joystick, 1)
-        self.joystickButtonOne.whileTrue(SubstationPickupCommand(self.driveTrain, self.poseEstimator, self.joystick, self.config))
+        self.joystickButtonThree = button.JoystickButton(self.joystick, 3)
+        self.joystickButtonThree.whileTrue(SubstationPickupCommand(self.driveTrain, self.poseEstimator, self.joystick, self.config))
         self.xboxController.A().whileTrue(MandibleIntakeCommand(self.mandible))
         self.xboxController.Y().whileTrue(cmd.run(lambda: self.mandible.outtake(), [self.mandible]))
         self.xboxController.X().onTrue(self.eventMap["CloseMandible"])
@@ -209,7 +209,7 @@ class RobotContainer:
         #currentPose = self.poseEstimator.getCurrentPose()
         pathName = self.autonomousChooser.getSelected()
         if pathName == "Only Charge":
-            return commands2.SequentialCommandGroup(self.autoGridPlacer.getCommandSequence(True), 
+            return commands2.SequentialCommandGroup(self.eventMap.get("Only Place"), 
                                                     TurnToCommand(self.driveTrain, self.poseEstimator, geometry.Rotation2d(math.pi / 4)), 
                                                     AutonomousChargeStation(self.driveTrain, self.arm, self.poseEstimator), 
                                                     commands2.WaitCommand(0.75), 

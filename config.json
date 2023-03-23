@@ -61,7 +61,7 @@
     "PCM_ID": 61
   },
   "autonomousSettings": {
-    "autoVelLimit": 0.75,
+    "autoVelLimit": 2,
     "autoAccelLimit": 2,
     "xPoseToleranceMeters": 0.03,
     "yPoseToleranceMeters": 0.03,
@@ -86,7 +86,7 @@
     "joystickDeadZones": {
       "xDeadZone": 0.1,
       "yDeadZone": 0.1,
-      "zDeadZone": 0.2
+      "zDeadZone": 0.15
     },
     "rateLimiters": {
       "xAccel": 8,
