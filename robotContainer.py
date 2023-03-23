@@ -53,7 +53,7 @@ class RobotContainer:
     photonCameraTwo = photonvision.PhotonCamera("photoncameratwo")
     LLTable = NetworkTables.getTable('limelight')
     photonTable = NetworkTables.getTable('photonvision')
-    photonTable.putNumber('ledMode', 0)
+    LLTable.putNumber('pipeline', 0)
     armSpeedFactor = 0.40
     
     def __init__(self) -> None:
@@ -64,7 +64,7 @@ class RobotContainer:
         
         # subsystems
         self.driveTrain = DriveTrainSubSystem(self.config)
-        self.poseEstimator = PoseEstimatorSubsystem(self.photonCamera, self.driveTrain, geometry.Pose2d(geometry.Translation2d(0, 0), geometry.Rotation2d(math.pi)), self.config) # NOTE: THE BLANK POSE2D IS TEMPORARY
+        self.poseEstimator = PoseEstimatorSubsystem(self.photonCamera, self.LLTable, self.driveTrain, geometry.Pose2d(geometry.Translation2d(0, 0), geometry.Rotation2d(math.pi)), self.config) # NOTE: THE BLANK POSE2D IS TEMPORARY
         self.mandible = MandibleSubSystem(self.config)
         self.arm = ArmSubSystem(self.config)
         self.streamDeckSubsystem = StreamDeckSubsystem(self.arm, self.auxiliaryStreamDeckJoystick)
@@ -160,7 +160,7 @@ class RobotContainer:
         self.joystickButtonFour.whileHeld(cmd.runOnce(lambda: self.driveTrain.xMode(), [self.driveTrain]))
         
         self.joystickButtonTwo = button.JoystickButton(self.joystick, 2)
-        self.joystickButtonTwo.whileTrue(AutoAlignCommand(self.photonCameraTwo, self.driveTrain, self.poseEstimator, self.joystick, self.config, self.photonTable))
+        self.joystickButtonTwo.whileTrue(AutoAlignCommand(self.LLTable, self.driveTrain, self.poseEstimator, self.joystick, self.config, self.photonTable))
         
         self.joystickButtonTwelve = button.JoystickButton(self.joystick, 12) # the speed limiter button
         self.joystickButtonTwelve.whenPressed(cmd.runOnce(lambda: self.driveTrain.enableSpeedLimiter(), []))
