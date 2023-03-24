@@ -81,7 +81,7 @@ class AutoAlignCommand(commands2.CommandBase):
     staticFrictionFFTurn = 0.2
     staticFrictionFFDrive = 0.075
     
-    def __init__(self, LLTable: NetworkTable, DriveTrain: DriveTrainSubSystem, PoseEstimator: PoseEstimatorSubsystem, Joystick: button.CommandJoystick, Config: dict, photonTable: NetworkTable) -> None:
+    def __init__(self, LLTable: NetworkTable, DriveTrain: DriveTrainSubSystem, PoseEstimator: PoseEstimatorSubsystem, Joystick: button.CommandJoystick, Config: dict, photonTable: NetworkTable, useAlliance = False) -> None:
         super().__init__()
         self.llTable = LLTable
         self.driveTrain = DriveTrain
@@ -95,6 +95,10 @@ class AutoAlignCommand(commands2.CommandBase):
         self.config = Config
         self.photonTable = photonTable
         self.addRequirements(self.driveTrain)
+        if useAlliance:
+            self.allianceFactor = -1
+        else:
+            self.allianceFactor = 1
         
     def initialize(self) -> None:
        self.llTable.putNumber('pipeline', 1)
@@ -119,7 +123,7 @@ class AutoAlignCommand(commands2.CommandBase):
                 driveFF = self.staticFrictionFFDrive
             else:
                 driveFF = 0
-            self.driveTrain.autoDrive(kinematics.ChassisSpeeds(self.getJoystickInput()[1], feedback + driveFF, rotationFeedback + rotFF), currentPose)
+            self.driveTrain.autoDrive(kinematics.ChassisSpeeds(self.getJoystickInput()[1], (feedback + driveFF) * self.allianceFactor, rotationFeedback + rotFF), currentPose)
         else:
             self.driveTrain.coast()
     

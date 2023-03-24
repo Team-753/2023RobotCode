@@ -40,7 +40,7 @@ class AutonomousChargeStation(commands2.CommandBase):
             if self.inverted:
                 rotationFeedback = self.angleController.calculate(currentPose.rotation().radians(), math.pi / 4)
             else:
-                rotationFeedback = self.angleController.calculate(currentPose.rotation().radians(), 3 * math.pi / 4)
+                rotationFeedback = self.angleController.calculate(currentPose.rotation().radians(), -3 * math.pi / 4)
             if rotationFeedback < 0:
                 rotFF = -self.staticFrictionFFTurn
             else:

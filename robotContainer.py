@@ -9,7 +9,7 @@ import wpilib
 import photonvision
 import os
 import json
-from wpimath import geometry
+from wpimath import geometry, kinematics
 from math import radians
 import math
 import pathplannerlib
@@ -31,6 +31,8 @@ from commands.turnToCommand import TurnToCommand
 from commands.SimpleGridAutoAlignerCommand import AutoAlignCommand
 from commands.armConfirmPlacementCommand import ArmConfirmPlacementCommand
 from commands.PiecePickupCommands import TurnToPieceCommand, LimeLightSanityCheck, DriveAndPickupPiece
+from commands.autoDriveCommand import AutoDriveCommand
+from commands.driveUntilLevelCommand import DriveUntilGroundLevelCommand
 
 from auto.swerveAutoBuilder import SwerveAutoBuilder
 
@@ -50,7 +52,6 @@ class RobotContainer:
     photonCamera = photonvision.PhotonCamera("photoncameraone") # , photonvision.PhotonCamera("photoncameratwo")
     fieldWidthMeters = 16.54175
     NetworkTables.initialize()
-    photonCameraTwo = photonvision.PhotonCamera("photoncameratwo")
     LLTable = NetworkTables.getTable('limelight')
     photonTable = NetworkTables.getTable('photonvision')
     LLTable.putNumber('pipeline', 0)
@@ -85,8 +86,11 @@ class RobotContainer:
         self.autonomousChooser = wpilib.SendableChooser()
         self.autonomousChooser.setDefaultOption("Only Place", "Only Place")
         self.autonomousChooser.addOption("Only Charge", "Only Charge")
-        for pathName in self.autoList:
-            self.autonomousChooser.addOption(pathName, pathName)
+        self.autonomousChooser.addOption("Taxi & Charge", "Taxi & Charge")
+        self.autonomousChooser.addOption("Cable Protector Place & Taxi", "Cable Protector Place & Taxi")
+        self.autonomousChooser.addOption("Open Shot Place & Taxi", "Open Shot Place & Taxi")
+        '''for pathName in self.autoList:
+            self.autonomousChooser.addOption(pathName, pathName)'''
         wpilib.SmartDashboard.putData("Autonomous Chooser", self.autonomousChooser)
         
         self.firstGamePiecePlacement = wpilib.SendableChooser()
@@ -214,9 +218,25 @@ class RobotContainer:
                                                     AutonomousChargeStation(self.driveTrain, self.arm, self.poseEstimator), 
                                                     commands2.WaitCommand(0.75), 
                                                     AutonomousChargeStation(self.driveTrain, self.arm, self.poseEstimator))
-        elif pathName == "Only Place":
-            return self.eventMap.get("Only Place")
+        elif pathName == "Taxi & Charge":
+            return commands2.SequentialCommandGroup(self.eventMap.get("Only Place"),
+                                                    TurnToCommand(self.driveTrain, self.poseEstimator, geometry.Rotation2d(math.pi / 4)),
+                                                    AutonomousChargeStation(self.driveTrain, self.arm, self.poseEstimator),
+                                                    DriveUntilGroundLevelCommand(2, False, self.driveTrain, self.poseEstimator),
+                                                    AutonomousChargeStation(self.driveTrain, self.arm, self.poseEstimator, True),
+                                                    commands2.WaitCommand(0.75),
+                                                    AutonomousChargeStation(self.driveTrain, self.arm, self.poseEstimator))
+        elif pathName == "Cable Protector Place & Taxi":
+            return commands2.SequentialCommandGroup(self.eventMap.get("Only Place"),
+                                                    AutoDriveCommand(0, -1, 0, 1, self.driveTrain, self.poseEstimator),
+                                                    AutoDriveCommand(2, 0, 0, 3, self.driveTrain, self.poseEstimator))
+        elif pathName == "Open Shot Place & Taxi":
+            return commands2.SequentialCommandGroup(self.eventMap.get("Only Place"),
+                                                    AutoDriveCommand(0, 1, 0, 1, self.driveTrain, self.poseEstimator),
+                                                    AutoDriveCommand(2, 0, 0, 1.5))
         else:
+            return self.eventMap.get("Only Place")
+        '''else:
             autoPath = self.getPathGroup(pathName)
             if wpilib.DriverStation.Alliance.kRed:
                 self.SwerveAutoBuilder.useAllianceColor = True
@@ -228,7 +248,7 @@ class RobotContainer:
             #correction = self.bruhMomentoAutoBuilder.followPath(pathplannerlib.PathPlanner.generatePath(self.pathConstraints, [pathplannerlib.PathPoint.fromCurrentHolonomicState(currentPose, kinematics.ChassisSpeeds(0, 0, 0)), pathplannerlib.PathPoint.fromCurrentHolonomicState(initialState, kinematics.ChassisSpeeds(0, 0, 0))]))
             fullAuto = self.SwerveAutoBuilder.fullAuto(autoPath)
             #return commands2.SequentialCommandGroup(correction, fullAuto) # correction
-            return fullAuto
+            return fullAuto'''
     
     def getPath(self, pathName: str) -> pathplannerlib.PathPlannerTrajectory:
         return pathplannerlib.PathPlanner.loadPath(pathName, self.pathConstraints, False)
