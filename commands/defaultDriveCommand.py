@@ -17,10 +17,11 @@ class DefaultDriveCommand(commands2.CommandBase):
         self.config = config
         self.kMaxSpeed = self.config["RobotDefaultSettings"]["wheelVelocityLimit"]
         self.maxAngularVelocity = self.config["driverStation"]["teleoperatedRobotConstants"]["teleopVelLimit"] / hypot(self.config["RobotDimensions"]["trackWidth"] / 2, self.config["RobotDimensions"]["wheelBase"] / 2) # about 11 rads per second
+        self.teleopTurnModifier = 0.6
         
     def execute(self) -> None:
         inputs = self.getJoystickInput()
-        self.driveTrain.joystickDrive([inputs[1] * self.kMaxSpeed, inputs[0] * self.kMaxSpeed, inputs[2] * self.maxAngularVelocity], self.poseEstimator.getCurrentPose())
+        self.driveTrain.joystickDrive([inputs[1] * self.kMaxSpeed, inputs[0] * self.kMaxSpeed, inputs[2] * self.maxAngularVelocity * self.teleopTurnModifier], self.poseEstimator.getCurrentPose())
     
     def getJoystickInput(self):
         inputs = (self.joystick.getX(), self.joystick.getY(), self.joystick.getZ())

@@ -18,7 +18,7 @@ class DriveUntilGroundLevelCommand(commands2.CommandBase):
         self.addRequirements(self.driveTrain)
     
     def execute(self) -> None:
-        self.driveTrain.autoDrive(kinematics.ChassisSpeeds(self.xVel * self.inversionFactor, 0, 0), self.poseEstimator.getCurrentPose())
+        self.driveTrain.autoDrive(kinematics.ChassisSpeeds(-self.xVel * self.inversionFactor, 0, 0), self.poseEstimator.getCurrentPose())
         if self.poseEstimator.tilt < 2: # angle is already abs()
             self.timer.start()
         else:

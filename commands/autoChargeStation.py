@@ -7,12 +7,11 @@ from subsystems.arm import ArmSubSystem
 from subsystems.poseEstimator import PoseEstimatorSubsystem
 
 class AutonomousChargeStation(commands2.CommandBase):
-    thresholdDegPerSec = -30
-    speedMS = 1.25
+    thresholdDegPerSec = -17.5
     tolerance = 1 # +/- one degree
     staticFrictionFFTurn = 0.2
     
-    def __init__(self, DriveTrain: DriveTrainSubSystem, Arm: ArmSubSystem, PoseEstimator: PoseEstimatorSubsystem, inverted = False) -> None:
+    def __init__(self, DriveTrain: DriveTrainSubSystem, Arm: ArmSubSystem, PoseEstimator: PoseEstimatorSubsystem, secondStage: bool, inverted = False) -> None:
         super().__init__()
         self.driveTrain = DriveTrain
         self.arm = Arm
@@ -22,6 +21,9 @@ class AutonomousChargeStation(commands2.CommandBase):
         self.angleController.enableContinuousInput(-math.pi, math.pi)
         self.angleController.setTolerance(self.tolerance)
         self.inverted = inverted
+        self.speedMS = 2.25
+        if secondStage:
+            self.speedMS = 0.375
         
     def initialize(self) -> None:
         self.done = False
@@ -32,15 +34,15 @@ class AutonomousChargeStation(commands2.CommandBase):
             modifier = -1
         else:
             modifier = 1
-        deltaTilt = self.poseEstimator.deltaTilt * modifier
+        deltaTilt = self.poseEstimator.deltaTilt
         if deltaTilt < self.thresholdDegPerSec:
             self.done = True
         else:
             currentPose = self.poseEstimator.getCurrentPose()
             if self.inverted:
-                rotationFeedback = self.angleController.calculate(currentPose.rotation().radians(), math.pi / 4)
+                rotationFeedback = self.angleController.calculate(currentPose.rotation().radians(), math.pi) # math.pi / 4
             else:
-                rotationFeedback = self.angleController.calculate(currentPose.rotation().radians(), -3 * math.pi / 4)
+                rotationFeedback = self.angleController.calculate(currentPose.rotation().radians(), math.pi) # -3 * math.pi / 4
             if rotationFeedback < 0:
                 rotFF = -self.staticFrictionFFTurn
             else:

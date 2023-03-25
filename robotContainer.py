@@ -55,7 +55,7 @@ class RobotContainer:
     LLTable = NetworkTables.getTable('limelight')
     photonTable = NetworkTables.getTable('photonvision')
     LLTable.putNumber('pipeline', 0)
-    armSpeedFactor = 0.40
+    armSpeedFactor = 0.10
     
     def __init__(self) -> None:
         # buttons
@@ -73,7 +73,7 @@ class RobotContainer:
         
         
         #subsystem configuration
-        self.arm.setDefaultCommand(cmd.run(lambda: self.arm.manualControlIncrementor(self.getStickInput(self.xboxController.getLeftY(), self.config["ArmConfig"]["manualControlDeadzone"]) * 0.10), [self.arm])) # same issue here, no way to bind commands to axes so this is the solution
+        self.arm.setDefaultCommand(cmd.run(lambda: self.arm.manualControlIncrementor(self.getStickInput(self.xboxController.getLeftY(), self.config["ArmConfig"]["manualControlDeadzone"])), [self.arm])) # same issue here, no way to bind commands to axes so this is the solution
         self.mandible.setDefaultCommand(cmd.run(lambda: self.mandible.cubePeriodic(), [self.mandible])) # this may not run in certain modes
         
         # additional configuration
@@ -89,6 +89,7 @@ class RobotContainer:
         self.autonomousChooser.addOption("Taxi & Charge", "Taxi & Charge")
         self.autonomousChooser.addOption("Cable Protector Place & Taxi", "Cable Protector Place & Taxi")
         self.autonomousChooser.addOption("Open Shot Place & Taxi", "Open Shot Place & Taxi")
+        self.autonomousChooser.addOption("Quite Literally Only Charge", "Quite Literally Only Charge")
         '''for pathName in self.autoList:
             self.autonomousChooser.addOption(pathName, pathName)'''
         wpilib.SmartDashboard.putData("Autonomous Chooser", self.autonomousChooser)
@@ -187,10 +188,10 @@ class RobotContainer:
             adjustedValue = (abs(input) - threshold) / (1 - threshold)
             if input < 0 and adjustedValue != 0:
                 adjustedValue = -adjustedValue
+            if not self.xboxController.getRightBumper():
+                adjustedValue *= self.armSpeedFactor
         else:
             adjustedValue = 0
-        if not self.xboxController.getRightBumper():
-            adjustedValue *= self.armSpeedFactor
         return adjustedValue    
     
     def evaluateDeadzones(self, inputs):
@@ -214,26 +215,36 @@ class RobotContainer:
         pathName = self.autonomousChooser.getSelected()
         if pathName == "Only Charge":
             return commands2.SequentialCommandGroup(self.eventMap.get("Only Place"), 
-                                                    TurnToCommand(self.driveTrain, self.poseEstimator, geometry.Rotation2d(math.pi / 4)), 
-                                                    AutonomousChargeStation(self.driveTrain, self.arm, self.poseEstimator), 
+                                                    TurnToCommand(self.driveTrain, self.poseEstimator, geometry.Rotation2d(math.pi)), 
+                                                    AutonomousChargeStation(self.driveTrain, self.arm, self.poseEstimator, False), 
                                                     commands2.WaitCommand(0.75), 
-                                                    AutonomousChargeStation(self.driveTrain, self.arm, self.poseEstimator))
-        elif pathName == "Taxi & Charge":
-            return commands2.SequentialCommandGroup(self.eventMap.get("Only Place"),
-                                                    TurnToCommand(self.driveTrain, self.poseEstimator, geometry.Rotation2d(math.pi / 4)),
-                                                    AutonomousChargeStation(self.driveTrain, self.arm, self.poseEstimator),
-                                                    DriveUntilGroundLevelCommand(2, False, self.driveTrain, self.poseEstimator),
                                                     AutonomousChargeStation(self.driveTrain, self.arm, self.poseEstimator, True),
+                                                    cmd.runOnce(lambda: self.arm.setPosition('Substation'), []))
+        elif pathName == "Taxi & Charge":
+            return DriveUntilGroundLevelCommand(1, False, self.driveTrain, self.poseEstimator)
+            return '''commands2.SequentialCommandGroup(self.eventMap.get("Only Place"),
+                                                    TurnToCommand(self.driveTrain, self.poseEstimator, geometry.Rotation2d(math.pi)),
+                                                    AutonomousChargeStation(self.driveTrain, self.arm, self.poseEstimator, False),
+                                                    DriveUntilGroundLevelCommand(1, False, self.driveTrain, self.poseEstimator),
+                                                    TurnToCommand(self.driveTrain, self.poseEstimator, geometry.Rotation2d(0)),
+                                                    AutonomousChargeStation(self.driveTrain, self.arm, self.poseEstimator, False, True),
                                                     commands2.WaitCommand(0.75),
-                                                    AutonomousChargeStation(self.driveTrain, self.arm, self.poseEstimator))
+                                                    AutonomousChargeStation(self.driveTrain, self.arm, self.poseEstimator, True, True),
+                                                    cmd.runOnce(lambda: self.arm.setPosition('Substation'), []))'''
         elif pathName == "Cable Protector Place & Taxi":
             return commands2.SequentialCommandGroup(self.eventMap.get("Only Place"),
-                                                    AutoDriveCommand(0, -1, 0, 1, self.driveTrain, self.poseEstimator),
-                                                    AutoDriveCommand(2, 0, 0, 3, self.driveTrain, self.poseEstimator))
+                                                    AutoDriveCommand(0, -0.5, 0, 1, self.driveTrain, self.poseEstimator),
+                                                    AutoDriveCommand(1.25, 0, 0, 3, self.driveTrain, self.poseEstimator))
         elif pathName == "Open Shot Place & Taxi":
             return commands2.SequentialCommandGroup(self.eventMap.get("Only Place"),
-                                                    AutoDriveCommand(0, 1, 0, 1, self.driveTrain, self.poseEstimator),
-                                                    AutoDriveCommand(2, 0, 0, 1.5))
+                                                    AutoDriveCommand(0, 0.5, 0, 1, self.driveTrain, self.poseEstimator),
+                                                    AutoDriveCommand(1.25, 0, 0, 1.5))
+        elif pathName == "Quite Literally Only Charge":
+            return commands2.SequentialCommandGroup(TurnToCommand(self.driveTrain, self.poseEstimator, geometry.Rotation2d(math.pi)), 
+                                                    AutonomousChargeStation(self.driveTrain, self.arm, self.poseEstimator, False), 
+                                                    commands2.WaitCommand(0.75), 
+                                                    AutonomousChargeStation(self.driveTrain, self.arm, self.poseEstimator, True),
+                                                    cmd.runOnce(lambda: self.arm.setPosition('Substation'), []))
         else:
             return self.eventMap.get("Only Place")
         '''else:
@@ -323,6 +334,7 @@ class RobotContainer:
     def autonomousInit(self):
         self.stages = 0
         self.driveTrain.setDefaultCommand(cmd.run(lambda: None, [self.driveTrain])) # stupid ass command based POS
+        self.mandible.setState('Cube')
     
     def autonomousPeriodic(self):
         pass

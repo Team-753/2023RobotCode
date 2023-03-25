@@ -56,7 +56,7 @@ class PoseEstimatorSubsystem(commands2.SubsystemBase):
         For this next section of code we are referencing both of our cameras to find the best apriltag to esimate our position off of, if one is available
         '''
         # NOTE: This algorithm is way too expensive. Anyway, TODO: Implement dual-camera pose throwaway/averaging
-        pipelineResult = self.photonCamera.getLatestResult()
+        '''pipelineResult = self.photonCamera.getLatestResult()
         resultTimeStamp = pipelineResult.getTimestamp()
         if (resultTimeStamp > self.previousPipelineResultTimeStamp and pipelineResult.hasTargets()):
             target = pipelineResult.getBestTarget()
@@ -71,8 +71,8 @@ class PoseEstimatorSubsystem(commands2.SubsystemBase):
                     robotPose = camPose.transformBy(self.cameraTransformation)
                     robotPose2d = robotPose.toPose2d()
                     self.previousPipelineResultTimeStamp = resultTimeStamp 
-                    self.poseEstimator.addVisionMeasurement(robotPose2d, resultTimeStamp)
-        if self.llTable.getNumber('getpipe', 0) == 0: # 0 being our apriltag pipeline
+                    self.poseEstimator.addVisionMeasurement(robotPose2d, resultTimeStamp)'''
+        '''if self.llTable.getNumber('getpipe', 0) == 0: # 0 being our apriltag pipeline
             if self.llTable.getNumber('tv', 0) == 1: # are there any valid targets
                 distanceToTagData = self.llTable.getNumberArray('camerapose_targetspace', [0, 0, 0, 0, 0, 0, 0])
                 if self.disabled or math.hypot(distanceToTagData[0], distanceToTagData[1]) < self.useAprilTagThresholdMeters:  
@@ -82,7 +82,7 @@ class PoseEstimatorSubsystem(commands2.SubsystemBase):
                         botPoseData = self.llTable.getNumberArray('botpose_wpired', [0,0,0,0,0,0,0])
                     botPose2D = geometry.Pose2d(geometry.Translation2d(botPoseData[0], botPoseData[1]), geometry.Rotation2d(botPoseData[5]))
                     latency = botPoseData[6]
-                    self.poseEstimator.addVisionMeasurement(botPose2D, latency)
+                    self.poseEstimator.addVisionMeasurement(botPose2D, latency)'''
                     
         self.poseEstimator.update(
             self.driveTrain.getNAVXRotation2d(),
