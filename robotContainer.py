@@ -33,6 +33,7 @@ from commands.armConfirmPlacementCommand import ArmConfirmPlacementCommand
 from commands.PiecePickupCommands import TurnToPieceCommand, LimeLightSanityCheck, DriveAndPickupPiece
 from commands.autoDriveCommand import AutoDriveCommand
 from commands.driveUntilLevelCommand import DriveUntilGroundLevelCommand
+from commands import AutoPlacementCommands
 
 from auto.swerveAutoBuilder import SwerveAutoBuilder
 
@@ -77,6 +78,7 @@ class RobotContainer:
         self.mandible.setDefaultCommand(cmd.run(lambda: self.mandible.cubePeriodic(), [self.mandible])) # this may not run in certain modes
         
         # additional configuration
+        self.autoPlacementCalculator = AutoPlacementCommands.Calculator(self.streamDeckSubsystem)
         
         # self.LEDS = wpilib.AddressableLED() NOTE: For later
         
@@ -165,7 +167,18 @@ class RobotContainer:
         self.joystickButtonFour.whileHeld(cmd.runOnce(lambda: self.driveTrain.xMode(), [self.driveTrain]))
         
         self.joystickButtonTwo = button.JoystickButton(self.joystick, 2)
-        self.joystickButtonTwo.whileTrue(AutoAlignCommand(self.LLTable, self.driveTrain, self.poseEstimator, self.joystick, self.config, self.photonTable))
+        self.joystickButtonTwo.whileTrue(commands2.SequentialCommandGroup(cmd.runOnce(lambda: self.autoPlacementCalculator.reInitialize(), []), 
+                                                                          cmd.runOnce(lambda: self.arm.setPosition(self.autoPlacementCalculator.getInitialArmPosition()), []),
+                                                                          self.bruhMomentoAutoBuilder.followPath(pathplannerlib.PathPlanner.generatePath(self.pathConstraints, 
+                                                                                                                                                         [pathplannerlib.PathPoint.fromCurrentHolonomicState(self.poseEstimator.getCurrentPose(), 
+                                                                                                                                                                                                             self.driveTrain.actualChassisSpeeds(self.poseEstimator.getCurrentPose().rotation())),
+                                                                                                                                                          pathplannerlib.PathPoint.fromCurrentHolonomicState(self.autoPlacementCalculator.calculateRobotPose(), kinematics.ChassisSpeeds(0, 0, 0))])),
+                                                                          ArmConfirmPlacementCommand(self.arm, self.autoPlacementCalculator.getInitialArmPosition()),
+                                                                          AutoPlacementCommands.DriverConfirmCommand(self.joystick),
+                                                                          ArmConfirmPlacementCommand(self.arm, self.autoPlacementCalculator.getFinalArmPosition()),
+                                                                          MandibleOuttakeCommand(self.mandible),
+                                                                          cmd.runOnce(lambda: self.mandible.setState('Cube'), []),
+                                                                          cmd.runOnce(lambda: self.arm.setPosition('Optimized'), [])))
         
         self.joystickButtonTwelve = button.JoystickButton(self.joystick, 12) # the speed limiter button
         self.joystickButtonTwelve.whenPressed(cmd.runOnce(lambda: self.driveTrain.enableSpeedLimiter(), []))

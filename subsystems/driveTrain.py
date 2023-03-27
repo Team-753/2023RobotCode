@@ -158,12 +158,13 @@ class DriveTrainSubSystem(commands2.SubsystemBase):
                self.rearRight.getSwerveModulePosition())
         return positions
     
-    def actualChassisSpeeds(self) -> kinematics.ChassisSpeeds:
+    def actualChassisSpeeds(self, currentRotation: geometry.Rotation2d) -> kinematics.ChassisSpeeds:
         states = (self.frontLeft.getSwerveModuleState(), 
                self.frontRight.getSwerveModuleState(), 
                self.rearLeft.getSwerveModuleState(), 
                self.rearRight.getSwerveModuleState())
-        return self.KINEMATICS.toChassisSpeeds(states[0], states[1], states[2], states[3])
+        chassisSpeeds = self.KINEMATICS.toChassisSpeeds(states[0], states[1], states[2], states[3])
+        return chassisSpeeds.fromFieldRelativeSpeeds(chassisSpeeds, geometry.Rotation2d(-currentRotation.radians())) # converting from robot relative to field relative speeds
         
     def resetSwerves(self) -> None:
         self.frontLeft.reZeroMotors()

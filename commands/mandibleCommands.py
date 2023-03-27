@@ -16,7 +16,7 @@ class MandibleOuttakeCommand(commands2.CommandBase):
         '''
     
     def initialize(self) -> None:
-        self.timer.start()
+        self.timer.restart()
     
     def execute(self) -> None:
         self.mandible.outtake()
@@ -26,7 +26,7 @@ class MandibleOuttakeCommand(commands2.CommandBase):
         self.timer.stop()
         
     def isFinished(self) -> bool:
-        return self.timer.hasElapsed(self.wait)
+        return self.timer.hasElapsed(self.wait) or self.mandible.state == 'Cone'
 
 class MandibleIntakeCommand(commands2.CommandBase):
     ''' Command for setting the mandible to intake until it detects a game piece. '''
